@@ -1,0 +1,40 @@
+load_file("hh.ses")
+objref s, ds, nm
+stdinit()
+continuerun(1.5)
+s = new Vector()
+cvode.states(s)
+s.printf()
+
+ds = new Vector()
+cvode.dstates(ds)
+ds.printf()
+
+proc pr() {
+	nm = new String()
+	for i=0, s.size-1 {
+		cvode.statename(i, nm.s)
+		printf("%d %s %g %g\n", i, nm.s, s.x[i], ds.x[i])
+	}
+}
+pr()
+
+ds.resize(0)
+cvode.f(t, s, ds)
+
+pr()
+
+proc jac() {local i, dx  localobj j, dsp
+	j = new Matrix(s.size, s.size)
+	dx = .001
+	dsp = new Vector()
+	for i=0, s.size-1 {
+		s.x[i] += dx
+		cvode.f(t, s, dsp)
+		s.x[i] -= dx
+		j.setrow(i, dsp.sub(ds).mul(1/dx))
+	}
+	printf("\nJacobian\n")
+	j.printf
+}
+jac()
