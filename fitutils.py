@@ -4,7 +4,7 @@ import numpy
 sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps
 
 def jac3(fun,value,x,y,z):
-  DFx = pylab.zeros((len(s0),len(x)))
+  DFx = pylab.zeros((len(value),len(x)))
   k = 0
   while k<len(x):
     temp = x[k]
