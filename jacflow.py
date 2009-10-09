@@ -82,3 +82,9 @@ def measJac():
   x = h.Vector();
   h.cvode.states(x)
   return [numpy.matrix(x.x[0]),numpy.matrix([1,0,0,0]),numpy.matrix(sigm)]
+
+def flow1Test(a, x, dt, sp):
+  return  [numpy.matrix(x*math.exp(-a*dt)), numpy.matrix(math.exp(-a*dt)), numpy.matrix(sp*math.sqrt(dt))]
+  
+def measTest(x, sm):
+  return [numpy.matrix(x), numpy.matrix(1), numpy.matrix(sm)]

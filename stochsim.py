@@ -27,6 +27,8 @@ class simData(wiener.Wiener):
     self.setWdt(initial_Wdt)
     self.setseed(initial_seed)
     self.setjump(initial_jumpW,initial_jumpM)
+    self.sm = sigm
+    self.sp = sigp
 
   def sim(self):
     tMax = self.gettMax()
@@ -34,8 +36,6 @@ class simData(wiener.Wiener):
     tNoise = 0
     h.stdinit()
     x = h.Vector()
-    Y = pylab.zeros(1+int(math.floor(tMax/self.Mdt)))
-    T = pylab.zeros(1+int(math.floor(tMax/self.Mdt)))
     Data = []
     while tData < tMax:
       noiseTimes = [] 
@@ -49,8 +49,18 @@ class simData(wiener.Wiener):
           tNoise = tMax
         h.continuerun(tNoise)
         h.cvode.states(x)
-        x.x[0] += sigp*(self.evalW(tNoise) - self.evalW(tNoise-self.Ndt))
+        x.x[0] += self.sp*(self.evalW(tNoise) - self.evalW(tNoise-self.Ndt))
         h.cvode.yscatter(x)
         h.cvode.re_init()
-      Data.append([noiseTimes, x.x[0] + sigm*self.evalM(tData)])
+      Data.append([noiseTimes, x.x[0] + self.sm*self.evalM(tData)])
     return Data 
+
+def test0(a,  x0, dt,  tMax):
+    t = 0
+    x = x0
+    Data = [[0, x0]]
+    while t<=tMax:
+        t += dt
+        x = x*math.exp(-a*dt)
+        Data.append([t, x])
+    return Data
