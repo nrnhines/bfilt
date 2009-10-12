@@ -32,7 +32,7 @@ class ObserveState0(noise.Gauss):
         return self.mean(time, state, param) + self.sigma*self.eval(time)
         
     def Dstate(self, time, state, param):
-        J = numpy.matrix(numpy.zeros((1, len(state))))
+        J = numpy.matrix(numpy.zeros((1, state.shape[0])))
         J[0, 0] = 1
         return J
         
@@ -85,30 +85,61 @@ class ObservationModel:
         return numpy.matrix(E)
         
     def Dstate(self, time, state, param, List=None):
-        E = []
         if List == None:
             List = range(0, self.D)
+        E = numpy.matrix(numpy.zeros((len(List), state.shape[0])))
+        Eindex = 0
         for k in List:
-            E.append(self.C[k].Dstate(time, state, param).tolist())
-        return numpy.matrix(E)
+            E[Eindex, :] = self.C[k].Dstate(time, state, param)
+            Eindex += 1
+        return E
         
     def Dnoise(self, time, state, param, List=None):
-        E = []
         if List == None:
             List = range(0, self.D)
+        E = numpy.matrix(numpy.zeros((len(List), len(List))))
+        Eindex = 0
         for k in List:
-            E.append(self.C[k].Dstate(time, state, param).tolist())
+            E[Eindex, Eindex] = self.C[k].Dnoise(time, state, param)
+            Eindex += 1
         return numpy.matrix(E) 
         
-class Noise:
-    def __init__(self, p, pdim, c):
+
+class DecayModel:
+    def __init__(self, p, i0, d):
         self.P = p
-        self.PDim = pdim
-        self.MDim = len(c)
-        # Dims are used for jumpahead making unique random seeds.
-        self.W = WienerVector(p, 0, pdim)  #jumpahead: 0..pdim-1
-        self.M = MeasList(p, pdim, c)  #: start jumpahead at pdim
+        self.I = i0
+        self.D = d
+        self.C = GaussVector(p, i0, d)
         
     # Change parameters
     def change(self, p):
-        self.__init__(p, self.PDim, self.M.C)
+        self.__init__(p, self.I, self.D)
+        
+    # Evaluate the noise at a given time
+    def eval(self, time):
+        E = []
+        for k in List:
+            E.append(self.C[k].eval(time))
+        return E
+
+    # Evaluate the mean vector field at a given time
+    def vfield(self, time, state,  param, discrete=None):
+        return -param.A*state
+    
+    def flow(self, Times, state0, param, discrete=None):
+        EndTime = Times[len(Times)-1]
+        if len(state) == 1:
+            return (math.exp(-param.A*(EndTime-Times[0])))*state0
+        else:
+            return (scipy.linalg.expm(-param.A*(EndTime-Times[0])))*state0
+    
+    def Dstate(self, Times, state0, param, discrete=None):
+        EndTime = Times[len(Times)-1]
+        if len(state) == 1:
+            return (math.exp(-param.A*(EndTime-Times[0])))
+        else:
+            return (scipy.linalg.expm(-param.A*(EndTime-Times[0])))
+            
+    def Dnoise(self, Times, state, param, discrete=None):
+ 
