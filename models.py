@@ -110,7 +110,8 @@ class DecayModel:
         self.P = p
         self.I = i0
         self.D = d
-        self.C = GaussVector(p, i0, d)
+        self.C = noise.GaussVector(p, i0, d)
+        self.Injection = EventTimed()
         
     # Change parameters
     def change(self, p):
@@ -141,5 +142,34 @@ class DecayModel:
         else:
             return (scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))
             
-    def Dnoise(self, Times, state, discrete=None):
- 
+    def Dnoise(self, Times, state0, discrete=None):
+        Dn = numpy.matrix(zeros(len(state), len(Times)-1))
+        if len(state) == 1:
+            for Index in range(0, len(Times)-1):
+                dtLast = Times[Index+1] - Times[Index]
+                dt2End = Times[len(Times)-1] - Times[Index+1]
+                Dn[:, Index] = math.sqrt(dtLast)*math.exp(-self.P.A*(dt2End))*self.P.B
+        else:
+            for index in range(0, len(Times)-1):
+                dtLast = Times[Index+1] - Times[Index]
+                dt2End = Time[len(Times)-1] - Times[Index+1]
+                Dn[:, Index] = math.sqrt(dtLast)*scipy.linalg.expm(-self.P.A*(dt2End))*self.P.B
+
+class Model:
+    def __init__(self, sys, obs, p):
+        self.Sys = sys
+        self.Obs = obs
+        self.P = p
+        self.Sys.change(p)
+        self.Obs.change(p)
+        FitEvents = self.Tabulate
+        
+    def change(self, p):
+        self.__init__(self.Sys, self.Obs, p)
+        
+    def Tabulate(self):
+        EventSet = set(self.Sys.Injection)
+        for Index in range(0, self.Obs.D):
+            EventSet = EventSet | set(self.Obs.C[Index].Times)
+        ObserveIndicies = [0]*self.Obs.D
+        NoiseTie
