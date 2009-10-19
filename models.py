@@ -6,9 +6,30 @@ class EventTimed:
     def __init__(self):
         self.Times = None
     def erange(self, tstart, tstop, dt):
-        self.Times = numpy.arange(tstart+0.0, tstop+dt/2.0,  dt+0.0).tolist();
+        self.Times = numpy.arange(tstart+0.0, tstop+dt/2.0,  dt+0.0).tolist()
     def set(self, times):
         self.Times = times
+    # The following function does several things:
+    # 1. Rounds event times to a particular discretization (dt)
+    # 2. After rounding, eliminates duplicates
+    # 3. Eliminiates non-increasing times.
+    def round(self, dt):
+        matTimes = numpy.asmatrix(self.Times)
+        roundTimes = (matTimes/(dt+0.0)).round()
+        roundTimes = dt*roundTimes
+        listReturn = roundTimes.tolist()
+        listReturn = listReturn[0]
+        lenList = len(listReturn)
+        index = 1
+        while index < lenList:
+            print index
+            print listReturn[index] - listReturn[index-1]
+            if (listReturn[index] - listReturn[index-1]) < dt/2.0:
+                del listReturn[index]
+                lenList -= 1
+            else:
+                index += 1
+        return listReturn
 
 # Parent class to subclasses
 class ObserveState0(noise.Gauss):
@@ -168,8 +189,11 @@ class Model:
         self.__init__(self.Sys, self.Obs, p)
         
     def Tabulate(self):
-        EventSet = set(self.Sys.Injection)
+        Inj = self.Sys.Injection.round(self.P.dt)
         for Index in range(0, self.Obs.D):
-            EventSet = EventSet | set(self.Obs.C[Index].Times)
-        ObserveIndicies = [0]*self.Obs.D
-        NoiseTie
+            Inj += self.Obs.C[Index].Times.round(self.P.dt)
+        Inj = Inj.sort()
+        InjTimes = EventTimed()
+        InjTimes.set(Inj)
+        Inj = injTimes.round(self.P.dt)
+        
