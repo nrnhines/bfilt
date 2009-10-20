@@ -30,14 +30,12 @@ class ZeroNoise:
     
     # just change P not I
     def change(self, p):
-        i = self.I
-        self.__init__(p, i)
+        self.__init__(p, self.I)
         
     # Return Zero process
     def clear(self):
         # set seed for new noise generation
-        self.R.seed(self.P.seed)
-        self.R.jumpahead(self.I)
+        self.R.seed(self.P.seed + 1e6*self.I)
         # how many numbers, given dt and tstop?
         kstop = 1+int(math.floor(self.P.tstop/self.P.dt))
         return [0.0]*kstop

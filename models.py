@@ -49,7 +49,11 @@ class ObserveState0(noise.Gauss):
         # set up event times
         self.Times = EventTimed(times)
         self.sigma = 0.0001
-        
+    
+    # just change P not I
+    def change(self, p):
+        self.__init__(p, self.I, self.Times.Times)
+    
     def mean(self, time, state):
         return state[0, 0]
         
@@ -84,6 +88,7 @@ class ObservationModel:
         
     # Evaluate the noise at a given time
     def eval(self, time,  List=None):
+        time = time[len(time)-1]
         E = []
         if List == None:
             List = range(0, self.D)
@@ -93,23 +98,26 @@ class ObservationModel:
 
     # Evaluate the mean measurement at a given time
     def mean(self, time, state, List=None):
+        time = time[len(time)-1]
         E = []
         if List == None:
             List = range(0, self.D)
         for k in List:        
             E.append(self.C[k].mean(time, state).tolist())
-        return numpy.matrix(E)
+        return numpy.matrix(E).T
 
     # Evaluate the measurement at a given time
     def meas(self, time, state, List=None):
+        time = time[len(time)-1]
         E = []
         if List == None:
             List = range(0, self.D)
         for k in List:
             E.append(self.C[k].meas(time, state).tolist())
-        return numpy.matrix(E)
+        return numpy.matrix(E).T
         
     def Dstate(self, time, state, List=None):
+        time = time[len(time)-1]
         if List == None:
             List = range(0, self.D)
         E = numpy.matrix(numpy.zeros((len(List), state.shape[0])))
@@ -120,6 +128,7 @@ class ObservationModel:
         return E
         
     def Dnoise(self, time, state, List=None):
+        time = time[len(time)-1]
         if List == None:
             List = range(0, self.D)
         E = numpy.matrix(numpy.zeros((len(List), len(List))))
@@ -168,24 +177,26 @@ class DecayModel:
         
     def Dstate(self, Times, state0, discrete=None):
         EndTime = Times[len(Times)-1]
-        if len(state) == 1:
-            return (math.exp(-self.P.A*(EndTime-Times[0])))
+        if len(state0) == 1:
+            return numpy.matrix(math.exp(-self.P.A*(EndTime-Times[0])))
         else:
-            return (scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))
+            return numpy.matrix(scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))
             
     def Dnoise(self, Times, state0, discrete=None):
-        Dn = numpy.matrix(zeros(len(state), len(Times)-1))
-        if len(state) == 1:
-            for Index in range(0, len(Times)-1):
-                dtLast = Times[Index+1] - Times[Index]
-                dt2End = Times[len(Times)-1] - Times[Index+1]
-                Dn[:, Index] = math.sqrt(dtLast)*math.exp(-self.P.A*(dt2End))*self.P.B
-        else:
-            for index in range(0, len(Times)-1):
-                dtLast = Times[Index+1] - Times[Index]
-                dt2End = Time[len(Times)-1] - Times[Index+1]
-                Dn[:, Index] = math.sqrt(dtLast)*scipy.linalg.expm(-self.P.A*(dt2End))*self.P.B
-                
+        NumNoise = self.D
+        Dn = numpy.matrix(numpy.zeros((len(state0), (len(Times)-1)*NumNoise)))  
+        if len(state0) == 1:
+            for IndexNum in range(0, (len(Times)-1)):  # loop over left-endpoints
+                dtLast = Times[IndexNum+1] - Times[IndexNum]
+                dt2End = Times[len(Times)-1] - Times[IndexNum+1]
+                Dn[:, IndexNum*NumNoise:(IndexNum+1)*NumNoise] = numpy.matrix(math.sqrt(dtLast)*math.exp(-self.P.A*(dt2End)))*self.P.B
+        else:   # only difference use expm instead of exp
+            for IndexNum in range(0, len(Times)-1):
+                dtLast = Times[IndexNum+1] - Times[IndexNum]
+                dt2End = Times[len(Times)-1] - Times[IndexNum+1]
+                Dn[:, IndexNum*NumNoise:(IndexNum+1)*NumNoise] = numpy.matrix(math.sqrt(dtLast)*math.expm(-self.P.A*(dt2End)))*self.P.B
+        return Dn
+        
     def dim(self):
         return self.P.A.shape[1]
 
@@ -236,7 +247,6 @@ class Model:
         for FEindex in range(0, len(self.FitEvents)):
             Times = self.FitEvents[FEindex][0]
             state = self.Sys.stochflow(Times, state)
-            time = Times[len(Times)-1]
             ObsNum = self.FitEvents[FEindex][1]
-            Data.append(self.Obs.meas(time, state, ObsNum))
+            Data.append(self.Obs.meas(Times, state, ObsNum))
         return Data
