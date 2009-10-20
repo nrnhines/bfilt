@@ -3,8 +3,8 @@ import numpy
 import random
 
 class EventTimed:
-    def __init__(self):
-        self.Times = None
+    def __init__(self, times=None):
+        self.Times = times
     def erange(self, tstart, tstop, dt):
         self.Times = numpy.arange(tstart+0.0, tstop+dt/2.0,  dt+0.0).tolist()
     def set(self, times):
@@ -14,11 +14,11 @@ class EventTimed:
     # 2. After rounding, eliminates duplicates
     # 3. Eliminiates non-increasing times.
     def round(self, dt):
-        matTimes = numpy.asmatrix(self.Times)
+        matTimes = numpy.asarray(self.Times)
         roundTimes = (matTimes/(dt+0.0)).round()
         roundTimes = dt*roundTimes
         listReturn = roundTimes.tolist()
-        listReturn = listReturn[0]
+        listReturn = listReturn
         lenList = len(listReturn)
         index = 1
         while index < lenList:
@@ -33,7 +33,7 @@ class EventTimed:
 
 # Parent class to subclasses
 class ObserveState0(noise.Gauss):
-    def __init__(self, p, i):
+    def __init__(self, p, i, times=None):
         # SAME AS IN GAUSS
         self.R = random.Random()
         # save local copies of P and I
@@ -43,7 +43,7 @@ class ObserveState0(noise.Gauss):
         self.X = self.calc()
         # NEW FROM HERE ON
         # set up event times
-        self.Times = EventTimed()
+        self.Times = EventTimed(times)
         self.sigma = 0.0001
         
     def mean(self, time, state):
@@ -71,7 +71,7 @@ class ObservationModel:
         self.C = c
         k = 0
         while k < self.D:
-            self.C[k].__init__(p, i0+k)
+            self.C[k].__init__(p, i0+k, c[k].times)
             k += 1
             
     # Change parameters
@@ -127,16 +127,16 @@ class ObservationModel:
         
 
 class DecayModel:
-    def __init__(self, p, i0, d):
+    def __init__(self, p, i0, d, times=None):
         self.P = p
         self.I = i0
         self.D = d
         self.C = noise.GaussVector(p, i0, d)
-        self.Injection = EventTimed()
+        self.Injection = EventTimed(times)
         
     # Change parameters
     def change(self, p):
-        self.__init__(p, self.I, self.D)
+        self.__init__(p, self.I, self.D, self.Injection.Times)
         
     # Evaluate the noise at a given time
     def eval(self, time):
@@ -183,17 +183,25 @@ class Model:
         self.P = p
         self.Sys.change(p)
         self.Obs.change(p)
-        FitEvents = self.Tabulate
+        self.FitEvents = self.Tabulate()
         
     def change(self, p):
         self.__init__(self.Sys, self.Obs, p)
         
     def Tabulate(self):
         Inj = self.Sys.Injection.round(self.P.dt)
+        Os = [];
         for Index in range(0, self.Obs.D):
-            Inj += self.Obs.C[Index].Times.round(self.P.dt)
-        Inj = Inj.sort()
-        InjTimes = EventTimed()
-        InjTimes.set(Inj)
+            Os.append(self.Obs.C[Index].Times.round(self.P.dt)) # append Obs times
+            Inj += Os[len(Os)-1]  # concatenate last set of times
+        Inj.sort()
+        InjTimes = EventTimed(Inj)
         Inj = injTimes.round(self.P.dt)
-        
+        ObsEvents = []
+        for i in range(0, len(Inj)):
+            ObsEvents.append([])
+            for ObNum in range(0, self.Obs.D):
+                if Os[ObNum][0] < Inj[i] + (self.P.dt/2.0):
+                    ObsEvents[i].append(ObNum)
+                    Os[ObNum].pop(0)
+        return ObsEvents
