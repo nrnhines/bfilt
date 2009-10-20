@@ -22,13 +22,14 @@ class EventTimed:
         lenList = len(listReturn)
         index = 1
         while index < lenList:
-            print index
-            print listReturn[index] - listReturn[index-1]
             if (listReturn[index] - listReturn[index-1]) < dt/2.0:
                 del listReturn[index]
                 lenList -= 1
             else:
                 index += 1
+        # Get rid of non-positive numbers at beginning of list
+        while listReturn[0] <= 0.:
+            listReturn.pop(0)
         return listReturn
 
 # Parent class to subclasses
@@ -71,7 +72,7 @@ class ObservationModel:
         self.C = c
         k = 0
         while k < self.D:
-            self.C[k].__init__(p, i0+k, c[k].times)
+            self.C[k].__init__(p, i0+k, c[k].Times.Times)
             k += 1
             
     # Change parameters
@@ -196,12 +197,20 @@ class Model:
             Inj += Os[len(Os)-1]  # concatenate last set of times
         Inj.sort()
         InjTimes = EventTimed(Inj)
-        Inj = injTimes.round(self.P.dt)
+        Inj = InjTimes.round(self.P.dt)
         ObsEvents = []
+        InjectionsForThisData = [0]
+        table = []
         for i in range(0, len(Inj)):
-            ObsEvents.append([])
+            # ObsEvents.append([])
+            InjectionsForThisData.append(Inj[i])
+            ObsEvents = []
             for ObNum in range(0, self.Obs.D):
-                if Os[ObNum][0] < Inj[i] + (self.P.dt/2.0):
-                    ObsEvents[i].append(ObNum)
-                    Os[ObNum].pop(0)
-        return ObsEvents
+                if len(Os[ObNum])>0 and Os[ObNum][0] < Inj[i] + (self.P.dt/2.0):
+                    # ObsEvents[i].append(ObNum)
+                    ObsEvents.append(ObNum)
+                    temp = Os[ObNum].pop(0)
+            if len(ObsEvents) > 0:
+                table.append([InjectionsForThisData, ObsEvents])
+                InjectionsForThisData = [Inj[i]]
+        return table
