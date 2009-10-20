@@ -1,6 +1,9 @@
 import noise
 import numpy
 import random
+import math
+import scipy
+import scipy.linalg
 
 class EventTimed:
     def __init__(self, times=None):
@@ -132,7 +135,7 @@ class DecayModel:
         self.P = p
         self.I = i0
         self.D = d
-        self.C = noise.GaussVector(p, i0, d)
+        self.V = noise.GaussVector(p, i0, d)
         self.Injection = EventTimed(times)
         
     # Change parameters
@@ -141,9 +144,9 @@ class DecayModel:
         
     # Evaluate the noise at a given time
     def eval(self, time):
-        E = []
-        for k in List:
-            E.append(self.C[k].eval(time))
+        E = numpy.matrix(numpy.zeros((self.D, 1)))
+        for k in range(0, self.D):
+            E[k, :] = self.V.C[k].eval(time)
         return E
 
     # Evaluate the mean vector field at a given time
@@ -152,11 +155,17 @@ class DecayModel:
     
     def flow(self, Times, state0, discrete=None):
         EndTime = Times[len(Times)-1]
-        if len(state) == 1:
+        if len(state0) == 1:
             return (math.exp(-self.P.A*(EndTime-Times[0])))*state0
         else:
             return (scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
-    
+            
+    def stochflow(self, Times, state0, discrete=None):
+        for interval in range(1, len(Times)):
+            state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
+            state0 = self.P.B*self.eval(Times[interval])
+        return state0
+        
     def Dstate(self, Times, state0, discrete=None):
         EndTime = Times[len(Times)-1]
         if len(state) == 1:
@@ -176,10 +185,16 @@ class DecayModel:
                 dtLast = Times[Index+1] - Times[Index]
                 dt2End = Time[len(Times)-1] - Times[Index+1]
                 Dn[:, Index] = math.sqrt(dtLast)*scipy.linalg.expm(-self.P.A*(dt2End))*self.P.B
+                
+    def dim(self):
+        return self.P.A.shape[1]
 
 class Model:
-    def __init__(self, sys, obs, p):
+    def __init__(self, sys, obs, p,  initial=None):
         self.Sys = sys
+        if initial == None:
+            initial = numpy.ones((self.Sys.dim(), 1), float)
+        self.Initial = initial
         self.Obs = obs
         self.P = p
         self.Sys.change(p)
@@ -187,7 +202,7 @@ class Model:
         self.FitEvents = self.Tabulate()
         
     def change(self, p):
-        self.__init__(self.Sys, self.Obs, p)
+        self.__init__(self.Sys, self.Obs, p, self.Initial)
         
     def Tabulate(self):
         Inj = self.Sys.Injection.round(self.P.dt)
@@ -214,3 +229,14 @@ class Model:
                 table.append([InjectionsForThisData, ObsEvents])
                 InjectionsForThisData = [Inj[i]]
         return table
+        
+    def sim(self):
+        Data = []
+        state = self.Initial
+        for FEindex in range(0, len(self.FitEvents)):
+            Times = self.FitEvents[FEindex][0]
+            state = self.Sys.stochflow(Times, state)
+            time = Times[len(Times)-1]
+            ObsNum = self.FitEvents[FEindex][1]
+            Data.append(self.Obs.meas(time, state, ObsNum))
+        return Data
