@@ -4,6 +4,8 @@ import random
 import math
 import scipy
 import scipy.linalg
+import neuron
+from neuron import h
 
 class EventTimed:
     def __init__(self, times=None):
@@ -138,6 +140,33 @@ class ObservationModel:
             Eindex += 1
         return numpy.matrix(E) 
         
+class NeuronModel:
+    def __init__(self, p, i0, d, times=None):
+        self.P = p
+        self.I = i0
+        self.D = d
+        self.V = noise.GaussVector(p, i0, d)
+        self.Injection = EventTimed(times)
+        h.stdinit()
+      
+    # This function has not changed  
+    def change(self, p):
+        self.__init__(p, sellf.I, self.D, self.Injection.Times)
+        
+    # This function has not changed
+    def eval(self, time):
+        E = numpy.matrix(numpy.zeros((self.D, 1)))
+        for k in range(0, self.D):
+            E[k, :] = self.V.C[k].eval(time)
+        return E
+        
+    def dim(self):
+    def vfield(self, Times, state0, discrete=None):
+    def flow(self, Times, state0, discrete=None):
+    def stochflow(self, Times, state0, discrete=None):
+    def Dstate(self, Times, state0, discrete=None):
+    def Dnoise(self, Times, state0, discrete=None):
+    def Deval(self, Times, state0, discrete=None):
 
 class DecayModel:
     def __init__(self, p, i0, d, times=None):
@@ -157,7 +186,10 @@ class DecayModel:
         for k in range(0, self.D):
             E[k, :] = self.V.C[k].eval(time)
         return E
-
+        
+    def dim(self):
+        return self.P.A.shape[1]
+        
     # Evaluate the mean vector field at a given time
     def vfield(self, time, state, discrete=None):
         return -self.P.A*state
@@ -196,9 +228,7 @@ class DecayModel:
                 dt2End = Times[len(Times)-1] - Times[IndexNum+1]
                 Dn[:, IndexNum*NumNoise:(IndexNum+1)*NumNoise] = numpy.matrix(math.sqrt(dtLast)*math.expm(-self.P.A*(dt2End)))*self.P.B
         return Dn
-        
-    def dim(self):
-        return self.P.A.shape[1]
+
 
 class Model:
     def __init__(self, sys, obs, p,  initial=None):
