@@ -1,4 +1,3 @@
-import jacflow
 import math
 import scipy
 import scipy.linalg

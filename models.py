@@ -173,7 +173,7 @@ class DecayModel:
         self.P = p
         self.I = i0
         self.D = d
-        self.V = noise.GaussVector(p, i0, d)
+        self.V = noise.WienerVector(p, i0, d)
         self.Injection = EventTimed(times)
         
     # Change parameters
@@ -204,7 +204,7 @@ class DecayModel:
     def stochflow(self, Times, state0, discrete=None):
         for interval in range(1, len(Times)):
             state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
-            state0 = self.P.B*self.eval(Times[interval])
+            state0 += self.P.B*self.eval(Times[interval])
         return state0
         
     def Dstate(self, Times, state0, discrete=None):
