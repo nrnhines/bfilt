@@ -1,7 +1,6 @@
 import jacflow
 import math
-import scipy
-import scipy.linalg
+from myscypi import linalg
 import numpy
 from neuron import h
 
@@ -35,7 +34,7 @@ def ekf(data, aparam):
     # print Wm.shape
     # print Am.shape
     # print('Pb')
-    # print scipy.linalg.eig(Pb) 
+    # print linalg.eig(Pb) 
 
     # Evaluate derivatives for update
     # L = jacflow.measJac()
@@ -58,18 +57,18 @@ def ekf(data, aparam):
     K = Pb*H.T*S.I
     P0 = Pb - K*S*K.T
     # print 'P0' 
-    # print scipy.linalg.eig(P0) 
+    # print linalg.eig(P0) 
     m0 = mb + K*v
     # h.cvode.yscatter(h.Vector(m0))
     # h.cvode.re_init()
 
     # Marginal Measurement Likelihood
-    mll = math.log(scipy.linalg.det(S)) + v.T*S.I*v
+    mll = math.log(linalg.det(S)) + v.T*S.I*v
     # print 'mll'
     # print mll
     smll += mll
     
-    # print scipy.linalg.eig(S) 
+    # print linalg.eig(S) 
     k += 1
     spll = -smll
   return spll

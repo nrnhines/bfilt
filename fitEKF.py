@@ -1,7 +1,6 @@
 #import jacflow
 import math
-#import scipy
-#import scipy.linalg
+from myscipy import linalg
 import numpy
 
 def ekf(data, model):
@@ -35,8 +34,7 @@ def ekf(data, model):
         m0 = mb + K*v
         
         # Likelihood
-        #mll = math.log(scipy.linalg.det(S)) + v.T*S.I*v
-        mll = math.log(S) + v.T*S.I*v
+        mll = math.log(linalg.det(S)) + v.T*S.I*v
         smll += mll
         k += 1
     # Keeps running sum of Minus-Log-Likelihood

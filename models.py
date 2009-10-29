@@ -2,8 +2,7 @@ import noise
 import numpy
 import random
 import math
-#import scipy
-#import scipy.linalg
+from myscipy import linalg
 from neuron import h
 
 class EventTimed:
@@ -294,7 +293,7 @@ class DecayModel:
         if len(state0) == 1:
             return (math.exp(-self.P.A*(EndTime-Times[0])))*state0
         else:
-            return 0#(scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
+            return (linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
             
     def stochflow(self, Times, state0, discrete=None):
         for interval in range(1, len(Times)):
@@ -307,7 +306,7 @@ class DecayModel:
         if len(state0) == 1:
             return numpy.matrix(math.exp(-self.P.A*(EndTime-Times[0])))
         else:
-            return 0#numpy.matrix(scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))
+            return numpy.matrix(linalg.expm(-self.P.A*(EndTime-Times[0])))
             
     def Dnoise(self, Times, state0, discrete=None):
         NumNoise = self.D
