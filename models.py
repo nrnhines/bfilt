@@ -165,12 +165,14 @@ class NeuronModel(object):
         return len(s)
 
     def vfield(self, time, state, discrete=None):
+        print 'vfield', time
         s = h.Vector(state)
         d = h.Vector()
         h.cvode.f(time, s, d)
         return numpy.matrix(d)
 	
     def flow(self, Times, state0, discrete=None):
+        print 'flow', Times
         if discrete:
           discrete.restore()
 	if Times[0] == 0.0:
@@ -184,6 +186,7 @@ class NeuronModel(object):
 	return numpy.matrix(s)
 
     def stochflow(self, Times, state0, discrete=None):
+        print 'stochflow', Times
 	if discrete:
 	  discrete.restore()
 	if Times[0] == 0.0:
@@ -204,6 +207,7 @@ class NeuronModel(object):
 	return x
 	  
     def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
+        print 'perturbedflow', iTimes, perturb
 	if discrete:
 	  discrete.restore()
 	if Times[0] == 0.0:
@@ -224,6 +228,7 @@ class NeuronModel(object):
 	  
     # jacobian of the flow with respect to state variables
     def Dstate(self, Times, state0, discrete=None):
+        print 'Dstate'
 	x = numpy.matrix(state0)
 	value = self.flow(Times, x, discrete)
 	DFx = numpy.matrix(numpy.zeros((len(value), len(x))))
@@ -242,6 +247,7 @@ class NeuronModel(object):
 	return DFx
 
     def Dnoise(self, Times, state0, discrete=None):
+	print 'Dnoise'
 	x = numpy.matrix(state0)
 	value = self.flow(Times, x, discrete)
 	ncol = (len(Times) - 1) * self.D
@@ -260,6 +266,7 @@ class NeuronModel(object):
 	    DFx[:,i] = (df - value)/h
 	    e[idW, 0] = 0.0
 	    i += 1
+        print 'leave Dnoise', DFx
 	return DFx
 
 class DecayModel:
