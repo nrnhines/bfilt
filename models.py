@@ -2,10 +2,8 @@ import noise
 import numpy
 import random
 import math
-import scipy
-import scipy.linalg
-# import neuron
-# from neuron import h
+from myscipy import linalg
+from neuron import h
 
 class EventTimed:
     def __init__(self, times=None):
@@ -140,33 +138,136 @@ class ObservationModel:
             Eindex += 1
         return numpy.matrix(E) 
         
-#class NeuronModel:
-#    def __init__(self, p, i0, d, times=None):
-#        self.P = p
-#        self.I = i0
-#        self.D = d
-#        self.V = noise.GaussVector(p, i0, d)
-#        self.Injection = EventTimed(times)
-#        h.stdinit()
-#      
-#    # This function has not changed  
-#    def change(self, p):
-#        self.__init__(p, sellf.I, self.D, self.Injection.Times)
-#        
-#    # This function has not changed
-#    def eval(self, time):
-#        E = numpy.matrix(numpy.zeros((self.D, 1)))
-#        for k in range(0, self.D):
-#            E[k, :] = self.V.C[k].eval(time)
-#        return E
-#        
-#    def dim(self):
-#    def vfield(self, Times, state0, discrete=None):
-#    def flow(self, Times, state0, discrete=None):
-#    def stochflow(self, Times, state0, discrete=None):
-#    def Dstate(self, Times, state0, discrete=None):
-#    def Dnoise(self, Times, state0, discrete=None):
-#    def Deval(self, Times, state0, discrete=None):
+class NeuronModel(object):
+    def __init__(self, p, i0, d, times=None):
+        self.P = p
+        self.I = i0
+        self.D = d
+        self.V = noise.GaussVector(p, i0, d)
+        self.Injection = EventTimed(times)
+	h.cvode_active(1)
+        h.stdinit()
+      
+    # This function has not changed  
+    def change(self, p):
+        self.__init__(p, self.I, self.D, self.Injection.Times)
+        
+    # This function has not changed
+    def eval(self, time):
+        E = numpy.matrix(numpy.zeros((self.D, 1)))
+        for k in range(0, self.D):
+            E[k, :] = self.V.C[k].eval(time)
+        return E
+        
+    def dim(self):
+	s = h.Vector()
+        h.cvode.states(s)
+        return len(s)
+
+    def vfield(self, time, state, discrete=None):
+        print 'vfield', time
+        s = h.Vector(state)
+        d = h.Vector()
+        h.cvode.f(time, s, d)
+        return numpy.matrix(d)
+	
+    def flow(self, Times, state0, discrete=None):
+        print 'flow', Times
+        if discrete:
+          discrete.restore()
+	if Times[0] == 0.0:
+	  h.stdinit()
+        assert(h.t == Times[0])
+        h.cvode.yscatter(h.Vector(state0))
+        h.cvode.re_init()
+        h.cvode.solve(Times[-1])
+	s = h.Vector()
+	h.cvode.states(s)
+	return numpy.matrix(s)
+
+    def stochflow(self, Times, state0, discrete=None):
+        print 'stochflow', Times
+	if discrete:
+	  discrete.restore()
+	if Times[0] == 0.0:
+	  h.stdinit()
+        assert(h.t == Times[0])
+	x = numpy.matrix(state0)
+	Wm = self.eval(Times[0])
+	for t in Times[1:]:
+	  h.cvode.yscatter(h.Vector(x.T))
+	  h.cvode.re_init()
+	  h.cvode.solve(t)
+	  s = h.Vector()
+	  h.cvode.states(s)
+	  x =  numpy.matrix(s)
+	  W = self.eval(t)
+          x += self.P.B*(W - Wm)
+	  Wm = W
+	return x
+	  
+    def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
+        print 'perturbedflow', iTimes, perturb
+	if discrete:
+	  discrete.restore()
+	if Times[0] == 0.0:
+	  h.stdinit()
+        assert(h.t == Times[0])
+	x = numpy.matrix(state0)
+	for i in range(1, len(Times)):
+	  t = Times[i]
+	  h.cvode.yscatter(h.Vector(x.T))
+	  h.cvode.re_init()
+	  h.cvode.solve(t)
+	  s = h.Vector()
+	  h.cvode.states(s)
+	  x =  numpy.matrix(s)
+	  if i == iTimes:
+	    x += perturb
+	return x
+	  
+    # jacobian of the flow with respect to state variables
+    def Dstate(self, Times, state0, discrete=None):
+        print 'Dstate'
+	x = numpy.matrix(state0)
+	value = self.flow(Times, x, discrete)
+	DFx = numpy.matrix(numpy.zeros((len(value), len(x))))
+	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
+	for i in range(len(x)):
+	  temp = x[i]
+	  if abs(temp) > 1:
+	    h = sqrtEps*abs(temp)
+	  else:
+	    h = sqrtEps
+	  x[i] = temp + h
+	  h = x[i] - temp
+	  df = self.flow(Times, x, discrete)
+	  x[i] = temp
+	  DFx[:,i] = (df - value)/h
+	return DFx
+
+    def Dnoise(self, Times, state0, discrete=None):
+	print 'Dnoise'
+	x = numpy.matrix(state0)
+	value = self.flow(Times, x, discrete)
+	ncol = (len(Times) - 1) * self.D
+	DFx = numpy.matrix(numpy.zeros((len(value), ncol)))
+	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
+	i = 0
+	h = sqrtEps
+	e = numpy.matrix(numpy.zeros((self.D,1)))
+	for itimes in range(1, len(Times)):
+	  dW = math.sqrt(Times[itimes] - Times[itimes-1])
+	  hdW = h*dW
+	  for idW in range(self.D):
+	    e[idW, 0] = 1.0
+	    perturb = self.P.B*e
+	    df = self.perturbedflow(Times, x, itimes, perturb, discrete)
+	    DFx[:,i] = (df - value)/h
+	    e[idW, 0] = 0.0
+	    i += 1
+        print 'leave Dnoise', DFx
+	return DFx
 
 class DecayModel:
     def __init__(self, p, i0, d, times=None):
@@ -199,7 +300,7 @@ class DecayModel:
         if len(state0) == 1:
             return (math.exp(-self.P.A*(EndTime-Times[0])))*state0
         else:
-            return (scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
+            return (linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
             
     def stochflow(self, Times, state0, discrete=None):
         for interval in range(1, len(Times)):
@@ -212,7 +313,7 @@ class DecayModel:
         if len(state0) == 1:
             return numpy.matrix(math.exp(-self.P.A*(EndTime-Times[0])))
         else:
-            return numpy.matrix(scipy.linalg.expm(-self.P.A*(EndTime-Times[0])))
+            return numpy.matrix(linalg.expm(-self.P.A*(EndTime-Times[0])))
             
     def Dnoise(self, Times, state0, discrete=None):
         NumNoise = self.D
