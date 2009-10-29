@@ -13,9 +13,14 @@ def ekf(data, model):
         # Evaluate derivatives for prediction
         Times = model.FitEvents[k][0]
         ObsNum = model.FitEvents[k][1]
+	print "Times m0", Times, m0
         mb = model.Sys.flow(Times, m0)
+	print 'flow', mb
         Am = model.Sys.Dstate(Times, m0)
+	print 'Dstate', Am
         Wm = model.Sys.Dnoise(Times, m0)
+	print "Dnoise", Wm
+	quit()
         
         # Prediction
         Pb = Wm*Wm.T + Am*P0*Am.T

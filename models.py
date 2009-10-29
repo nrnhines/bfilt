@@ -145,6 +145,7 @@ class NeuronModel(object):
         self.D = d
         self.V = noise.GaussVector(p, i0, d)
         self.Injection = EventTimed(times)
+	h.cvode.atol(1e-6)
 	h.cvode_active(1)
         h.stdinit()
       
@@ -165,14 +166,12 @@ class NeuronModel(object):
         return len(s)
 
     def vfield(self, time, state, discrete=None):
-        print 'vfield', time
         s = h.Vector(state)
         d = h.Vector()
         h.cvode.f(time, s, d)
         return numpy.matrix(d)
 	
     def flow(self, Times, state0, discrete=None):
-        print 'flow', Times
         if discrete:
           discrete.restore()
 	if Times[0] == 0.0:
@@ -186,7 +185,6 @@ class NeuronModel(object):
 	return numpy.matrix(s)
 
     def stochflow(self, Times, state0, discrete=None):
-        print 'stochflow', Times
 	if discrete:
 	  discrete.restore()
 	if Times[0] == 0.0:
@@ -207,7 +205,6 @@ class NeuronModel(object):
 	return x
 	  
     def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
-        print 'perturbedflow', iTimes, perturb
 	if discrete:
 	  discrete.restore()
 	if Times[0] == 0.0:
@@ -228,13 +225,13 @@ class NeuronModel(object):
 	  
     # jacobian of the flow with respect to state variables
     def Dstate(self, Times, state0, discrete=None):
-        print 'Dstate'
 	x = numpy.matrix(state0)
 	value = self.flow(Times, x, discrete)
 	DFx = numpy.matrix(numpy.zeros((len(value), len(x))))
 	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
+	sqrtEps = 1e-3
 	for i in range(len(x)):
-	  temp = x[i]
+	  temp = x[0, i]
 	  if abs(temp) > 1:
 	    h = sqrtEps*abs(temp)
 	  else:
@@ -247,13 +244,13 @@ class NeuronModel(object):
 	return DFx
 
     def Dnoise(self, Times, state0, discrete=None):
-	print 'Dnoise'
 	x = numpy.matrix(state0)
 	value = self.flow(Times, x, discrete)
 	ncol = (len(Times) - 1) * self.D
 	DFx = numpy.matrix(numpy.zeros((len(value), ncol)))
 	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
 	i = 0
+	sqrtEps = 1e-3
 	h = sqrtEps
 	e = numpy.matrix(numpy.zeros((self.D,1)))
 	for itimes in range(1, len(Times)):
@@ -261,12 +258,11 @@ class NeuronModel(object):
 	  hdW = h*dW
 	  for idW in range(self.D):
 	    e[idW, 0] = 1.0
-	    perturb = self.P.B*e
+	    perturb = self.P.B*e*hdW
 	    df = self.perturbedflow(Times, x, itimes, perturb, discrete)
 	    DFx[:,i] = (df - value)/h
 	    e[idW, 0] = 0.0
 	    i += 1
-        print 'leave Dnoise', DFx
 	return DFx
 
 class DecayModel:
