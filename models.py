@@ -307,12 +307,15 @@ class DecayModel:
             return (math.exp(-self.P.A*(EndTime-Times[0])))*state0
         else:
             return (linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
-            
+
     def stochflow(self, Times, state0, discrete=None):
-        for interval in range(1, len(Times)):
-            state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
-	    print 'state0'
-            state0 += self.P.B*(self.eval(Times[interval])-self.eval(Times[interval-1]))
+	for interval in range(1, len(Times)):
+		state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
+		temp = state0
+		state0 += self.P.B*(self.eval(Times[interval])-self.eval(Times[interval-1]))
+		# print 'diff', state0-temp
+		print 'state0', state0
+	print 'final state:', state0, '@ Times =', Times
         return state0
         
     def Dstate(self, Times, state0, discrete=None):
