@@ -269,6 +269,7 @@ class NeuronModel(object):
 	  for idW in range(self.D):
 	    e[idW, 0] = 1.0
 	    perturb = self.P.B*e*hdW
+	    #OK for now but we need to reprogram for efficiency!
 	    df = self.perturbedflow(Times, x, itimes, perturb, discrete)
 	    DFx[:,i] = (df - value)/h
 	    e[idW, 0] = 0.0
@@ -337,7 +338,7 @@ class DecayModel:
             for IndexNum in range(0, len(Times)-1):
                 dtLast = Times[IndexNum+1] - Times[IndexNum]
                 dt2End = Times[len(Times)-1] - Times[IndexNum+1]
-                Dn[:, IndexNum*NumNoise:(IndexNum+1)*NumNoise] = numpy.matrix(math.sqrt(dtLast)*math.expm(-self.P.A*(dt2End)))*self.P.B
+                Dn[:, IndexNum*NumNoise:(IndexNum+1)*NumNoise] = numpy.matrix(math.sqrt(dtLast)*linalg.expm(-self.P.A*(dt2End)))*self.P.B
         return Dn
 
 
