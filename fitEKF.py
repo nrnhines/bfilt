@@ -15,7 +15,7 @@ def ekf(data, model):
         ObsNum = model.FitEvents[k][1]
 	#print "Times m0", Times, m0
         mb = model.Sys.flow(Times, m0)
-	#print 'flow', mb
+	# print 'flow', mb
         Am = model.Sys.Dstate(Times, m0)
 	#print 'Dstate', Am
         Wm = model.Sys.Dnoise(Times, m0)
@@ -30,7 +30,12 @@ def ekf(data, model):
         V = model.Obs.Dnoise(Times, mb, ObsNum)
         
         # Update
+	# print 'data[k]', data[k]
+	# print 'ObsNum', ObsNum
+	# print 'hh', hh
+	# print 'data, hh', data[k] hh
         v = data[k] - hh
+	print 'v', v
         S = H*Pb*H.T + V*V.T
         K = Pb*H.T*S.I
         P0 = Pb - K*S*K.T
