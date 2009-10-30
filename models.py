@@ -194,7 +194,7 @@ class NeuronModel(object):
         h.cvode.solve(Times[-1])
 	s = h.Vector()
 	h.cvode.states(s)
-	return numpy.matrix(s)
+	return numpy.matrix(s).T
 
     def stochflow(self, Times, state0, discrete=None):
 	if discrete:
@@ -204,14 +204,18 @@ class NeuronModel(object):
 	x = numpy.matrix(state0)
 	Wm = self.eval(Times[0])
 	for t in Times[1:]:
-	  h.cvode.yscatter(h.Vector(x.T))
+	  print 'x', x
+	  h.cvode.yscatter(h.Vector(x)) #MH had x.T
 	  h.cvode.re_init()
 	  h.cvode.solve(t)
 	  s = h.Vector()
 	  h.cvode.states(s)
-	  x =  numpy.matrix(s)
+	  x =  numpy.matrix(s).T
 	  W = self.eval(t)
-          x += self.P.B*(W - Wm)
+	  print 'B', self.P.B
+	  print 'dW', W - Wm
+	  print 'x', x
+          x += (self.P.B*(W - Wm))
 	  Wm = W
 	return x
 	  
@@ -221,14 +225,17 @@ class NeuronModel(object):
         self.moveto(Times[0])
         assert(h.t == Times[0])
 	x = numpy.matrix(state0)
+	print 'x after assert', x
 	for i in range(1, len(Times)):
 	  t = Times[i]
-	  h.cvode.yscatter(h.Vector(x.T))
+	  h.cvode.yscatter(h.Vector(x))
 	  h.cvode.re_init()
 	  h.cvode.solve(t)
 	  s = h.Vector()
 	  h.cvode.states(s)
-	  x =  numpy.matrix(s)
+	  x =  numpy.matrix(s).T
+	  print 'x to perturb', x
+	  print 'perturb to perturb', perturb
 	  if i == iTimes:
 	    x += perturb
 	return x
@@ -241,7 +248,7 @@ class NeuronModel(object):
 	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
 	sqrtEps = 1e-3
 	for i in range(len(x)):
-	  temp = x[0, i]
+	  temp = x[i,0]
 	  if abs(temp) > 1:
 	    h = sqrtEps*abs(temp)
 	  else:
@@ -346,7 +353,12 @@ class Model:
     def __init__(self, sys, obs, p,  initial=None):
         self.Sys = sys
         if initial == None:
-            initial = numpy.ones((self.Sys.dim(), 1), float)
+            # initial = numpy.ones((self.Sys.dim(), 1), float)
+	    h.stdinit();
+	    s = h.Vector()
+	    h.cvode.states(s)
+	    initial = numpy.matrix(s).T
+	    print initial
         self.Initial = initial
         self.Obs = obs
         self.P = p
