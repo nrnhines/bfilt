@@ -49,25 +49,56 @@ class ObserveState0(noise.Gauss):
         # set up event times
         self.Times = EventTimed(times)
         self.sigma = 0.0001
+	self.observed = 0
     
     # just change P not I
     def change(self, p):
         self.__init__(p, self.I, self.Times.Times)
     
     def mean(self, time, state):
-        return state[0, 0]
+        return state[observed, 0]
         
     def meas(self, time, state):
         return self.mean(time, state) + self.sigma*self.eval(time)
         
     def Dstate(self, time, state):
         J = numpy.matrix(numpy.zeros((1, state.shape[0])))
-        J[0, 0] = 1
+        J[0, observed] = 1
         return J
         
     def Dnoise(self, time, state):
         return numpy.matrix(self.sigma)
 
+class NeuronObservable(ObserveState0):
+    
+    def mean(self, time, state):  # the observable (under zero noise, ie mean)
+	ss = h.SaveState()
+	ss.save()
+	h.cvode.yscatter(state)
+	h.cvode.re_init()
+	#measurement goes here
+	ss.restore(1)
+	
+    def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
+	x = numpy.matrix(state)
+	value = self.mean(self,time,state)
+	DFx = numpy.matrix(numpy.zeros((len(value), len(x))))
+	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
+	sqrtEps = 1e-3
+	for i in range(len(x)):
+	    temp = x[i,0]
+	    if abs(temp) > 1:
+		h = sqrtEps*abs(temp)
+	    else:
+		h = sqrtEps
+	    x[i] = temp + h
+	    h = x[i] - temp
+	    df = self.mean(self,time,state)
+	    x[i] = temp
+	    DFx[:,i] = (df - value)/h
+	return DFx
+   
+	
 # This class defines a list of the observation classes employed.
 # All have NoiseParams P, instance i0 (for unique random seeds)
 # Finally c is a python list (e.g. [o1,o2,o3]) of the observation objects.
