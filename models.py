@@ -311,6 +311,7 @@ class DecayModel:
     def stochflow(self, Times, state0, discrete=None):
         for interval in range(1, len(Times)):
             state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
+	    print 'state0'
             state0 += self.P.B*(self.eval(Times[interval])-self.eval(Times[interval-1]))
         return state0
         
