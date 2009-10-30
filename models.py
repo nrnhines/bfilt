@@ -171,14 +171,26 @@ class NeuronModel(object):
         h.cvode.f(time, s, d)
         return numpy.matrix(d)
 	
+    def moveto(self, t0):
+        h.t = t0
+        return
+        if h.t == t0:
+            return
+        elif t0 == 0:
+	    stdinit()
+        elif h.t < t0:
+            h.cvode.solve(t0)
+        elif h.t > t0:
+            h.stdinit()
+            h.cvode.solve(t0)
+
     def flow(self, Times, state0, discrete=None):
         if discrete:
           discrete.restore()
-	if Times[0] == 0.0:
-	  h.stdinit()
-        assert(h.t == Times[0])
+        self.moveto(Times[0])
         h.cvode.yscatter(h.Vector(state0))
         h.cvode.re_init()
+        assert(h.t == Times[0])
         h.cvode.solve(Times[-1])
 	s = h.Vector()
 	h.cvode.states(s)
@@ -187,8 +199,7 @@ class NeuronModel(object):
     def stochflow(self, Times, state0, discrete=None):
 	if discrete:
 	  discrete.restore()
-	if Times[0] == 0.0:
-	  h.stdinit()
+        self.moveto(Times[0])
         assert(h.t == Times[0])
 	x = numpy.matrix(state0)
 	Wm = self.eval(Times[0])
@@ -207,8 +218,7 @@ class NeuronModel(object):
     def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
 	if discrete:
 	  discrete.restore()
-	if Times[0] == 0.0:
-	  h.stdinit()
+        self.moveto(Times[0])
         assert(h.t == Times[0])
 	x = numpy.matrix(state0)
 	for i in range(1, len(Times)):
