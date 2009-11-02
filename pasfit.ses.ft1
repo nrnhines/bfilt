@@ -1,0 +1,6 @@
+ParmFitness: Unnamed multiple run protocol
+	FitnessGenerator1: Unnamed single run protocol
+		RegionFitness:	v(.5)
+
+	Parameters:
+End ParmFitness
