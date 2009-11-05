@@ -72,12 +72,12 @@ class ObserveState0(noise.Gauss):
 class NeuronObservable(ObserveState0):
     
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
-	ss = h.SaveState()
-	ss.save()
+	ss = h.Vector()
+	ss = cvode.states()
 	h.cvode.yscatter(state)
-	h.cvode.re_init()
+	h.cvode.f()
 	#measurement goes here
-	ss.restore(1)
+	h.cvode.yscatter(ss)
 	
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
 	x = numpy.matrix(state)
