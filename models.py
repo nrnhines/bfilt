@@ -38,6 +38,9 @@ class EventTimed:
 # Parent class to subclasses
 class ObserveState0(noise.Gauss):
     def __init__(self, p, i, times=None):
+        self.__init(p, i, times)
+
+    def __init(self, p, i, times=None):
         # SAME AS IN GAUSS
         self.R = random.Random()
         # save local copies of P and I
@@ -53,7 +56,7 @@ class ObserveState0(noise.Gauss):
     
     # just change P not I
     def change(self, p):
-        self.__init__(p, self.I, self.Times.Times)
+        self.__init(p, self.I, self.Times.Times)
     
     def mean(self, time, state):
         return state[observed, 0]
@@ -71,13 +74,21 @@ class ObserveState0(noise.Gauss):
 
 class NeuronObservable(ObserveState0):
     
+    def __init__(self, hpointer, p, i, times=None):
+       hpt = hpointer
+       ObserveState0.__init__(self, p, i, times)
+
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
-	ss = h.Vector()
-	ss = cvode.states()
-	h.cvode.yscatter(state)
-	h.cvode.f()
+	ss = h.Vector() #save
+	cvode.states(ss)
+
+	ds = h.Vector()
+	h.cvode.f(time, h.Vector(state), ds)
 	#measurement goes here
-	h.cvode.yscatter(ss)
+        x = hpt.val()
+
+	h.cvode.yscatter(ss) #restore
+        return x
 	
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
 	x = numpy.matrix(state)
