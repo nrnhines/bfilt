@@ -1,10 +1,14 @@
 from neuron import h
+import noise
+import models
+import numpy
+import fitEKF
 
 class NrnBFilt(object):
-	def __init__(self, ho):
-		self.rf = ho
+  def __init__(self, ho):
+    self.rf = ho
     ol = []
-    P = noise.NoiseParam()
+    P = noise.NoiseParams()
     P.dt = 0.1
     vl = self.rf.yvarlist
     fl = self.rf.fitnesslist
@@ -18,26 +22,36 @@ class NrnBFilt(object):
         tlast = tl[-1]
     P.tstop = tlast
     s = h.Vector()
-    cvode.states(s)
-    P.B = numpy.matrix(numpy.zeros(len(s), len(vl))
+    h.cvode.states(s)
+    assert(len(s) > 0)
+    assert(len(vl) > 0)
+    P.B = numpy.matrix(numpy.zeros((len(s), len(vl))))
     P.B[0,0] = .1
-    P.InitialCov = numpy.I(len(s))
+    P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
     Sys.Injection.erange(0.0, tlast, 1.0)
     self.M = models.Model(Sys, Obs, P)
-    self.Data = __data(fl,self.M.FitEvents)
+    self.Data = self.__data(fl,self.M.FitEvents)
     
   def __data(self,fl,FitEvents):
-		# counter = [0]*(len(fl))
-		Data = []
-		for ev = range(len(FitEvents)):
-			DataEV = []
-		  for ob = range(len(FitEvents[ev][1])):
-				DataEv.append(fl.o[FitEvents[ev][1][ob]])
-				#?????
-			Data.append(numpy.matrix(DataEv))
-		return Data
+    counter = [0]*(len(fl))
+    Data = []
+    for elm in FitEvents:
+      time = elm[0][-1]
+      obindices = elm[1]
+      DataEV = []
+      for i in obindices:
+        x = fl.o(i).xdat_
+        y = fl.o(i).ydat_
+        assert(time == x[counter[i]])
+        DataEV.append(y[counter[i]])
+        counter[i] += 1
+      Data.append(numpy.matrix(DataEv))
+    for i in len(fl):
+	assert(counter[i] == len(fl.o(i).xdat_))
+    return Data
 		
-		def likelihood(self):
+  def likelihood(self):
+    return 1.0
     return fitEKF.ekf(self.Data, self.M)

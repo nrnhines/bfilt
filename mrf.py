@@ -15,4 +15,5 @@ if __name__ == '__main__':
   h.dt = 0.1
   h.v_init = 1
   h.load_file('pasfit.ses')
+  h.cvode_active(1)
   #import testext # if launching python instead of nrniv

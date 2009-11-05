@@ -4,7 +4,7 @@ begintemplate FitnessGenerator1
 public efun, fitnesslist, generator, yvarlist, yveclist, tvec, title
 public rfile, wfile, map, pelist, chtitle, gview, clone, add
 public save_context, restore_context
-external classname, tstop
+external classname, tstop, cvode
 objref fitnesslist, generator, yvarlist, yveclist, tvec, tobj, tobj1, sf, this
 objref vbox, g, hb1, pelist, po
 objref dec, gdeck, fdeck, deck, symch_
