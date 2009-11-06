@@ -1,8 +1,10 @@
 from neuron import h
 h.load_file('mulfit.hoc')
 h.load_file('eonerunmlf.hoc')
+import nrnbfilt
 
-if __name__ == '__main__':
+def test():
+  global s, h
   h.load_file('nrngui.hoc')
   from math import pi
   s = h.Section()
@@ -17,3 +19,6 @@ if __name__ == '__main__':
   h.load_file('pasfit.ses')
   h.cvode_active(1)
   #import testext # if launching python instead of nrniv
+
+if __name__ == '__main__':
+  test()
