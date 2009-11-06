@@ -86,8 +86,8 @@ class NeuronObservable(ObserveState0):
 	
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
 	x = numpy.matrix(state)
-	value = self.mean(self,time,state)
-	DFx = numpy.matrix(numpy.zeros((len(value), len(x))))
+	value = self.mean(time,state)
+	DFx = numpy.matrix(numpy.zeros((1, len(x))))
 	sqrtEps = math.sqrt(numpy.finfo(numpy.double).eps)
 	sqrtEps = 1e-3
 	for i in range(len(x)):
@@ -98,7 +98,7 @@ class NeuronObservable(ObserveState0):
 		h = sqrtEps
 	    x[i] = temp + h
 	    h = x[i] - temp
-	    df = self.mean(self,time,state)
+	    df = self.mean(time,state)
 	    x[i] = temp
 	    DFx[:,i] = (df - value)/h
 	return DFx
@@ -139,7 +139,7 @@ class ObservationModel:
         if List == None:
             List = range(0, self.D)
         for k in List:        
-            E.append(self.C[k].mean(time, state).tolist())
+            E.append(self.C[k].mean(time, state))
         return numpy.matrix(E).T
 
     # Evaluate the measurement at a given time
@@ -149,7 +149,7 @@ class ObservationModel:
         if List == None:
             List = range(0, self.D)
         for k in List:
-            E.append(self.C[k].meas(time, state).tolist())
+            E.append(self.C[k].meas(time, state))
         return numpy.matrix(E).T
         
     def Dstate(self, time, state, List=None):
