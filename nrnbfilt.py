@@ -33,9 +33,10 @@ class NrnBFilt(object):
     Sys.Injection.erange(0.0, tlast, 1.0)
     self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M.FitEvents)
-    
+    print 'leave NrnBFilt'
+
   def __data(self,fl,FitEvents):
-    counter = [0]*(len(fl))
+    counter = [1]*(len(fl))
     Data = []
     for elm in FitEvents:
       time = elm[0][-1]
@@ -47,11 +48,11 @@ class NrnBFilt(object):
         assert(time == x[counter[i]])
         DataEV.append(y[counter[i]])
         counter[i] += 1
-      Data.append(numpy.matrix(DataEv))
-    for i in len(fl):
+      Data.append(numpy.matrix(DataEV))
+    for i in range(len(fl)):
 	assert(counter[i] == len(fl.o(i).xdat_))
     return Data
 		
   def likelihood(self):
-    return 1.0
+    print 'likelihood'
     return fitEKF.ekf(self.Data, self.M)

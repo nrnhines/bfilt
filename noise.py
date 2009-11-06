@@ -21,6 +21,9 @@ class ZeroNoise:
     #    P should be the same for all noise processes in a model
     #    I should be different for each noise process in a model
     def __init__(self, p, i):
+      self.base_init(p, i)
+
+    def base_init(self, p, i):
         self.R = random.Random()
         # save local copies of P and I
         self.P = p
@@ -30,7 +33,7 @@ class ZeroNoise:
     
     # just change P not I
     def change(self, p):
-        self.__init__(p, self.I)
+        self.base_init(p, self.I)
         
     # Return Zero process
     def clear(self):

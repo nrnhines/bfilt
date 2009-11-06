@@ -41,22 +41,14 @@ class ObserveState0(noise.Gauss):
         self.__init(p, i, times)
 
     def __init(self, p, i, times=None):
-        # SAME AS IN GAUSS
-        self.R = random.Random()
-        # save local copies of P and I
-        self.P = p
-        self.I = i
-        # calculate noise
-        self.X = self.calc()
-        # NEW FROM HERE ON
-        # set up event times
         self.Times = EventTimed(times)
         self.sigma = 0.0001
 	self.observed = 0
+        self.base_init(p, i)
     
     # just change P not I
     def change(self, p):
-        self.__init(p, self.I, self.Times.Times)
+        self.base_init(p, self.I)
     
     def mean(self, time, state):
         return state[observed, 0]
@@ -75,17 +67,19 @@ class ObserveState0(noise.Gauss):
 class NeuronObservable(ObserveState0):
     
     def __init__(self, hpointer, p, i, times=None):
-       hpt = hpointer
+       if (times == None):
+         raise RuntimeError, "unrecoverable"
+       self.hpt = hpointer
        ObserveState0.__init__(self, p, i, times)
 
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
 	ss = h.Vector() #save
-	cvode.states(ss)
+	h.cvode.states(ss)
 
 	ds = h.Vector()
 	h.cvode.f(time, h.Vector(state), ds)
 	#measurement goes here
-        x = hpt.val()
+        x = self.hpt.val
 
 	h.cvode.yscatter(ss) #restore
         return x
@@ -121,7 +115,7 @@ class ObservationModel:
         self.C = c
         k = 0
         while k < self.D:
-            self.C[k].__init__(p, i0+k, c[k].Times.Times)
+            self.C[k].base_init(p, i0+k)
             k += 1
             
     # Change parameters
