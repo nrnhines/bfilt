@@ -1,6 +1,7 @@
 import math
 from myscipy import linalg
 import numpy
+from fitglobals import debug
 
 def ekf(data, model):
 	m0 = model.Initial
@@ -18,10 +19,12 @@ def ekf(data, model):
 		mb = m0
 		for i in range(1,len(Times)):
 			 mb = model.Sys.flow([Times[i-1],Times[i]],mb)
-			 print 'flow', mb
+			 if debug:
+			   print 'flow', mb
 		# Operational Code
 		# mb = model.Sys.flow(Times, m0)
-		print 'final flow', mb, '@ Times =', Times
+		if debug:
+		  print 'final flow', mb, '@ Times =', Times
 		Am = model.Sys.Dstate(Times, m0)
 		#print 'Dstate', Am
 		Wm = model.Sys.Dnoise(Times, m0)
@@ -38,10 +41,12 @@ def ekf(data, model):
 		# Update
 		# print 'data[k]', data[k]
 		# print 'ObsNum', ObsNum
-		print 'hh', hh
+		if debug:
+		  print 'hh', hh
 		# print 'data, hh', data[k] hh		
 		v = data[k] - hh
-		print 'v', v
+		if debug:
+		  print 'v', v
 		S = H*Pb*H.T + V*V.T
 		K = Pb*H.T*S.I
 		P0 = Pb - K*S*K.T
