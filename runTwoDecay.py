@@ -1,10 +1,11 @@
+import fitglobals
 import noise
 import models
 import fitEKF
 import numpy
-import fitglobals
 
-fitglobals.debug = False
+
+fitglobals.debugon()
 
 P = noise.NoiseParams()
 P.tstop = 20
@@ -39,4 +40,7 @@ P.B = numpy.matrix([[0.5, 0], [0, 0.4]])
   # Not needed: change(P)
 M.Obs.C[0].sigma = 0.001
 M.Obs.C[1].sigma = 0.0001
+print 'debug', fitglobals.debug
 LL = fitEKF.ekf(Data,M)
+
+fitglobals.debugoff()
