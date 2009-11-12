@@ -1,14 +1,19 @@
 import math
 from myscipy import linalg
 import numpy
-from fitglobals import debug
+import fitglobals
 
 def ekf(data, model):
+	debug = fitglobals.debug
 	m0 = model.Initial
 	P0 = model.P.InitialCov
 	k = 0
 	smll = 0
-	
+	spll = 0
+	if debug:
+		f = open('data.txt','w')
+		f.write('# f1 f2 PLL\n')
+
 	# Main Filtering Loop
 	while k < len(data):
 		# Evaluate derivatives for prediction
@@ -19,12 +24,12 @@ def ekf(data, model):
 		mb = m0
 		for i in range(1,len(Times)):
 			 mb = model.Sys.flow([Times[i-1],Times[i]],mb)
-			 if debug:
-			   print 'flow', mb
+			 # if debug:
+			 #  print 'flow', mb
 		# Operational Code
 		# mb = model.Sys.flow(Times, m0)
-		if debug:
-		  print 'final flow', mb, '@ Times =', Times
+		# if debug:
+		# print 'final flow', mb, '@ Times =', Times
 		Am = model.Sys.Dstate(Times, m0)
 		#print 'Dstate', Am
 		Wm = model.Sys.Dnoise(Times, m0)
@@ -53,9 +58,22 @@ def ekf(data, model):
 		m0 = mb + K*v
 		
 		# Likelihood
-		mll = math.log(linalg.det(S)) + v.T*S.I*v
-		smll += mll
+		f0 = len(v)*math.log(2*math.pi)
+		f1 =  math.log(linalg.det(S))
+		f2 = (v.T*S.I*v).tolist()[0][0]
+		smll += (f0+f1+f2)
 		k += 1
+		if debug:
+			print 'S', S
+			print 'factors:', f0, f1, f2
+			print 'len v:', len(v)
+			f.write('%s %s %s\n' % (f1,f2,f1+f2))
+		# mll = math.log(linalg.det(S)) + v.T*S.I*v
+		# pll = -(1/2)*(f0+f1+f2)
+		# spll += pll
+		# print 'diff', spll + (1/2)*smll
 		# Keeps running sum of Minus-Log-Likelihood
 		# But returns Positive Log Likeliood (for now)
-	return -smll
+	if debug:
+		f.close()
+	return -smll/2.0

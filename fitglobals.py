@@ -1,6 +1,4 @@
 
-debug = False
-
 def debugon():
 	global debug
 	debug = True

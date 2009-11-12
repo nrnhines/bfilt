@@ -4,8 +4,7 @@ import random
 import math
 from myscipy import linalg
 from neuron import h
-useNeuron = False
-from fitglobals import debug
+import fitglobals
 
 class EventTimed:
     def __init__(self, times=None):
@@ -256,6 +255,7 @@ class NeuronModel(object):
         return numpy.matrix(s).T
 
     def stochflow(self, Times, state0, discrete=None):
+        debug = fitglobals.debug
         if discrete:
             discrete.restore()
             self.moveto(Times[0])
@@ -281,6 +281,7 @@ class NeuronModel(object):
         return x
       
     def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
+        debug = fitglobals.debug
         if discrete:
             discrete.restore()
             self.moveto(Times[0])
@@ -380,11 +381,15 @@ class DecayModel:
             return (linalg.expm(-self.P.A*(EndTime-Times[0])))*state0
 
     def stochflow(self, Times, state0, discrete=None):
+        debug = fitglobals.debug
         for interval in range(1, len(Times)):
+            # print 'state0 zeroth:',state0
             state0 = self.flow([Times[interval-1], Times[interval]], state0, discrete)
-            temp = state0
+            # print 'state0 first:', state0
+            # temp = state0
             state0 += self.P.B*(self.eval(Times[interval])-self.eval(Times[interval-1]))
             # print 'diff', state0-temp
+            # print 'state0 second:', state0
             if debug:
                 print 'state0', state0
                 print 'final state:', state0, '@ Times =', Times

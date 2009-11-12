@@ -44,3 +44,12 @@ print 'debug', fitglobals.debug
 LL = fitEKF.ekf(Data,M)
 
 fitglobals.debugoff()
+
+def setParams(Mset,A0set,A1set):
+	Mset.P.A = numpy.matrix([[A0set, 0], [0,A1set]])
+	
+def getParams(Mget):
+	A0get = Mget.P.A[0,0]
+	A1get = Mget.P.A[1,1]
+	return [A0get, A1get]
+	
