@@ -5,6 +5,9 @@ import noise
 import models
 import fitEKF
 import numpy
+import fitglobals
+
+fitglobals.debugon()
 
 P = noise.NoiseParams()
 P.tstop = 20

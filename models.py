@@ -264,7 +264,7 @@ class NeuronModel(object):
         Wm = self.eval(Times[0])
         for t in Times[1:]:
             if debug:
-                print 'x', x
+                print 'x (in stochflow):', x
             h.cvode.yscatter(h.Vector(x)) #MH had x.T
             h.cvode.re_init()
             h.cvode.solve(t)
