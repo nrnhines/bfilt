@@ -9,7 +9,8 @@ def test():
   fitglobals.debugon()
   h.load_file('nrngui.hoc')
   from math import pi
-  s = h.Section()
+  h('create soma')
+  s = h.soma
   s.diam = 10
   s.L = 100/pi/s.diam
   s.insert('pas')
