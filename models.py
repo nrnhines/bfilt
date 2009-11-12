@@ -424,13 +424,13 @@ class Model:
         #  if initial == None:
         #     initial = numpy.ones((self.Sys.dim(), 1), float)
         
-        # FOR NEURON MODELS!!!
-        h.stdinit()
-        s = h.Vector()
-        h.cvode.states(s)
-        initial = numpy.matrix(s).T
-        print 'Initial', initial
-        
+        if initial == None:
+            # FOR NEURON MODELS!!!
+            h.stdinit()
+            s = h.Vector()
+            h.cvode.states(s)
+            initial = numpy.matrix(s).T
+
         self.Initial = initial
         self.Obs = obs
         self.P = p
