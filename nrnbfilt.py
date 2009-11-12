@@ -56,5 +56,5 @@ class NrnBFilt(object):
   def likelihood(self):
     print 'likelihood'
     x = fitEKF.ekf(self.Data, self.M)
-    x = float(x[0,0])
+    x = float(x)
     return x

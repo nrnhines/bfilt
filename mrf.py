@@ -1,10 +1,12 @@
 from neuron import h
+import fitglobals
 h.load_file('mulfit.hoc')
 h.load_file('eonerunmlf.hoc')
 import nrnbfilt
 
 def test():
   global s, h
+  fitglobals.debugon()
   h.load_file('nrngui.hoc')
   from math import pi
   s = h.Section()

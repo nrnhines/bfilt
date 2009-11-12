@@ -244,7 +244,7 @@ class NeuronModel(object):
 
     def flow(self, Times, state0, discrete=None):
         if discrete:
-          discrete.restore()
+            discrete.restore()
         self.moveto(Times[0])
         h.cvode.yscatter(h.Vector(state0))
         h.cvode.re_init()
@@ -258,7 +258,7 @@ class NeuronModel(object):
         debug = fitglobals.debug
         if discrete:
             discrete.restore()
-            self.moveto(Times[0])
+        self.moveto(Times[0])
         assert(h.t == Times[0])
         x = numpy.matrix(state0)
         Wm = self.eval(Times[0])
@@ -284,7 +284,7 @@ class NeuronModel(object):
         debug = fitglobals.debug
         if discrete:
             discrete.restore()
-            self.moveto(Times[0])
+        self.moveto(Times[0])
         assert(h.t == Times[0])
         x = numpy.matrix(state0)
         if debug:
@@ -424,12 +424,12 @@ class Model:
         #  if initial == None:
         #     initial = numpy.ones((self.Sys.dim(), 1), float)
         
-        # TAKE THESE COMMENTS OUT FOR NEURON MODELS!!!
-        # h.stdinit()
-        # s = h.Vector()
-        # h.cvode.states(s)
-        # initial = numpy.matrix(s).T
-        # print initial
+        # FOR NEURON MODELS!!!
+        h.stdinit()
+        s = h.Vector()
+        h.cvode.states(s)
+        initial = numpy.matrix(s).T
+        print 'Initial', initial
         
         self.Initial = initial
         self.Obs = obs
