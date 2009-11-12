@@ -1,7 +1,5 @@
-import runTwoDecay
 import numpy
 import fitEKF
-import shutil
 import os
 import fitglobals
 import copy
@@ -60,21 +58,5 @@ def calc2(MS,R0=None,R1=None):
     simParams = MS.getParams()
     LLsim = MS.loglike(simParams[0],simParams[1])
     print 'Sim Like =', LLsim, '@ (A0, A1) =', simParams[0], simParams[1]
-    
-def simLL():
-    LL = fitEKF.ekf(runTwoDecay.Data,runTwoDecay.M)
-    # print 'Sim LL =', LL
-    return LL
-
-def fitLL(A0,A1):
-    Mfit = copy.deepcopy(runTwoDecay.M)
-    # Mfit.P.A = numpy.matrix([[A0, 0], [0,A1]])
-    runTwoDecay.setParams(Mfit,A0,A1)
-    LL = fitEKF.ekf(runTwoDecay.Data,Mfit)
-    # print 'Fit LL =', LL
-    return LL
-    
-def tofile(fname):
-    shutil.copy('data.txt','plots/'+fname)
 
     
