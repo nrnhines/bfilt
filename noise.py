@@ -40,7 +40,10 @@ class ZeroNoise:
         # set seed for new noise generation
         self.R.seed(self.P.seed + 1e6*self.I)
         # how many numbers, given dt and tstop?
-        kstop = 1+int(math.floor(self.P.tstop/self.P.dt))
+        if self.P.dt > 0:
+            kstop = 1+int(math.floor(self.P.tstop/self.P.dt))
+        else:
+            kstop = 0
         return [0.0]*kstop
         
     # Calculate (zero) process: subclasses will overload this function
@@ -52,8 +55,12 @@ class ZeroNoise:
         if t > self.P.tstop:
             t = self.P.tstop
             print "Warning evaluating Noise at time > tstop"
-        return self.X[int(round(t/self.P.dt))]
-        
+        if self.P.dt > 0:
+            return self.X[int(round(t/self.P.dt))]
+        else:
+            print "Noise dt must be postive for simulation, returning 0"
+            return 0
+
 # Gauss: a sequence of standard Gaussian random variables
 # Gauss is suitable for measurement noise
 class Gauss(ZeroNoise):

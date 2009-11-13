@@ -18,11 +18,16 @@ class EventTimed:
     # 2. After rounding, eliminates duplicates
     # 3. Eliminiates non-increasing times.
     def round(self, dt):
-        matTimes = numpy.asarray(self.Times)
-        roundTimes = (matTimes/(dt+0.0)).round()
-        roundTimes = dt*roundTimes
-        listReturn = roundTimes.tolist()
-        listReturn = listReturn
+        if dt > 0:
+            matTimes = numpy.asarray(self.Times)
+            roundTimes = (matTimes/(dt+0.0)).round()
+            roundTimes = dt*roundTimes
+            listReturn = roundTimes.tolist()
+        else:
+            listReturn = numpy.asarray(self.Times)
+        # The following removes duplicates and points out of order
+        # This can be caused by rounding or improper entry.
+        # Good for dt = 0, too
         lenList = len(listReturn)
         index = 1
         while index < lenList:
