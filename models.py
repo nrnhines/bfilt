@@ -24,7 +24,7 @@ class EventTimed:
             roundTimes = dt*roundTimes
             listReturn = roundTimes.tolist()
         else:
-            listReturn = numpy.asarray(self.Times)
+            listReturn = numpy.asarray(self.Times).tolist()
         # The following removes duplicates and points out of order
         # This can be caused by rounding or improper entry.
         # Good for dt = 0, too
