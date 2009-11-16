@@ -1,5 +1,6 @@
 ParmFitness: Unnamed multiple run protocol
 	FitnessGenerator1: Unnamed single run protocol
+		Use Likelihood: 1
 		YFitness:	soma.O_ch3( 0.5 )
 
 	Parameters:

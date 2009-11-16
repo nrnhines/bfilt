@@ -6,7 +6,7 @@ public rfile, wfile, map, pelist, chtitle, gview, clone, add
 public save_context, restore_context
 external classname, tstop, cvode
 objref fitnesslist, generator, yvarlist, yveclist, tvec, tobj, tobj1, sf, this
-objref vbox, g, hb1, pelist, po
+objref vbox, g, hb1, pelist, po, ldeck, hbox
 objref dec, gdeck, fdeck, deck, symch_
 strdef title, tstr, tstr1, tag, cmd
 
@@ -155,6 +155,7 @@ proc add() { // variable string, fitness object
 proc wfile() {local i
 	$o1.printf("\t%s: %s\n", tag, title)
 	generator.wfile($o1, $o2)
+	$o1.printf("\t\tUse Likelihood: %d\n", use_likelihood)
 	for i=0, fitnesslist.count-1 {
 		sprint(tstr, "%s", fitnesslist.object(i).tag)
 		$o1.printf("\t\t%s:\t%s\n", tstr, yvarlist.object(i).s)
@@ -171,6 +172,11 @@ proc rfile() {local i
 	}
 	if (i == 0) {
 		printf("Invalid format for Fitness Generator\n%stag=|%s| title=|%s|\n", $s3, tag, title)
+	}
+	$o1.gets(tstr)
+	i = sscanf(tstr, "\t\tUse Likelihood:%d", &use_likelihood)
+	if (i == 0) {
+		printf("Invalid format for Use Likelihood:\n")
 	}
 	$o1.gets(tstr)
 	if (sf.substr(tstr, ":") > -1) {
@@ -200,17 +206,39 @@ printf("Invalid format. Nonempty line that does not contain a Fitness substring.
 	}
 }
 
-proc select_likelihood() {
+proc select_likelihood() {local i  localobj ts
 	objref po
 	if (use_likelihood == 0) {
 		objref po
 	}else if (nrnpython("import nrnbfilt")) {
 		po = new PythonObject()
-		po = po.nrnbfilt.NrnBFilt(this)
+		if (yvarlist.count == 0) {
+			continue_dialog("No variables to fit. Declare all variables and specify data before selecting Likelihood")
+			use_likelihood = 0
+		}
+		for i=0, fitnesslist.count-1 {
+			if (object_id(fitnesslist.o(i).xdat_) == 0) {
+				use_likelihood = 0
+			}else if (fitnesslist.o(i).xdat_.size == 0) {
+				use_likelihood = 0
+			}
+			if (use_likelihood == 0) {
+				ts = new String()
+				sprint(ts.s, "No data for %s. Declare all variables and specify data before selecting Likelihood", yvarlist.o(i).s)
+				continue_dialog(ts.s)
+				break
+			}
+		}
+		if (use_likelihood) {
+			po = po.nrnbfilt.NrnBFilt(this)
+		}
 	}else{
 		use_likelihood = 0
 	}
+	ldeck.flip_to(use_likelihood)
+	errval = 0.0
 }
+
 
 proc chfit() {local i
 	context_ += 1
@@ -374,9 +402,23 @@ proc fitdeck() {
 proc map() {local i
 	vbox = new VBox(3)
 	vbox.intercept(1)
+	hbox = new HBox(3)
+	hbox.intercept(1)
 	xpanel("",1)
 	xlabel(title)
-	xpvalue("Error Value", &errval, 0, "efun()")
+	xpanel()
+	ldeck = new Deck(3)
+	ldeck.intercept(1)
+	xpanel("",1)
+		xpvalue("Error Value", &errval, 0, "efun()")
+	xpanel()
+	xpanel("",1)
+		xpvalue("-log(likelihood)", &errval, 0, "efun()")
+	xpanel()
+	ldeck.intercept(0)
+	ldeck.map()
+	ldeck.flip_to(use_likelihood)
+	xpanel("",1)
 	xmenu("Fitness")
 		xmenu("Change Method to")
 		for i=0, pelist.count-1 {
@@ -393,6 +435,8 @@ proc map() {local i
 		xbutton("Remove a protocol", "rmconst()")
 	xmenu()
 	xpanel()
+	hbox.intercept(0)
+	hbox.map()
 	hb1 = new HBox(3)
 	hb1.intercept(1)
 	gdeck = new Deck(3)
@@ -415,6 +459,9 @@ proc map() {local i
 	deck.flip_to(dshow)
 	vbox.intercept(0)
 	vbox.map()
+	if (use_likelihood) {
+		select_likelihood()
+	}
 }
 
 endtemplate FitnessGenerator1
