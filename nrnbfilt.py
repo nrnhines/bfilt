@@ -10,7 +10,7 @@ class NrnBFilt(object):
     self.rf = ho
     ol = []
     P = noise.NoiseParams()
-    P.dt = 0.1
+    P.dt = 0.0
     vl = self.rf.yvarlist
     fl = self.rf.fitnesslist
     tlast = 0

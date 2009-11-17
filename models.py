@@ -6,6 +6,8 @@ from myscipy import linalg
 from neuron import h
 import fitglobals
 
+toler = 1e-8
+
 class EventTimed:
     def __init__(self, times=None):
         self.Times = times
@@ -31,7 +33,7 @@ class EventTimed:
         lenList = len(listReturn)
         index = 1
         while index < lenList:
-            if (listReturn[index] - listReturn[index-1]) < dt/2.0:
+            if (listReturn[index] - listReturn[index-1]) < dt/2.0 + toler:
                 del listReturn[index]
                 lenList -= 1
             else:
@@ -463,7 +465,7 @@ class Model:
             InjectionsForThisData.append(Inj[i])
             ObsEvents = []
             for ObNum in range(0, self.Obs.D):
-                if len(Os[ObNum])>0 and Os[ObNum][0] < Inj[i] + (self.P.dt/2.0):
+                if len(Os[ObNum])>0 and Os[ObNum][0] < Inj[i] + (self.P.dt/2.0) + toler:
                     # ObsEvents[i].append(ObNum)
                     ObsEvents.append(ObNum)
                     temp = Os[ObNum].pop(0)
