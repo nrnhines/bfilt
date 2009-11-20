@@ -47,13 +47,14 @@ class NrnBFilt(object):
       for i in obindices:
         x = fl.o(i).xdat_
         y = fl.o(i).ydat_
-        print i, counter[i], time, x[counter[i]], time - x[counter[i]]
+        #print i, counter[i], time, x[counter[i]], time - x[counter[i]]
         assert(math.fabs(time - x[counter[i]]) < 1e-10)
         DataEV.append(y[counter[i]])
         counter[i] += 1
       Data.append(numpy.matrix(DataEV))
     for i in range(len(fl)):
 	assert(counter[i] == len(fl.o(i).xdat_))
+    print 'FitEvents\n', FitEvents, '\nData\n', Data
     return Data
 		
   def likelihood(self):

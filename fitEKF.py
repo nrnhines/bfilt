@@ -4,6 +4,7 @@ import numpy
 import fitglobals
 
 def ekf(data, model):
+        print 'data', data
 	debug = fitglobals.debug
 	m0 = model.Initial
 	P0 = model.P.InitialCov
@@ -19,6 +20,8 @@ def ekf(data, model):
 		# Evaluate derivatives for prediction
 		Times = model.FitEvents[k][0]
 		ObsNum = model.FitEvents[k][1]
+                print 'model.Obs', model, model.Obs
+                print 'ObsNum', ObsNum
 		#print "Times m0", Times, m0
 		# DEBUGGING CODE
 		mb = m0
@@ -46,6 +49,7 @@ def ekf(data, model):
 		# Update
 		# print 'data[k]', data[k]
 		# print 'ObsNum', ObsNum
+                print Times[-1], hh
 		if debug:
 		  print 'hh', hh
 		# print 'data, hh', data[k] hh		
@@ -55,6 +59,10 @@ def ekf(data, model):
 		S = H*Pb*H.T + V*V.T
 		K = Pb*H.T*S.I
 		P0 = Pb - K*S*K.T
+                print 'm0', m0
+                print 'mb', mb
+                print 'K', K
+                print 'v', v
 		m0 = mb + K*v
 		
 		# Likelihood
