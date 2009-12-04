@@ -51,7 +51,7 @@ class NrnBFilt(object):
         assert(math.fabs(time - x[counter[i]]) < 1e-10)
         DataEV.append(y[counter[i]])
         counter[i] += 1
-      Data.append(numpy.matrix(DataEV))
+      Data.append(numpy.matrix(DataEV).T)
     for i in range(len(fl)):
 	assert(counter[i] == len(fl.o(i).xdat_))
     print 'FitEvents\n', FitEvents, '\nData\n', Data
