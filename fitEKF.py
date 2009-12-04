@@ -14,6 +14,10 @@ def ekf(data, model):
 		f = open('data.txt','w')
 		f.write('# f1 f2 PLL\n')
 
+	# Initialize Error Bar Lists
+	Ecenter = [[]]*model.Obs.D
+	Ewidth = [[]]*model.Obs.D
+	
 	# Main Filtering Loop
 	while k < len(data):
 		# Evaluate derivatives for prediction
@@ -56,6 +60,11 @@ def ekf(data, model):
 		K = Pb*H.T*S.I
 		P0 = Pb - K*S*K.T
 		m0 = mb + K*v
+
+		# Error Bars
+		for iObs in range(len(ObsNum)):
+			Ecenter[ObsNum[iObs]].append(hh[iObs,0])
+			Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
 		
 		# Likelihood
 		f0 = len(v)*math.log(2*math.pi)
@@ -76,4 +85,6 @@ def ekf(data, model):
 		# But returns Positive Log Likeliood (for now)
 	if debug:
 		f.close()
+	print 'Final Ecenter', Ecenter
+	print 'Final Ewidth', Ewidth
 	return -smll/2.0
