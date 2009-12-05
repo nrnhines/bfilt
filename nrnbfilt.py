@@ -61,3 +61,10 @@ class NrnBFilt(object):
     x = fitEKF.ekf(self.Data, self.M)
     x = float(x)
     return -x
+
+  def Ecenter(self, i):
+    return h.Vector(fitEKF.Ecenter[int(i)])
+
+  def Ewidth(self, i):
+    return h.Vector(fitEKF.Ewidth[int(i)])
+

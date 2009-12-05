@@ -15,6 +15,7 @@ def ekf(data, model):
 		f.write('# f1 f2 PLL\n')
 
 	# Initialize Error Bar Lists
+	global Ecenter, Ewidth
 	Ecenter = [[]]*model.Obs.D
 	Ewidth = [[]]*model.Obs.D
 	
@@ -85,6 +86,4 @@ def ekf(data, model):
 		# But returns Positive Log Likeliood (for now)
 	if debug:
 		f.close()
-	print 'Final Ecenter', Ecenter
-	print 'Final Ewidth', Ewidth
 	return -smll/2.0

@@ -95,6 +95,18 @@ func likelihood() {
 	return po.likelihood()
 }
 
+proc plot_likelihood_result() {local i  localobj m, w, x
+	for i=0, fitnesslist.count - 1 {
+		execute("redraw()", fitnesslist.o(i))
+		m = po.Ecenter(i)
+		w = po.Ewidth(i).mul(.5)
+		x = fitnesslist.o(i).xdat_.c.remove(0)
+		m.c.add(w).line(fitnesslist.o(i).g, x)
+		m.c.sub(w).line(fitnesslist.o(i).g, x)
+		fitnesslist.o(i).g.flush()
+	}
+}
+
 
 func gview() {local i, j, l,b,r,t
 	for i=0, fitnesslist.count - 1 {
@@ -413,7 +425,7 @@ proc map() {local i
 		xpvalue("Error Value", &errval, 0, "efun()")
 	xpanel()
 	xpanel("",1)
-		xpvalue("-log(likelihood)", &errval, 0, "efun()")
+		xpvalue("-log(likelihood)", &errval, 0, "efun() plot_likelihood_result()")
 	xpanel()
 	ldeck.intercept(0)
 	ldeck.map()
