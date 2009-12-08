@@ -4,6 +4,11 @@ import os
 import fitglobals
 import copy
 
+def calc0(MS):
+    Mfit = copy.deepcopy(MS.M)
+    LL = fitEKF.ekf(MS.Data,Mfit)
+    print 'Like =', LL
+    
 def calc1(MS,R0=None):
     if R0 == None:
         R0 = numpy.arange(0.05,1.0,0.05)

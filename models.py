@@ -125,11 +125,11 @@ class NeuronObservable(ObserveState0):
                 h = sqrtEps*abs(temp)
             else:
                 h = sqrtEps
-                x[i] = temp + h
-                h = x[i] - temp
-                df = self.mean(time,state)
-                x[i] = temp
-                DFx[:,i] = (df - value)/h
+            x[i] = temp + h
+            h = x[i] - temp
+            df = self.mean(time,x)
+            x[i] = temp
+            DFx[:,i] = (df - value)/h
         return DFx
    
     

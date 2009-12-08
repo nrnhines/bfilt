@@ -99,7 +99,7 @@ proc plot_likelihood_result() {local i  localobj m, w, x
 	for i=0, fitnesslist.count - 1 {
 		execute("redraw()", fitnesslist.o(i))
 		m = po.Ecenter(i)
-		w = po.Ewidth(i).mul(.5)
+		w = po.Ewidth(i)
 		x = fitnesslist.o(i).xdat_.c.remove(0)
 		m.c.add(w).line(fitnesslist.o(i).g, x)
 		m.c.sub(w).line(fitnesslist.o(i).g, x)
