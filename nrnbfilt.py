@@ -62,6 +62,9 @@ class NrnBFilt(object):
     x = float(x)
     return -x
 
+  def Etime(self):
+    return h.Vector(fitEKF.Etime)
+
   def Ecenter(self, i):
     return h.Vector(fitEKF.Ecenter[int(i)])
 

@@ -15,10 +15,12 @@ def ekf(data, model):
 		f.write('# f1 f2 PLL\n')
 
 	# Initialize Error Bar Lists
-	global Ecenter, Ewidth
+	global Ecenter, Ewidth, Etime
+	Etime = []
 	Ecenter = [[]]*model.Obs.D
 	Ewidth = [[]]*model.Obs.D
 	
+	dataAtTime0Exists = False
 	# Main Filtering Loop
 	while k < len(data):
 		if dataAtTime0Exists:
@@ -32,6 +34,7 @@ def ekf(data, model):
 			P0 = Pb - K*S*K.T
 			m0 = mb + K*v
 			# Error Bars
+                        Etime.append(time0)
 			for iObs in range(len(ObsNum)):
 				Ecenter[ObsNum[iObs]].append(hh[iObs,0])
 				Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
@@ -39,9 +42,10 @@ def ekf(data, model):
 			H = model.Obs.Dstate(Times, m0, ObsNum)
 			V = model.Obs.Dnoise(Times, m0, ObsNum)		
 			S = H*P0*H.T + V*V.T
+                        Etime.append(time0)
 			for iObs in range(len(ObsNum)):
-				EcenterPost[ObsNum[iObs]].append(hh[iObs,0])
-				EwidthPost[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
+				Ecenter[ObsNum[iObs]].append(hh[iObs,0])
+				Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
 		# Evaluate derivatives for prediction
 		Times = model.FitEvents[k][0]
 		ObsNum = model.FitEvents[k][1]
@@ -88,6 +92,7 @@ def ekf(data, model):
 		m0 = mb + K*v
 
 		# Error Bars
+                Etime.append(Times[-1])
 		for iObs in range(len(ObsNum)):
 			Ecenter[ObsNum[iObs]].append(hh[iObs,0])
 			Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
@@ -95,9 +100,10 @@ def ekf(data, model):
 		H = model.Obs.Dstate(Times, m0, ObsNum)
 		V = model.Obs.Dnoise(Times, m0, ObsNum)		
 		S = H*P0*H.T + V*V.T
+                Etime.append(Times[-1])
 		for iObs in range(len(ObsNum)):
-			EcenterPost[ObsNum[iObs]].append(hh[iObs,0])
-			EwidthPost[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
+			Ecenter[ObsNum[iObs]].append(hh[iObs,0])
+			Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
 			
 		# Likelihood
 		f0 = len(v)*math.log(2*math.pi)
