@@ -17,8 +17,11 @@ def ekf(data, model):
 	# Initialize Error Bar Lists
 	global Ecenter, Ewidth, Etime
 	Etime = []
-	Ecenter = [[]]*model.Obs.D
-	Ewidth = [[]]*model.Obs.D
+	Ecenter = []
+	Ewidth = []
+        for i in range(model.Obs.D):
+            Ecenter.append([])
+            Ewidth.append([])
 	
 	dataAtTime0Exists = False
 	# Main Filtering Loop
