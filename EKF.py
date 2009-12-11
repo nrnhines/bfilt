@@ -51,11 +51,22 @@ def predict(m,P,t0,t1,injectionTime):
     assert(injectionTime[-1] <= t1)
     mb = m
     As = []
-    for i in range(1,len(Times)):
-        (mb, A) = model.Sys.flowJac([injectionTime[i-1],injectionTime[i]],mb)
+    Bs = []
+    for i in range(1,len(injectionTime)):
+        (mb, A, B) = model.Sys.flowJac([injectionTime[i-1],injectionTime[i]],mb)
+        As.append(A)  # A's are Jacobians of above flows
+        Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
+    if  t1 > injectionTime[-1]:
+        (mb, A, B) = model.Sys.flowJac([injectionTime[-1],t1],mb)
         As.append(A)
-    Am = model.Sys.Dstate(Times, m0)
-    Wm = model.Sys.Dnoise(Times, m0)
+    else:
+        As.append(IdentityMaxtrixSizeOfState)
+    Am = IdentityMatrixSizeOfState
+    for i in range(len(Bs))
+        Am = Am*As[-(i+1)]  # Composition of Jacobians is product
+        # NEED TO TEST INJECTING IN MORE THAN ONE PLACE
+        Wm = numpy.bmat('Bs[-(i+1)]*Am Wm')
+    Am = Am*As[0]
     Pb = Wm*Wm.T + Am*P0*Am.T
     return (mb, Pb, t1)
     
@@ -69,6 +80,9 @@ def ekf(data, model):
     # Initialize
     smll = 0
     initializeErrorBars()
+    collectionTime = model.collectionTime
+    injectionTimes = model.injectionTimes
+    ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
     
     # Main loop
