@@ -44,7 +44,19 @@ def update(data,time,ObsNum,mb,Pb):
     modelMeasurement(time,ObsNum,m,P)
     return (m,P,e,S)
 
-def predict(m,P,t0,t1,injectionTimes):
+def predict(m,P,t0,t1,injectionTime):
+    # FUNCTION NOT FINISHED YET...
+    assert(injectionTime[0] <= t0)
+    assert(injectionTime[1] > t0)
+    assert(injectionTime[-1] <= t1)
+    mb = m
+    As = []
+    for i in range(1,len(Times)):
+        (mb, A) = model.Sys.flowJac([injectionTime[i-1],injectionTime[i]],mb)
+        As.append(A)
+    Am = model.Sys.Dstate(Times, m0)
+    Wm = model.Sys.Dnoise(Times, m0)
+    Pb = Wm*Wm.T + Am*P0*Am.T
     return (mb, Pb, t1)
     
 def minusTwiceLogGaussianPDF(v,S):
@@ -61,12 +73,12 @@ def ekf(data, model):
     
     # Main loop
     if collectionTime[0] == 0:
-        (m,P,e,S) = update(data[0],collectionTime[0],ObsNums[0],m0,P0)
+        (m,P,e,S) = update(data[0],collectionTime[0],ObsNum[0],m0,P0)
         k = 1
     else:
         (m,P) = (m0,P0)
         k = 0
-    while(k<len(data))        
+    while(k<len(data))
         (mb,Pb,time) = predict(m,P,time,collectionTime[k],injectionTimes[k])
         (m,P,e,S) = update(data[k],collectionTime[k],ObsNum[k],mb,Pb,saveError)
         smll += minusTwiceLogGaussianPDF(e,S)
