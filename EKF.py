@@ -45,29 +45,30 @@ def update(data,time,ObsNum,mb,Pb):
     return (m,P,e,S)
 
 def predict(m,P,t0,t1,injectionTime):
-    # FUNCTION NOT FINISHED YET...
     assert(injectionTime[0] <= t0)
     assert(injectionTime[1] > t0)
     assert(injectionTime[-1] <= t1)
     mb = m
+    tStart = t0
+    identityMatrixSizeOfState = numpy.eye(len(m))
     As = []
     Bs = []
     for i in range(1,len(injectionTime)):
-        (mb, A, B) = model.Sys.flowJac([injectionTime[i-1],injectionTime[i]],mb)
+        (mb, A, B, tStart) = model.Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
         As.append(A)  # A's are Jacobians of above flows
         Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
     if  t1 > injectionTime[-1]:
-        (mb, A, B) = model.Sys.flowJac([injectionTime[-1],t1],mb)
+        (mb, A, B, tStart) = model.Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
         As.append(A)
     else:
         As.append(IdentityMaxtrixSizeOfState)
     Am = IdentityMatrixSizeOfState
+    Wm = EmptyMatrixNumStateRowsZeroCols
     for i in range(len(Bs))
         Am = Am*As[-(i+1)]  # Composition of Jacobians is product
-        # NEED TO TEST INJECTING IN MORE THAN ONE PLACE
-        Wm = numpy.bmat('Bs[-(i+1)]*Am Wm')
+        Wm = numpy.bmat('Am*Bs[-(i+1)] Wm')
     Am = Am*As[0]
-    Pb = Wm*Wm.T + Am*P0*Am.T
+    Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
     
 def minusTwiceLogGaussianPDF(v,S):
@@ -80,21 +81,21 @@ def ekf(data, model):
     # Initialize
     smll = 0
     initializeErrorBars()
-    collectionTime = model.collectionTime
+    collectionTimes = model.collectionTimes
     injectionTimes = model.injectionTimes
     ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
     
     # Main loop
-    if collectionTime[0] == 0:
-        (m,P,e,S) = update(data[0],collectionTime[0],ObsNum[0],m0,P0)
+    if collectionTimes[0] == 0.0:
+        (m,P,e,S) = update(data[0],collectionTimes[0],ObsNum[0],m0,P0)
         k = 1
     else:
         (m,P) = (m0,P0)
         k = 0
     while(k<len(data))
-        (mb,Pb,time) = predict(m,P,time,collectionTime[k],injectionTimes[k])
-        (m,P,e,S) = update(data[k],collectionTime[k],ObsNum[k],mb,Pb,saveError)
+        (mb,Pb,time) = predict(m,P,time,collectionTimes[k],injectionTimes[k])
+        (m,P,e,S) = update(data[k],collectionTimes[k],ObsNum[k],mb,Pb,saveError)
         smll += minusTwiceLogGaussianPDF(e,S)
         k += 1
     return -smll/2.0

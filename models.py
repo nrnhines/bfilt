@@ -472,6 +472,13 @@ class Model:
             if len(ObsEvents) > 0:
                 table.append([InjectionsForThisData, ObsEvents])
                 InjectionsForThisData = [Inj[i]]
+        self.collectionTimes = []
+        self.injectionTimes = []
+        self.ObsNum = []
+        for elem in table:
+            self.collectionTimes.append(elem[0][-1])
+            self.injectionTimes.append(elem[0])
+            self.ObsNum.append(elem[1])
         return table
         
     def sim(self):
