@@ -1,7 +1,7 @@
 import fitglobals
 import noise
 import models
-import fitEKF
+import EKF
 import numpy
 import copy
 
@@ -55,7 +55,7 @@ class twoDecay(object):
 			A1 = simParams[1]
 		Mtest = copy.deepcopy(self.M)
 		self.setParams(A0,A1,Mtest)
-		LL = fitEKF.ekf(self.Data, Mtest)
+		LL = EKF.ekf(self.Data, Mtest)
 		return LL
 		
 	def setParams(self,A0set,A1set,Mset):

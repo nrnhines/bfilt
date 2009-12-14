@@ -20,7 +20,7 @@ def initialStateCov(model):
     return (m0, P0)
     
 def modelMeasurement(time,ObsNum,m,P):
-# Returns the measurement and movariance plus Jacobians
+# Returns the measurement and covariance plus Jacobians
     hh = model.Obs.mean(time, m, ObsNum)
     H = model.Obs.Dstate(time, m, ObsNum)
     V = model.Obs.Dnoise(time, m, ObsNum)
@@ -41,7 +41,7 @@ def update(data,time,ObsNum,mb,Pb):
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
     m = mb + K*e
-    modelMeasurement(time,ObsNum,m,P)
+    modelMeasurement(time,ObsNum,m,P)  # Saves error bars
     return (m,P,e,S)
 
 def predict(m,P,t0,t1,injectionTime):
