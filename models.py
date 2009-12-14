@@ -331,7 +331,7 @@ class NeuronModel(object):
             DFx[:,i] = (df - value)/h
         return DFx
 
-    def flowJac(tStart, injectionTimes,m,discrete=None)
+    def flowJac(self, tStart, injectionTimes,m,discrete=None):
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]
         mb = self.flow([tStart,tFinal],m,discrete)
@@ -417,7 +417,8 @@ class DecayModel:
         else:
             return numpy.matrix(linalg.expm(-self.P.A*(EndTime-Times[0])))
             
-    def flowJac(tStart, injectionTimes,m,discrete=None)
+    def flowJac(self, tStart, injectionTimes,m,discrete=None):
+        print 'ITimes', injectionTimes
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]
         mb = self.flow([tStart,tFinal],m,discrete)
@@ -425,7 +426,7 @@ class DecayModel:
         B = self.P.B*math.sqrt(tFinal - inject0)
         return (mb, A, B, tFinal)
         
-  def Dnoise(self, Times, state0, discrete=None):
+    def Dnoise(self, Times, state0, discrete=None):
         NumNoise = self.D
         Dn = numpy.matrix(numpy.zeros((len(state0), (len(Times)-1)*NumNoise)))  
         if len(state0) == 1:

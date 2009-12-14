@@ -2,6 +2,7 @@ import fitglobals
 import noise
 import models
 import EKF
+import fitEKF
 import numpy
 import copy
 
@@ -57,6 +58,18 @@ class twoDecay(object):
 		self.setParams(A0,A1,Mtest)
 		LL = EKF.ekf(self.Data, Mtest)
 		return LL
+	
+	def fitloglike(self, A0=None,A1=None):
+		simParams = self.getParams()
+		if A0 == None:
+			A0 = simParams[0]
+		if A1 == None:
+			A1 = simParams[1]
+		Mtest = copy.deepcopy(self.M)
+		self.setParams(A0,A1,Mtest)
+		LL = fitEKF.ekf(self.Data, Mtest)
+		return LL
+	
 		
 	def setParams(self,A0set,A1set,Mset):
 		Mset.P.A = numpy.matrix([[A0set, 0], [0,A1set]])
