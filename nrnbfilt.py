@@ -2,7 +2,7 @@ from neuron import h
 import noise
 import models
 import numpy
-import fitEKF
+import EKF
 import math
 
 class NrnBFilt(object):
@@ -58,16 +58,16 @@ class NrnBFilt(object):
     return Data
 		
   def likelihood(self):
-    x = fitEKF.ekf(self.Data, self.M)
+    x = EKF.ekf(self.Data, self.M)
     x = float(x)
     return -x
 
   def Etime(self):
-    return h.Vector(fitEKF.Etime)
+    return h.Vector(EKF.Etime)
 
   def Ecenter(self, i):
-    return h.Vector(fitEKF.Ecenter[int(i)])
+    return h.Vector(EKF.Ecenter[int(i)])
 
   def Ewidth(self, i):
-    return h.Vector(fitEKF.Ewidth[int(i)])
+    return h.Vector(EKF.Ewidth[int(i)])
 
