@@ -98,7 +98,7 @@ func likelihood() {
 proc plot_likelihood_result() {local i  localobj m, w, x
 	x = po.Etime()
 	for i=0, fitnesslist.count - 1 {
-		execute("redraw()", fitnesslist.o(i))
+		execute("mserrlabel=\"\" redraw()", fitnesslist.o(i))
 		m = po.Ecenter(i)
 		w = po.Ewidth(i)
 		m.c.add(w).line(fitnesslist.o(i).g, x)

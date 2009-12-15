@@ -102,11 +102,11 @@ def ekf(data, model):
 		hh = model.Obs.mean(Times, m0, ObsNum)
 		H = model.Obs.Dstate(Times, m0, ObsNum)
 		V = model.Obs.Dnoise(Times, m0, ObsNum)		
-		S = H*P0*H.T + V*V.T
+		SS = H*P0*H.T + V*V.T
                 Etime.append(Times[-1])
 		for iObs in range(len(ObsNum)):
 			Ecenter[ObsNum[iObs]].append(hh[iObs,0])
-			Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
+			Ewidth[ObsNum[iObs]].append(math.sqrt(SS[iObs,iObs]))
 			
 		# Likelihood
 		f0 = len(v)*math.log(2*math.pi)
