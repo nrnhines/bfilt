@@ -35,7 +35,8 @@ class NrnBFilt(object):
     Sys.Injection.erange(0.0, tlast, 1.0)
     self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M.FitEvents)
-    #print 'leave NrnBFilt'
+    if self.rf.vbox:
+      self.paramPanel()
 
   def __data(self,fl,FitEvents):
     counter = [1]*(len(fl))
@@ -70,4 +71,16 @@ class NrnBFilt(object):
 
   def Ewidth(self, i):
     return h.Vector(EKF.Ewidth[int(i)])
+
+  def paramPanel(self):
+    self.box = h.VBox()
+    self.box.intercept(1)
+    h.xpanel('')
+    h.xlabel('Likelihood numerical parameters')
+    c =  self.M.Obs.C
+    for o in c:
+      h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
+    h.xpanel()
+    self.box.intercept(0)
+    self.box.map('Likelihood parameters')
 
