@@ -54,8 +54,6 @@ def predict(model,m,P,t0,t1,injectionTime):
     As = []
     Bs = []
     for i in range(1,len(injectionTime)):
-        print 'itM', injectionTime[i-1]
-        print 'itI', injectionTime[i]
         (mb, A, B, tStart) = model.Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
         As.append(A)  # A's are Jacobians of above flows
         Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)

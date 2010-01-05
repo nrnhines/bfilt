@@ -465,7 +465,7 @@ class Model:
     def change(self, p):
         self.__init__(self.Sys, self.Obs, p, self.Initial)
         
-    def Tabulate(self):
+    def Tabulate(self):  #OLD FUNCTION TO BE REMOVED AFTER NEW WORKS
         Inj = self.Sys.Injection.round(self.P.dt)
         Os = [];
         for Index in range(0, self.Obs.D):
@@ -497,7 +497,49 @@ class Model:
             self.injectionTimes.append(elem[0])
             self.ObsNum.append(elem[1])
         return table
-        
+
+    def tab(self):
+        # NEW Function: the OLD forced noise injections at Obs Times
+        # OLD also didn't let an observation occur at time 0.
+        # Store event times Inj Os[] after removing duplicates, etc, with round.
+        Inj = self.Sys.Injection.round(self.P.dt)
+        Os = [];
+        # Os will be a list of list of event times, each sublist for a different obs
+        for Index in range(0, self.Obs.D):
+            Os.append(self.Obs.C[Index].Times.round(self.P.dt))
+        # In the OLD function we also concatentated obs times to Inj then resorted.
+        # Then in OLD we also converted back to EventTimed, round removed dups.
+        InjectionsForThisData = [0]
+        timePastAllObs = 0  # Construct a time which is greater than all obs times
+        for ObNum in range(0, self.Obs.D):
+            timePastAllObs += Os[ObNum][-1]
+        moreObs = True # moreObs is true when there is more obs to process
+        while moreObs
+            # Find Next Obs Time -- Least value among all next times for all ObNum
+            timeNextOb = timePastAllObs
+            moreObs = False # Make true again if any of the Os are nonempty
+            for ObNum in range(0, self.Obs.D):
+                if len(Os[ObNum])>0 and timeNextOb > Os[ObNum][0]:
+                    timeNextOb = Os[ObNum][0]
+                    moreObs = True  # Will execute if any list is nonempty
+            # Find All Obs Simultaneous with Next Obs -- Delete from list
+            ObsEvents = []
+            for ObNum in range(0, self.Obs.D):
+                if len(Os[ObNum])>0 and timeNextOb < Os[ObNum][0] + toler:
+                    ObsEvents.append(ObNum)
+                    temp = Os[ObNum].pop(0)  # delete from list
+            # Find injections for this data point
+            # The first injection time in the list is the previous one (from last list) not used for injection.
+            while len(Inj)>0 and Inj[0]<timeNextOb + toler
+                InjectionsForThisData.append(Inj[0])
+                temp = Inj.pop(0)
+            # Save everything and prepare for next step of loop.
+            self.collectionTimes.append(timeNextOb)
+            self.injectionTimes.append(InjectionsForThisData)
+            self.ObsNum.append(ObsEvents)
+            InjectionsForThisData = [InjectionsForThisData[-1]]
+            
+            
     def sim(self):
         Data = []
         state = self.Initial
