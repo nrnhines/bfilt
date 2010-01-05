@@ -39,7 +39,7 @@ class EventTimed:
             else:
                 index += 1
         # Get rid of non-positive numbers at beginning of list
-        while listReturn[0] <= 0.:
+        while listReturn[0] < 0.:
             listReturn.pop(0)
         return listReturn
 
@@ -460,7 +460,8 @@ class Model:
         self.P = p
         self.Sys.change(p)
         self.Obs.change(p)
-        self.FitEvents = self.Tabulate()
+        # self.FitEvents = self.Tabulate()
+        self.tab()
         
     def change(self, p):
         self.__init__(self.Sys, self.Obs, p, self.Initial)
@@ -501,6 +502,10 @@ class Model:
     def tab(self):
         # NEW Function: the OLD forced noise injections at Obs Times
         # OLD also didn't let an observation occur at time 0.
+        # Initialize Lists
+        self.collectionTimes = []
+        self.injectionTimes = []
+        self.ObsNum = []
         # Store event times Inj Os[] after removing duplicates, etc, with round.
         Inj = self.Sys.Injection.round(self.P.dt)
         Os = [];
@@ -514,7 +519,7 @@ class Model:
         for ObNum in range(0, self.Obs.D):
             timePastAllObs += Os[ObNum][-1]
         moreObs = True # moreObs is true when there is more obs to process
-        while moreObs
+        while moreObs:
             # Find Next Obs Time -- Least value among all next times for all ObNum
             timeNextOb = timePastAllObs
             moreObs = False # Make true again if any of the Os are nonempty
@@ -530,7 +535,7 @@ class Model:
                     temp = Os[ObNum].pop(0)  # delete from list
             # Find injections for this data point
             # The first injection time in the list is the previous one (from last list) not used for injection.
-            while len(Inj)>0 and Inj[0]<timeNextOb + toler
+            while len(Inj)>0 and Inj[0]<timeNextOb + toler:
                 InjectionsForThisData.append(Inj[0])
                 temp = Inj.pop(0)
             # Save everything and prepare for next step of loop.
@@ -541,7 +546,7 @@ class Model:
             
             
     def sim(self):
-        Data = []
+        Data = [] 
         state = self.Initial
         for FEindex in range(0, len(self.FitEvents)):
             Times = self.FitEvents[FEindex][0]
