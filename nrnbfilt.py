@@ -34,16 +34,15 @@ class NrnBFilt(object):
     Sys = models.NeuronModel(P, 0, len(vl))
     Sys.Injection.erange(0.0, tlast, 1.0)
     self.M = models.Model(Sys, Obs, P)
-    self.Data = self.__data(fl,self.M.FitEvents)
+    self.Data = self.__data(fl,self.M)
     if self.rf.vbox:
       self.paramPanel()
 
-  def __data(self,fl,FitEvents):
-    counter = [1]*(len(fl))
+  def __data(self,fl,M):
+    counter = [0]*(len(fl))
     Data = []
-    for elm in FitEvents:
-      time = elm[0][-1]
-      obindices = elm[1]
+    for idx, time in enumerate(M.collectionTimes):
+      obindices = M.ObsNum[idx]
       DataEV = []
       for i in obindices:
         x = fl.o(i).xdat_
@@ -54,8 +53,8 @@ class NrnBFilt(object):
         counter[i] += 1
       Data.append(numpy.matrix(DataEV).T)
     for i in range(len(fl)):
-	assert(counter[i] == len(fl.o(i).xdat_))
-    print 'FitEvents\n', FitEvents, '\nData\n', Data
+        assert(counter[i] == len(fl.o(i).xdat_))
+    print 'Collection Times\n', M.collectionTimes, '\nData\n', Data
     return Data
 		
   def likelihood(self):

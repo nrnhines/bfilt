@@ -539,6 +539,8 @@ class Model:
                 InjectionsForThisData.append(Inj[0])
                 temp = Inj.pop(0)
             # Save everything and prepare for next step of loop.
+            if len(InjectionsForThisData) == 1:
+              InjectionsForThisData.append(timeNextOb)
             self.collectionTimes.append(timeNextOb)
             self.injectionTimes.append(InjectionsForThisData)
             self.ObsNum.append(ObsEvents)
