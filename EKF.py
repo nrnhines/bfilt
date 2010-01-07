@@ -8,7 +8,7 @@ def initializeErrorBars(model):
     saveErrorBars = True
     Etime = []
     Ecenter = []
-    Ewidth = []   
+    Ewidth = []
     for i in range(model.Obs.D):
         Ecenter.append([])
         Ewidth.append([])
@@ -18,14 +18,14 @@ def initialStateCov(model):
     m0 = model.Initial
     P0 = model.P.InitialCov
     return (m0, P0)
-    
+
 def modelMeasurement(model,time,ObsNum,m,P):
 # Returns the measurement and covariance plus Jacobians
     hh = model.Obs.mean([time], m, ObsNum)
     H = model.Obs.Dstate([time], m, ObsNum)
     V = model.Obs.Dnoise([time], m, ObsNum)
     S = H*P*H.T + V*V.T
-    
+
     global saveErrorBars
     if saveErrorBars:
         global Etime, Ecenter, Ewidth
@@ -73,7 +73,7 @@ def predict(model,m,P,t0,t1,injectionTime):
     Am = Am*As[0]
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
-    
+
 def minusTwiceLogGaussianPDF(v,S):
     f0 = len(v)*math.log(2*math.pi)
     f1 =  math.log(linalg.det(S))
@@ -89,7 +89,7 @@ def ekf(data, model):
     injectionTimes = model.injectionTimes
     ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
-    
+
     # Main loop
     if collectionTimes[0] == 0.0:
         (m,P,e,S) = update(model,data[0],collectionTimes[0],ObsNum[0],m0,P0)

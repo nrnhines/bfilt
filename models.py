@@ -8,6 +8,16 @@ import fitglobals
 
 toler = 1e-8
 
+def rmDupsWithToler(L,tol):
+    lenL = len(L)
+    i = 0
+    while i < lenL-1:
+        if L[i+1] - L[i] < tol:
+            L.pop(i+1)
+            lenL -= 1
+        else:
+            i += 1
+
 class EventTimed:
     def __init__(self, times=None):
         self.Times = times
@@ -53,22 +63,22 @@ class ObserveState0(noise.Gauss):
         self.sigma = 0.001
         self.observed = 0
         self.base_init(p, i)
-    
+
     # just change P not I
     def change(self, p):
         self.base_init(p, self.I)
-    
+
     def mean(self, time, state):
         return state[self.observed, 0]
-        
+
     def meas(self, time, state):
         return self.mean(time, state) + self.sigma*self.eval(time)
-        
+
     def Dstate(self, time, state):
         J = numpy.matrix(numpy.zeros((1, state.shape[0])))
         J[0, self.observed] = 1
         return J
-        
+
     def Dnoise(self, time, state):
         return numpy.matrix(self.sigma)
 
@@ -86,7 +96,7 @@ class ObserveStateSum(ObserveState0):
         for observed in range(state.shape[0]):
            ob += state[observed, 0]
         return ob
-    
+
     def Dstate(self, time, state):
         J = numpy.matrix(numpy.zeros((1, state.shape[0])))
         for observed in range(state.shape[0]):
@@ -94,7 +104,7 @@ class ObserveStateSum(ObserveState0):
         return J
 
 class NeuronObservable(ObserveState0):
-    
+
     def __init__(self, hpointer, p, i, times=None):
        if (times == None):
          raise RuntimeError, "unrecoverable"
@@ -112,7 +122,7 @@ class NeuronObservable(ObserveState0):
 
         h.cvode.yscatter(ss) #restore
         return x
-    
+
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
         x = numpy.matrix(state)
         value = self.mean(time,state)
@@ -131,8 +141,8 @@ class NeuronObservable(ObserveState0):
             x[i] = temp
             DFx[:,i] = (df - value)/h
         return DFx
-   
-    
+
+
 # This class defines a list of the observation classes employed.
 # All have NoiseParams P, instance i0 (for unique random seeds)
 # Finally c is a python list (e.g. [o1,o2,o3]) of the observation objects.
@@ -146,11 +156,11 @@ class ObservationModel:
         while k < self.D:
             self.C[k].base_init(p, i0+k)
             k += 1
-            
+
     # Change parameters
     def change(self, p):
         self.__init__(p, self.I, self.C)
-        
+
     # Evaluate the noise at a given time
     def eval(self, time,  List=None):
         time = time[len(time)-1]
@@ -167,7 +177,7 @@ class ObservationModel:
         E = []
         if List == None:
             List = range(0, self.D)
-        for k in List:        
+        for k in List:
             E.append(self.C[k].mean(time, state))
         return numpy.matrix(E).T
 
@@ -180,7 +190,7 @@ class ObservationModel:
         for k in List:
             E.append(self.C[k].meas(time, state))
         return numpy.matrix(E).T
-        
+
     def Dstate(self, time, state, List=None):
         time = time[len(time)-1]
         if List == None:
@@ -191,7 +201,7 @@ class ObservationModel:
             E[Eindex, :] = self.C[k].Dstate(time, state)
             Eindex += 1
         return E
-        
+
     def Dnoise(self, time, state, List=None):
         time = time[len(time)-1]
         if List == None:
@@ -201,8 +211,8 @@ class ObservationModel:
         for k in List:
             E[Eindex, Eindex] = self.C[k].Dnoise(time, state)
             Eindex += 1
-        return numpy.matrix(E) 
-        
+        return numpy.matrix(E)
+
 class NeuronModel(object):
     def __init__(self, p, i0, d, times=None):
         self.P = p
@@ -213,18 +223,18 @@ class NeuronModel(object):
         h.cvode.atol(1e-6)
         h.cvode_active(1)
         h.stdinit()
-      
-    # This function has not changed  
+
+    # This function has not changed
     def change(self, p):
         self.__init__(p, self.I, self.D, self.Injection.Times)
-        
+
     # This function has not changed
     def eval(self, time):
         E = numpy.matrix(numpy.zeros((self.D, 1)))
         for k in range(0, self.D):
             E[k, :] = self.V.C[k].eval(time)
         return E
-        
+
     def dim(self):
         s = h.Vector()
         h.cvode.states(s)
@@ -235,7 +245,7 @@ class NeuronModel(object):
         d = h.Vector()
         h.cvode.f(time, s, d)
         return numpy.matrix(d)
-    
+
     def moveto(self, t0):
         h.t = t0
         return
@@ -286,7 +296,7 @@ class NeuronModel(object):
             x += (self.P.B*(W - Wm))
             Wm = W
         return x
-      
+
     def perturbedflow(self, Times, state0, iTimes, perturb, discrete=None):
         debug = fitglobals.debug
         if discrete:
@@ -310,7 +320,7 @@ class NeuronModel(object):
         if i == iTimes:
             x += perturb
         return x
-      
+
     # jacobian of the flow with respect to state variables
     def Dstate(self, Times, state0, discrete=None):
         x = numpy.matrix(state0)
@@ -337,7 +347,7 @@ class NeuronModel(object):
         mb = self.flow([tStart,tFinal],m,discrete)
         A = self.Dstate([tStart,tFinal],m,discrete)
         B = self.P.B*math.sqrt(tFinal - inject0)
-        return (mb, A, B, tFinal) 
+        return (mb, A, B, tFinal)
 
     def Dnoise(self, Times, state0, discrete=None):
         x = numpy.matrix(state0)
@@ -369,25 +379,25 @@ class DecayModel:
         self.D = d
         self.V = noise.WienerVector(p, i0, d)
         self.Injection = EventTimed(times)
-        
+
     # Change parameters
     def change(self, p):
         self.__init__(p, self.I, self.D, self.Injection.Times)
-        
+
     # Evaluate the noise at a given time
     def eval(self, time):
         E = numpy.matrix(numpy.zeros((self.D, 1)))
         for k in range(0, self.D):
             E[k, :] = self.V.C[k].eval(time)
         return E
-        
+
     def dim(self):
         return self.P.A.shape[1]
-        
+
     # Evaluate the mean vector field at a given time
     def vfield(self, time, state, discrete=None):
         return -self.P.A*state
-    
+
     def flow(self, Times, state0, discrete=None):
         EndTime = Times[len(Times)-1]
         if len(state0) == 1:
@@ -409,14 +419,14 @@ class DecayModel:
                 print 'state0', state0
                 print 'final state:', state0, '@ Times =', Times
         return state0
-        
+
     def Dstate(self, Times, state0, discrete=None):
         EndTime = Times[len(Times)-1]
         if len(state0) == 1:
             return numpy.matrix(math.exp(-self.P.A*(EndTime-Times[0])))
         else:
             return numpy.matrix(linalg.expm(-self.P.A*(EndTime-Times[0])))
-            
+
     def flowJac(self, tStart, injectionTimes,m,discrete=None):
         print 'ITimes', injectionTimes
         inject0 = injectionTimes[0]
@@ -425,10 +435,10 @@ class DecayModel:
         A = self.Dstate([tStart,tFinal],m,discrete)
         B = self.P.B*math.sqrt(tFinal - inject0)
         return (mb, A, B, tFinal)
-        
+
     def Dnoise(self, Times, state0, discrete=None):
         NumNoise = self.D
-        Dn = numpy.matrix(numpy.zeros((len(state0), (len(Times)-1)*NumNoise)))  
+        Dn = numpy.matrix(numpy.zeros((len(state0), (len(Times)-1)*NumNoise)))
         if len(state0) == 1:
             for IndexNum in range(0, (len(Times)-1)):  # loop over left-endpoints
                 dtLast = Times[IndexNum+1] - Times[IndexNum]
@@ -447,7 +457,7 @@ class Model:
         self.Sys = sys
         #  if initial == None:
         #     initial = numpy.ones((self.Sys.dim(), 1), float)
-        
+
         if initial == None:
             # FOR NEURON MODELS!!!
             h.stdinit()
@@ -462,10 +472,10 @@ class Model:
         self.Obs.change(p)
         # self.FitEvents = self.Tabulate()
         self.tab()
-        
+
     def change(self, p):
         self.__init__(self.Sys, self.Obs, p, self.Initial)
-        
+
     def Tabulate(self):  #OLD FUNCTION TO BE REMOVED AFTER NEW WORKS
         Inj = self.Sys.Injection.round(self.P.dt)
         Os = [];
@@ -499,7 +509,7 @@ class Model:
             self.ObsNum.append(elem[1])
         return table
 
-    def tab(self):
+    def temp_tab_temp(self):
         # NEW Function: the OLD forced noise injections at Obs Times
         # OLD also didn't let an observation occur at time 0.
         # Initialize Lists
@@ -545,10 +555,46 @@ class Model:
             self.injectionTimes.append(InjectionsForThisData)
             self.ObsNum.append(ObsEvents)
             InjectionsForThisData = [InjectionsForThisData[-1]]
-            
-            
+
+    def tab(self):
+        # Create collectionTimes list
+        self.collectionTimes = []
+        for Index in range(0, self.Obs.D):
+            self.collectionTimes += self.Obs.C[Index].Times.round(self.P.dt)
+        self.collectionTimes.sort()
+        rmDupsWithToler(self.collectionTimes,toler)
+
+        # Create injectionTimes list
+        self.injectionTimes = []
+        Inj = self.Sys.Injection.round(self.P.dt)
+        # Inj.sort() # round does this already -- remove either here or above
+        # rmDupsWithToler(self.collection.TImes,toler)
+        injectionsForThisData = [0]
+        for timeNextOb in self.collectionTimes:
+            while len(Inj) > 0 and Inj[0] < timeNextOb + toler:
+                injectionsForThisData.append(Inj[0])
+                Inj.pop(0)
+            if len(injectionsForThisData) == 1:
+                injectionsForThisData.append(timeNextOb)
+            self.injectionTimes.append(injectionsForThisData)
+            injectionsForThisData = [injectionsForThisData[-1]]
+
+        #Create ObsNum list
+        self.ObsNum = []
+        OTimes = []  # OTimes will be a list of lists of event times, each list for a different obs
+        for ObNum in range(0, self.Obs.D):
+            OTimes.append(self.Obs.C[ObNum].Times.round(self.P.dt))
+        for timeNextOb in self.collectionTimes:
+            ObsThisData = []
+            for ObNum in range(0, self.Obs.D):
+                if len(OTimes[ObNum]) > 0 and OTimes[ObNum][0] < timeNextOb + toler:
+                    ObsThisData.append(ObNum)
+                    temp = OTimes[ObNum].pop(0)  # delete from list
+            assert(len(ObsThisData)>0)
+            self.ObsNum.append(ObsThisData)
+
     def sim(self):
-        Data = [] 
+        Data = []
         state = self.Initial
         for FEindex in range(0, len(self.FitEvents)):
             Times = self.FitEvents[FEindex][0]
