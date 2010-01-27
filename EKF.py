@@ -35,12 +35,26 @@ def modelMeasurement(model,time,ObsNum,m,P):
             Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
     return (hh,S,H,V)
 
-def update(model,data,time,ObsNum,mb,Pb):
+def updateInBounds(K,e,mb,bounds):
+    # Boundaries are B*x >= b where B=bounds[i][0], b=bounds[i][1], x=State
+    # The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
+    alpha = 1  # default update assuming its in bounds
+    Ke = K*e;  # need this more than once
+    for i in range(len(bounds)):
+        # solves for alpha such that update on boundary
+        newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
+        # reassigns alpha if a smaller update is required for this boundary
+        if alpha > newalpha:
+            alpha = newalpha
+    assert(alpha >= 0)  # equivalently old point in bounds
+    return alpha*Ke
+
+def update(model,data,time,ObsNum,mb,Pb,bounds):
     (hh,S,H,V) = modelMeasurement(model,time,ObsNum,mb,Pb)
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    m = mb + K*e
+    m = mb + updateInBounds(K,e,mb,bounds)
     modelMeasurement(model,time,ObsNum,m,P)  # Saves error bars
     return (m,P,e,S)
 
@@ -87,19 +101,20 @@ def ekf(data, model):
     initializeErrorBars(model)
     collectionTimes = model.collectionTimes
     injectionTimes = model.injectionTimes
+    bounds = model.stateBoundaries
     ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
 
     # Main loop
     if collectionTimes[0] == 0.0:
-        (m,P,e,S) = update(model,data[0],collectionTimes[0],ObsNum[0],m0,P0)
+        (m,P,e,S) = update(model,data[0],collectionTimes[0],ObsNum[0],m0,P0,bounds)
         k = 1
     else:
         (m,P) = (m0,P0)
         k = 0
     while(k<len(data)):
         (mb,Pb,time) = predict(model,m,P,time,collectionTimes[k],injectionTimes[k])
-        (m,P,e,S) = update(model,data[k],collectionTimes[k],ObsNum[k],mb,Pb)
+        (m,P,e,S) = update(model,data[k],collectionTimes[k],ObsNum[k],mb,Pb,bounds)
         smll += minusTwiceLogGaussianPDF(e,S)
         k += 1
     return -smll/2.0
