@@ -36,8 +36,8 @@ def modelMeasurement(model,time,ObsNum,m,P):
     return (hh,S,H,V)
 
 def updateInBounds(K,e,mb,bounds):
-    # Boundaries are B*x >= b where B=bounds[i][0], b=bounds[i][1], x=State
-    # The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
+# Boundaries are B*x >= b where B=bounds[i][0], b=bounds[i][1], x=State
+# The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
     alpha = 1  # default update assuming its in bounds
     Ke = K*e;  # need this more than once
     for i in range(len(bounds)):
@@ -46,7 +46,7 @@ def updateInBounds(K,e,mb,bounds):
         # reassigns alpha if a smaller update is required for this boundary
         if alpha > newalpha:
             alpha = newalpha
-    assert(alpha >= 0)  # equivalently old point in bounds
+    assert(alpha >= 0)  # equivalent to asserting old point in bounds
     return alpha*Ke
 
 def update(model,data,time,ObsNum,mb,Pb,bounds):
