@@ -42,22 +42,32 @@ def updateInBounds(K,e,mb,bounds):
     alpha = 1  # default update assuming its in bounds
     tolfactor = 1  # tolfactor reduces alpha more to prevent numerical issues
     Ke = K*e;  # need this more than once
-    for i in range(len(bounds)):
-        # solves for alpha such that update on boundary
-        newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
-        # reassigns alpha if a smaller update is required for this boundary
-        if alpha > newalpha:
-            alpha = newalpha
-            tolfactor = 0.99999 # reduce final alpha by this amount
-    assert(alpha >= 0)  # equivalent to asserting mb in bounds
-    return alpha*tolfactor*Ke
+    if Ke.T*Ke != 0: # Trap case where no update is needed, would break code
+        for i in range(len(bounds)):
+            assert(bounds[i][0]*mb >= bounds[i][1])
+            # solves for alpha such that update on boundary
+            print 'bounds[i][1]', bounds[i][1]
+            print 'bounds[i][0]', bounds[i][0]
+            print 'mb', mb
+            print 'Ke', Ke
+            newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
+            print 'newalpha', newalpha
+            # reassigns alpha if a smaller update is required for this boundary
+            if alpha > newalpha and newalpha > 0:
+                alpha = newalpha
+                tolfactor = 0.99999 # reduce final alpha by this amount
+        assert(alpha >= 0)  # equivalent to asserting mb in bounds
+    print 'alpha', alpha
+    print 'tolfactor', tolfactor
+    print 'Ke', Ke
+    return Ke*alpha*tolfactor
 
 def update(model,data,time,ObsNum,mb,Pb,bounds):
     (hh,S,H,V) = modelMeasurement(model,time,ObsNum,mb,Pb)
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    m = mb + K*e # updateInBounds(K,e,mb,bounds)
+    m = mb + updateInBounds(K,e,mb,bounds)
     modelMeasurement(model,time,ObsNum,m,P)  # Saves error bars
     return (m,P,e,S)
 
