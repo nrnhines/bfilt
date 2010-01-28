@@ -15,8 +15,8 @@ ocbox_.inserter = new Inserter(0)
 {
 mt.select("hh") i = mt.selected()
 ms[i] = new MechanismStandard("hh")
-ms[i].set("gnabar_hh", 0.12, 0)
-ms[i].set("gkbar_hh", 0.036, 0)
+ms[i].set("gnabar_hh", 0.11214, 0)
+ms[i].set("gkbar_hh", 0.01945, 0)
 ms[i].set("gl_hh", 0.0003, 0)
 ms[i].set("el_hh", -54.3, 0)
 mstate[i]= 1
@@ -51,7 +51,9 @@ fdat = new File("hhss.ses.fd1")
 read_data()
 build()
 }
-{p.gengui(0, 946, 51, 552, 440.64)}
+{p.gengui(0, 443, 51, 552, 440.64)}
+{p.showargs(3, 48, 310.08, 94.08)}
+{p.showdomain(0, 25, 295.68, 192)}
 {object_pop()}
 {
 ocbox_.map("MulRunFitter[0]", 539, 306, 360.96, 199.68)
@@ -70,11 +72,11 @@ xvalue("Continue til","runStopAt", 1,"{continuerun(runStopAt) stoprun=1}", 1, 1 
 runStopIn = 1
 xvalue("Continue for","runStopIn", 1,"{continuerun(t + runStopIn) stoprun=1}", 1, 1 )
 xbutton("Single Step","steprun()")
-t = 0
+t = 100
 xvalue("t","t", 2 )
 tstop = 100
 xvalue("Tstop","tstop", 1,"tstop_changed()", 0, 1 )
-dt = 0.025
+dt = 0.149905
 xvalue("dt","dt", 1,"setdt()", 0, 1 )
 steps_per_ms = 40
 xvalue("Points plotted/ms","steps_per_ms", 1,"setdt()", 0, 1 )

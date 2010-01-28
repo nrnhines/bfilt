@@ -2,6 +2,7 @@ import math
 from myscipy import linalg
 import numpy
 import fitglobals
+import HHBounds
 
 def initializeErrorBars(model):
     global saveErrorBars, Etime, Ecenter, Ewidth
@@ -56,7 +57,7 @@ def update(model,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    m = mb + updateInBounds(K,e,mb,bounds)
+    m = mb + K*e # updateInBounds(K,e,mb,bounds)
     modelMeasurement(model,time,ObsNum,m,P)  # Saves error bars
     return (m,P,e,S)
 
@@ -103,7 +104,7 @@ def ekf(data, model):
     initializeErrorBars(model)
     collectionTimes = model.collectionTimes
     injectionTimes = model.injectionTimes
-    bounds = model.stateBoundaries
+    bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
 
