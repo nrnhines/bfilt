@@ -41,22 +41,24 @@ def updateInBounds(K,e,mb,bounds):
 # The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
     alpha = 1  # default update assuming its in bounds
     tolfactor = 1  # tolfactor reduces alpha more to prevent numerical issues
+    tolbound = 1e-7 # tolerance for evaluating boudnaries
     Ke = K*e;  # need this more than once
     if Ke.T*Ke != 0: # Trap case where no update is needed, would break code
         for i in range(len(bounds)):
-            assert(bounds[i][0]*mb >= bounds[i][1])
-            # solves for alpha such that update on boundary
+            # print 'i', i
             # print 'bounds[i][1]', bounds[i][1]
             # print 'bounds[i][0]', bounds[i][0]
             # print 'mb', mb
             # print 'Ke', Ke
+            assert(bounds[i][0]*mb + tolbound >= bounds[i][1])
+            # solves for alpha such that update on boundary
             newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
-            # print 'newalpha', newalpha
+            #print 'newalpha', newalpha
             # reassigns alpha if a smaller update is required for this boundary
             if alpha > newalpha and newalpha > 0:
                 alpha = newalpha
                 tolfactor = 0.99999 # reduce final alpha by this amount
-        assert(alpha >= 0)  # equivalent to asserting mb in bounds
+        assert(alpha >= 0)
     # print 'alpha', alpha
     # print 'tolfactor', tolfactor
     # print 'Ke', Ke
