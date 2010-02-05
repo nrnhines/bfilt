@@ -3,6 +3,7 @@ from myscipy import linalg
 import numpy
 import fitglobals
 import HHBounds
+import numdifftools as nd
 
 def initializeErrorBars(model):
     global saveErrorBars, Etime, Ecenter, Ewidth
@@ -46,20 +47,20 @@ def updateInBounds(K,e,mb,bounds):
         for i in range(len(bounds)):
             assert(bounds[i][0]*mb >= bounds[i][1])
             # solves for alpha such that update on boundary
-            print 'bounds[i][1]', bounds[i][1]
-            print 'bounds[i][0]', bounds[i][0]
-            print 'mb', mb
-            print 'Ke', Ke
+            # print 'bounds[i][1]', bounds[i][1]
+            # print 'bounds[i][0]', bounds[i][0]
+            # print 'mb', mb
+            # print 'Ke', Ke
             newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
-            print 'newalpha', newalpha
+            # print 'newalpha', newalpha
             # reassigns alpha if a smaller update is required for this boundary
             if alpha > newalpha and newalpha > 0:
                 alpha = newalpha
                 tolfactor = 0.99999 # reduce final alpha by this amount
         assert(alpha >= 0)  # equivalent to asserting mb in bounds
-    print 'alpha', alpha
-    print 'tolfactor', tolfactor
-    print 'Ke', Ke
+    # print 'alpha', alpha
+    # print 'tolfactor', tolfactor
+    # print 'Ke', Ke
     return Ke*alpha*tolfactor
 
 def update(model,data,time,ObsNum,mb,Pb,bounds):
@@ -107,7 +108,10 @@ def minusTwiceLogGaussianPDF(v,S):
     f2 = (v.T*S.I*v).tolist()[0][0]
     return (f0+f1+f2)
 
-def ekf(data, model):
+def ekf(data, model, param=None):
+    # TO_DO Overwrite parameters with param
+    # if param NOT None ... overwrite
+
     # Initialize
     smll = 0.0
     time = 0.0
@@ -131,3 +135,11 @@ def ekf(data, model):
         smll += minusTwiceLogGaussianPDF(e,S)
         k += 1
     return -smll/2.0
+
+def HessEKF(data,model):
+    # TO_DO Read current values of parameters
+    # param = ???
+
+    like = lambda p: ekf(data,model,p)
+    likeHess = nd.Hessian(like)
+    return likeHess(param)

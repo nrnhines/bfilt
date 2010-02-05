@@ -28,7 +28,7 @@ class NrnBFilt(object):
     assert(len(s) > 0)
     assert(len(vl) > 0)
     P.B = numpy.matrix(numpy.zeros((len(s), len(vl))))
-    P.B[0,0] = .01
+    P.B[0,0] = 1
     P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
