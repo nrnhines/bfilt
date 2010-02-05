@@ -5,6 +5,10 @@ import numpy
 import EKF
 import math
 
+class WrappedVal:
+  def __init__(self, val):
+    self.x = val
+
 class NrnBFilt(object):
   def __init__(self, ho):
     self.rf = ho
@@ -29,6 +33,9 @@ class NrnBFilt(object):
     assert(len(vl) > 0)
     P.B = numpy.matrix(numpy.zeros((len(s), len(vl))))
     P.B[0,0] = 1
+    self.processNoise = []
+    for i in range(len(s)):
+      self.processNoise.append(WrappedVal(P.B[i, 0]))
     P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
@@ -89,6 +96,10 @@ class NrnBFilt(object):
     #assign current objective funtion parameters
     self.pf.parm(hvec)
 
+  def fillPB(self, i):
+    self.M.P.B[i,0] = self.processNoise[i].x
+    print i, self.M.P.B
+
   def paramPanel(self):
     self.box = h.VBox()
     self.box.intercept(1)
@@ -99,6 +110,12 @@ class NrnBFilt(object):
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
     h.xlabel('    Process noise')
+    s = h.Vector()
+    h.cvode.states(s)
+    sref = h.ref('')
+    for i in range(len(s)):
+      h.cvode.statename(i, sref, 1)
+      h.xvalue('P.B[%d,0]: '%(i,) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
     h.xpanel()
     self.box.intercept(0)
     self.box.map('Likelihood parameters')
