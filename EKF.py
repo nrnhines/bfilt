@@ -3,7 +3,6 @@ from myscipy import linalg
 import numpy
 import fitglobals
 import HHBounds
-#import numdifftools as nd
 
 def initializeErrorBars(model):
     global saveErrorBars, Etime, Ecenter, Ewidth
@@ -108,10 +107,7 @@ def minusTwiceLogGaussianPDF(v,S):
     f2 = (v.T*S.I*v).tolist()[0][0]
     return (f0+f1+f2)
 
-def ekf(data, model, param=None):
-    # TO_DO Overwrite parameters with param
-    # if param NOT None ... overwrite
-
+def ekf(data, model):
     # Initialize
     smll = 0.0
     time = 0.0
@@ -136,10 +132,3 @@ def ekf(data, model, param=None):
         k += 1
     return -smll/2.0
 
-def HessEKF(data,model):
-    # TO_DO Read current values of parameters
-    # param = ???
-
-    like = lambda p: ekf(data,model,p)
-    likeHess = None#nd.Hessian(like)
-    return likeHess(param)
