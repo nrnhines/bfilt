@@ -3,7 +3,7 @@ from myscipy import linalg
 import numpy
 import fitglobals
 import HHBounds
-import numdifftools as nd
+#import numdifftools as nd
 
 def initializeErrorBars(model):
     global saveErrorBars, Etime, Ecenter, Ewidth
@@ -141,5 +141,5 @@ def HessEKF(data,model):
     # param = ???
 
     like = lambda p: ekf(data,model,p)
-    likeHess = nd.Hessian(like)
+    likeHess = None#nd.Hessian(like)
     return likeHess(param)
