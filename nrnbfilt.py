@@ -35,8 +35,7 @@ class NrnBFilt(object):
     Sys.Injection.erange(0.0, tlast, 1.0)
     self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M)
-    if self.rf.vbox:
-      self.paramPanel()
+    self.pf = self.getParmFitness()
 
   def __data(self,fl,M):
     counter = [0]*(len(fl))
@@ -71,14 +70,35 @@ class NrnBFilt(object):
   def Ewidth(self, i):
     return h.Vector(EKF.Ewidth[int(i)])
 
+  def getParmFitness(self):
+    # the ParmFitness instance that owns me.
+    # there are probably not many so we can work forward from ParmFitness
+    pfl = h.List('ParmFitness')
+    for pf in pfl:
+      for gi in pf.generatorlist:
+        if gi.gen.hocobjptr() == self.rf.hocobjptr():
+          return pf
+
+  def getParm(self):
+    #return Hoc Vector of current objective function parameters
+    v = h.Vector()
+    self.pf.doarg_get(v)
+    return v
+
+  def setParm(self, hvec):
+    #assign current objective funtion parameters
+    self.pf.parm(hvec)
+
   def paramPanel(self):
     self.box = h.VBox()
     self.box.intercept(1)
     h.xpanel('')
     h.xlabel('Likelihood numerical parameters')
+    h.xlabel('    Measurement noise')
     c =  self.M.Obs.C
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
+    h.xlabel('    Process noise')
     h.xpanel()
     self.box.intercept(0)
     self.box.map('Likelihood parameters')
