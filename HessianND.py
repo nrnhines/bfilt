@@ -4,7 +4,8 @@ def evalFun(fun, args, p)
     # ######### TO_DO write setMRFparam
     setMRFparam(p)
     # ######### TO_DO check syntax
-    fun(args)
+    L = fun(args)
+    L.tolist()
 
 def HessianMRF(fun,args):
     # Read current values of parameters (hopefully MLEs)
