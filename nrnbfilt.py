@@ -31,11 +31,11 @@ class NrnBFilt(object):
     h.cvode.states(s)
     assert(len(s) > 0)
     assert(len(vl) > 0)
-    P.B = numpy.matrix(numpy.zeros((len(s), len(vl))))
+    P.B = numpy.matrix(numpy.zeros((len(s), len(s))))
     P.B[0,0] = 1
     self.processNoise = []
     for i in range(len(s)):
-      self.processNoise.append(WrappedVal(P.B[i, 0]))
+      self.processNoise.append(WrappedVal(P.B[i, i]))
     P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
@@ -62,7 +62,7 @@ class NrnBFilt(object):
         assert(counter[i] == len(fl.o(i).xdat_))
     print 'Collection Times\n', M.collectionTimes, '\nData\n', Data
     return Data
-		
+
   def likelihood(self):
     x = EKF.ekf(self.Data, self.M)
     x = float(x)
@@ -97,7 +97,7 @@ class NrnBFilt(object):
     self.pf.parm(hvec)
 
   def fillPB(self, i):
-    self.M.P.B[i,0] = self.processNoise[i].x
+    self.M.P.B[i,i] = self.processNoise[i].x
     print i, self.M.P.B
 
   def paramPanel(self):
@@ -115,7 +115,7 @@ class NrnBFilt(object):
     sref = h.ref('')
     for i in range(len(s)):
       h.cvode.statename(i, sref, 1)
-      h.xvalue('P.B[%d,0]: '%(i,) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
+      h.xvalue('P.B[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
     h.xpanel()
     self.box.intercept(0)
     self.box.map('Likelihood parameters')
