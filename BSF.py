@@ -5,7 +5,7 @@ import random
 R = random.Random()
 N_particles = 100
 seed0 = 0
-tol = 1e -7
+tol = 1e-7
 
 def sample(self, m, C):
     A = linalg.cholesky(C)
@@ -57,7 +57,7 @@ def importance(model,data,X,time,ObsNum):
         Y += (newPDF,)
         cumulative += newPDF
     Z = ()
-    for i in range(len(Y))
+    for i in range(len(Y)):
         Z += (Y[i]/cumulative,)
     return Z
 
