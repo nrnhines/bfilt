@@ -577,7 +577,7 @@ class Model:
             if len(injectionsForThisData) == 1:
                 injectionsForThisData.append(timeNextOb)
             self.injectionTimes.append(injectionsForThisData)
-            injectionsForThisData = [injectionsForThisData[-1]]
+            injectionsForThisData = [injectionsForThisData[-1]]  # start next list with last item of previous
 
         #Create ObsNum list
         self.ObsNum = []
