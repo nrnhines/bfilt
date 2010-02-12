@@ -64,6 +64,22 @@ def saveCloud(time,hh,ObsNum):
         Cpoint[ObsNum[iObs]].append(hh[iObs,0])
         Ctime[ObsNum[iObs]].append(time)
 
+def initializeCloud2(model):
+    global C2time, C2point
+    C2time = []
+    C2point = []
+    for i in range(model.Obs.D):
+        C2time.append([])
+        C2point.append([])
+    return (C2time,C2point)
+
+def saveCloud2(time,H,ObsNum):
+    global C2time, C2point
+    for hh in H:
+        for iObs in range(len(ObsNum)):
+            C2point[ObsNum[iObs]].append(hh[iObs,0])
+            C2time[ObsNum[iObs]].append(time)
+
 def importance(model,data,X,time,ObsNum):
     sigmaList = []
     for i in range(len(ObsNum)):
@@ -71,33 +87,38 @@ def importance(model,data,X,time,ObsNum):
     sigmaMatrix = numpy.matrix(numpy.diag(sigmaList,0))
     RR = sigmaMatrix*sigmaMatrix.T
     Y = ()
+    H = ()
     cumulative = 0
     for i in range(len(X)):
         hh = model.Obs.mean([time], X[i], ObsNum)
         newPDF = GaussianPDF(data-hh,RR)
         Y += (newPDF,)
+        H += (hh,)  # H is measurement under X
         cumulative += newPDF
         saveCloud(time,hh,ObsNum)  # Could also include X[i] to save state
     Z = ()
     for i in range(len(Y)):
         Z += (Y[i]/cumulative,)
-    return Z
+    return (Z,H)
 
-def select(X,W):
+def select(X,H,W):  # H is meaurement under X
     Y = ()
+    G = ()
     for i in range(len(X)):
         r = R.random()  # random num between 0 and 1
         cumulative = 0
         j = -1
         while cumulative <= r:
             j += 1
-            cumulative += W[j]  # Sum of all = 1
+            cumulative += W[j]  # Sum of all equals 1
         Y = Y + (X[j],)  # Selects next Y from X[0] ... X[N_particles] with respective probability W
-    return Y
+        G = G + (H[j],)  # Select corresponding H
+    return (Y,G)
 
 def bsf(data, model):
     # Initialize
     initializeCloud(model)
+    initializeCloud2(model)
     R.seed(seed0)
     time = 0
     collectionTimes = model.collectionTimes
@@ -110,17 +131,18 @@ def bsf(data, model):
         X = X + (sample(m0,P0),)
     # First iteration needed if 0 a collection time
     if collectionTimes[0] == 0.0:
-        W = importance(model,data[0],X,collectionTimes[0],ObsNum[0])
+        (W,H) = importance(model,data[0],X,collectionTimes[0],ObsNum[0])
         # saveX.append(X)    # If saving state after
-        X = select(X,W)
+        (X,H) = select(X,H,W)
+        saveCloud2(collectionTimes[0],H,ObsNum[0])
         k = 1
     else:
         k = 0
     # Main loop
     while(k<len(data)):
         (X,time) = predict(model,X,time,collectionTimes[k],injectionTimes[k])
-        W = importance(model,data[k],X,collectionTimes[k],ObsNum[k])
-
-        X = select(X,W)
+        (W,H) = importance(model,data[k],X,collectionTimes[k],ObsNum[k])
+        (X,H) = select(X,H,W)
+        saveCloud2(collectionTimes[k],H,ObsNum[k])
         k += 1
     return
