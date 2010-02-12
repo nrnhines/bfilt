@@ -1,13 +1,19 @@
 import numpy
 import scipy.linalg as linalg
 import random
+import math
 
 R = random.Random()
 N_particles = 100
 seed0 = 0
 tol = 1e-7
 
-def sample(self, m, C):
+def initialStateCov(model):
+    m0 = model.Initial
+    P0 = model.P.InitialCov
+    return (m0, P0)
+
+def sample(m, C):
     A = linalg.cholesky(C)
     x = []
     for i in range(len(m)):
@@ -31,21 +37,36 @@ def predict(model,X,t0,t1,injectionTime):
             for j in range(numNoise):
                 N.append(R.normalvariate(0,1))
             N = numpy.matrix(N).T
-            xtemp += models.P.B*N
-        if t1 + tol > injectionTIme[-1]:
+            xtemp += model.P.B*N
+        if t1 + tol > injectionTime[-1]:
             xtemp = model.Sys.flow([injectionTime[-1], t1], xtemp)
         Y = Y + (xtemp,)
-    return Y
+    return (Y, t1)
 
 def GaussianPDF(v,S):
     f0 = len(v)*math.log(2*math.pi)
     f1 =  math.log(linalg.det(S))
     f2 = (v.T*S.I*v).tolist()[0][0]
-    return exp(-(1/2)*(f0+f1+f2))
+    return math.exp(-(1/2)*(f0+f1+f2))
+
+def initializeCloud(model):
+    global Ctime, Cpoint
+    Ctime = []
+    Cpoint = []
+    for i in range(model.Obs.D):
+        Ctime.append([])
+        Cpoint.append([])
+    return (Ctime,Cpoint)
+
+def saveCloud(time,hh,ObsNum):
+    global Ctime, Cpoint
+    for iObs in range(len(ObsNum)):
+        Cpoint[ObsNum[iObs]].append(hh[iObs,0])
+        Ctime[ObsNum[iObs]].append(time)
 
 def importance(model,data,X,time,ObsNum):
     sigmaList = []
-    for i in range(ObsNum):
+    for i in range(len(ObsNum)):
         sigmaList.append(model.Obs.C[ObsNum[i]].sigma)
     sigmaMatrix = numpy.matrix(numpy.diag(sigmaList,0))
     RR = sigmaMatrix*sigmaMatrix.T
@@ -56,6 +77,7 @@ def importance(model,data,X,time,ObsNum):
         newPDF = GaussianPDF(data-hh,RR)
         Y += (newPDF,)
         cumulative += newPDF
+        saveCloud(time,hh,ObsNum)  # Could also include X[i] to save state
     Z = ()
     for i in range(len(Y)):
         Z += (Y[i]/cumulative,)
@@ -67,7 +89,7 @@ def select(X,W):
         r = R.random()  # random num between 0 and 1
         cumulative = 0
         j = -1
-        while w <= r:
+        while cumulative <= r:
             j += 1
             cumulative += W[j]  # Sum of all = 1
         Y = Y + (X[j],)  # Selects next Y from X[0] ... X[N_particles] with respective probability W
@@ -75,15 +97,21 @@ def select(X,W):
 
 def bsf(data, model):
     # Initialize
+    initializeCloud(model)
     R.seed(seed0)
     time = 0
+    collectionTimes = model.collectionTimes
+    injectionTimes = model.injectionTimes
+    ObsNum = model.ObsNum
     (m0, P0) = initialStateCov(model)
     X = ()
+    saveX = []  # If saving state
     for i in range(N_particles):
-        X = X + (Sample.sample(m0,P0),)
+        X = X + (sample(m0,P0),)
     # First iteration needed if 0 a collection time
     if collectionTimes[0] == 0.0:
         W = importance(model,data[0],X,collectionTimes[0],ObsNum[0])
+        # saveX.append(X)    # If saving state after
         X = select(X,W)
         k = 1
     else:
@@ -92,6 +120,7 @@ def bsf(data, model):
     while(k<len(data)):
         (X,time) = predict(model,X,time,collectionTimes[k],injectionTimes[k])
         W = importance(model,data[k],X,collectionTimes[k],ObsNum[k])
+
         X = select(X,W)
         k += 1
-    return -smll/2.0
+    return
