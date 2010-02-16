@@ -1,4 +1,5 @@
 import numdifftools as nd
+import math
 
 def evalFun(nbf, p):
     saveParm = nbf.getParm()
@@ -45,3 +46,8 @@ def LikePerturbed(nbf,perturbList,delta):
     L = nbf.likelihood()
     nbf.setParm(saveParm)
     return L
+
+def test4(Parm):
+    LamFun = lambda p: p**4
+    HessFun = nd.Hessian(LamFun)
+    return HessFun(Parm)
