@@ -39,7 +39,8 @@ class NrnBFilt(object):
     P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
-    Sys.Injection.erange(0.0, tlast, 0.1)
+    self.inj_invl = 1.0
+    self.inj_invl_changed(Sys, P.tstop)
     self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M)
     self.pf = self.getParmFitness()
@@ -100,6 +101,9 @@ class NrnBFilt(object):
     self.M.P.B[i,i] = self.processNoise[i].x
     print i, self.M.P.B
 
+  def inj_invl_changed(self, sys, tstop):
+    sys.Injection.erange(0.0, tstop, self.inj_invl)
+
   def paramPanel(self):
     self.box = h.VBox()
     self.box.intercept(1)
@@ -110,6 +114,7 @@ class NrnBFilt(object):
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
     h.xlabel('    Process noise')
+    h.xvalue('Injection interval', (self, 'inj_invl'), 1, (self.inj_invl_changed, (self.M.Sys, self.M.P.tstop)))
     s = h.Vector()
     h.cvode.states(s)
     sref = h.ref('')
