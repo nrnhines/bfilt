@@ -39,7 +39,7 @@ class NrnBFilt(object):
     P.InitialCov = numpy.eye(len(s))
     Obs = models.ObservationModel(P, 1000, ol)
     Sys = models.NeuronModel(P, 0, len(vl))
-    Sys.Injection.erange(0.0, tlast, 1.0)
+    Sys.Injection.erange(0.0, tlast, 0.1)
     self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M)
     self.pf = self.getParmFitness()

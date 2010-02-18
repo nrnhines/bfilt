@@ -74,9 +74,10 @@ def update(model,data,time,ObsNum,mb,Pb,bounds):
     return (m,P,e,S)
 
 def predict(model,m,P,t0,t1,injectionTime):
-    assert(injectionTime[0] <= t0)
+    tol = 1e-7
+    assert(injectionTime[0] <= t0 + tol)
     assert(injectionTime[1] > t0)
-    assert(injectionTime[-1] <= t1)
+    assert(injectionTime[-1] <= t1 + tol)
     mb = m
     tStart = t0
     identityMatrixSizeOfState = numpy.eye(len(m))
@@ -102,7 +103,6 @@ def predict(model,m,P,t0,t1,injectionTime):
         else:
             Wm = numpy.bmat('New Wm')
         Am_temp = Am*As[0]
-        print 'prod:', Wm*Wm.T
         Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
         modelMeasurement(model,injectionTime[i+1],[0],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
