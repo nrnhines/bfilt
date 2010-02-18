@@ -104,7 +104,7 @@ def predict(model,m,P,t0,t1,injectionTime):
         Am_temp = Am*As[0]
         print 'prod:', Wm*Wm.T
         Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
-        modelMeasurement(model,injectionTime[i+1],[0],mbs[i],P)  # Saves error bars ONLY ObsNum = 0
+        modelMeasurement(model,injectionTime[i+1],[0],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
