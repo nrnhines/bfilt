@@ -82,10 +82,12 @@ def predict(model,m,P,t0,t1,injectionTime):
     identityMatrixSizeOfState = numpy.eye(len(m))
     As = []
     Bs = []
+    mbs = []
     for i in range(1,len(injectionTime)):
         (mb, A, B, tStart) = model.Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
         As.append(A)  # A's are Jacobians of above flows
         Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
+        mbs.append(mb)
     if  t1 > injectionTime[-1]:
         (mb, A, B, tStart) = model.Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
         As.append(A)
@@ -99,6 +101,10 @@ def predict(model,m,P,t0,t1,injectionTime):
             Wm = New
         else:
             Wm = numpy.bmat('New Wm')
+        Am_temp = Am*As[0]
+        print 'prod:', Wm*Wm.T
+        Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
+        modelMeasurement(model,injectionTime[i+1],[0],mbs[i],P)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
