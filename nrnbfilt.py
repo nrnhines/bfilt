@@ -101,8 +101,9 @@ class NrnBFilt(object):
     self.M.P.B[i,i] = self.processNoise[i].x
     print i, self.M.P.B
 
-  def inj_invl_changed(self, sys, tstop):
-    sys.Injection.erange(0.0, tstop, self.inj_invl)
+  def inj_invl_changed(self):
+    self.Eve.newInjectionInterval(self.inj_invl)
+    self.Data = self.__data(self.rf.fitnesslist,self.Eve)
 
   def paramPanel(self):
     self.box = h.VBox()
@@ -114,7 +115,7 @@ class NrnBFilt(object):
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
     h.xlabel('    Process noise')
-    h.xvalue('Injection interval', (self, 'inj_invl'), 1, (self.Eve.newInjectionInterval, self.inj_invl))
+    h.xvalue('Injection interval', (self, 'inj_invl'), 1, self.inj_invl_changed)
     s = h.Vector()
     h.cvode.states(s)
     sref = h.ref('')
