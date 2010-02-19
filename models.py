@@ -453,7 +453,7 @@ class DecayModel:
 
 
 class Model:
-    def __init__(self, sys, obs, p,  initial=None):
+    def __init__(self, sys, obs, p, injection_interval, initial=None):
         self.Sys = sys
         #  if initial == None:
         #     initial = numpy.ones((self.Sys.dim(), 1), float)
@@ -465,6 +465,8 @@ class Model:
             h.cvode.states(s)
             initial = numpy.matrix(s).T
 
+	self.inj_invl = injection_interval
+	self.Sys.Injection.erange(0.0, p.tstop, self.inj_invl)
         self.Initial = initial
         self.Obs = obs
         self.P = p
@@ -474,7 +476,7 @@ class Model:
         self.tab()
 
     def change(self, p):
-        self.__init__(self.Sys, self.Obs, p, self.Initial)
+        self.__init__(self.Sys, self.Obs, p, self.inj_invl, self.Initial)
 
     def Tabulate(self):  #OLD FUNCTION TO BE REMOVED AFTER NEW WORKS
         Inj = self.Sys.Injection.round(self.P.dt)

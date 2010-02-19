@@ -1,9 +1,12 @@
 from neuron import h
 import noise
-import models
 import numpy
 import EKF
 import math
+import sto
+import sys
+import obs
+import eve
 
 class WrappedVal:
   def __init__(self, val):
@@ -13,35 +16,31 @@ class NrnBFilt(object):
   def __init__(self, ho):
     self.rf = ho
     ol = []
-    P = noise.NoiseParams()
-    P.dt = 0.0
     vl = self.rf.yvarlist
     fl = self.rf.fitnesslist
     tlast = 0
     for i in range(len(vl)):
       tl = list(fl.o(i).xdat_)
-      o = models.NeuronObservable(vl.o(i), P, i, tl)
+      o = obs.NeuronObservable(vl.o(i), tl)
       o.sigma = 0.01
       ol.append(o)
       if (tlast < tl[-1]):
         tlast = tl[-1]
-    P.tstop = tlast
     s = h.Vector()
     h.cvode.active(1)
     h.cvode.states(s)
     assert(len(s) > 0)
     assert(len(vl) > 0)
-    P.B = numpy.matrix(numpy.zeros((len(s), len(s))))
-    P.B[0,0] = 1
+    Sto = sto.StochasticModel(len(s),tlast)
     self.processNoise = []
     for i in range(len(s)):
-      self.processNoise.append(WrappedVal(P.B[i, i]))
-    P.InitialCov = numpy.eye(len(s))
-    Obs = models.ObservationModel(P, 1000, ol)
-    Sys = models.NeuronModel(P, 0, len(vl))
-    self.inj_invl = 1.0
-    self.inj_invl_changed(Sys, P.tstop)
-    self.M = models.Model(Sys, Obs, P)
+      self.processNoise.append(WrappedVal(Sto.B[i, i]))
+    Obs = obs.ObservationModel(ol)
+    self.Eve = eve.EventTable(Sto,Obs)
+    self.Sys = sys.NeuronModel()
+    # self.inj_invl = 1.0
+    # self.inj_invl_changed(Sys, P.tstop)
+    # self.M = models.Model(Sys, Obs, P)
     self.Data = self.__data(fl,self.M)
     self.pf = self.getParmFitness()
 
@@ -65,7 +64,7 @@ class NrnBFilt(object):
     return Data
 
   def likelihood(self):
-    x = EKF.ekf(self.Data, self.M)
+    x = EKF.ekf(self.Data, self.Eve, self.Sys)
     x = float(x)
     return -x
 
@@ -114,7 +113,7 @@ class NrnBFilt(object):
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
     h.xlabel('    Process noise')
-    h.xvalue('Injection interval', (self, 'inj_invl'), 1, (self.inj_invl_changed, (self.M.Sys, self.M.P.tstop)))
+    h.xvalue('Injection interval', (self, 'inj_invl'), 1, (self.Eve.newInjectionInterval, self.inj_invl))
     s = h.Vector()
     h.cvode.states(s)
     sref = h.ref('')
