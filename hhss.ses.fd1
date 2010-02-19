@@ -1,4 +1,4 @@
-YFitness xdat ydat erry (lines=8052)
+YFitness xdat ydat erry (lines=8056)
 4001
 0
 0.025
@@ -8004,8 +8004,12 @@ YFitness xdat ydat erry (lines=8052)
 -63.1147
 -63.1406
 
-44
+48
 0.5
+41
+75
+117
+159
 211.026
 421.553
 465
