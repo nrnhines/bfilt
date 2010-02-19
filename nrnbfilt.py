@@ -4,7 +4,7 @@ import numpy
 import EKF
 import math
 import sto
-import sys
+import detsys
 import obs
 import eve
 
@@ -37,18 +37,19 @@ class NrnBFilt(object):
       self.processNoise.append(WrappedVal(Sto.B[i, i]))
     Obs = obs.ObservationModel(ol)
     self.Eve = eve.EventTable(Sto,Obs)
-    self.Sys = sys.NeuronModel()
-    # self.inj_invl = 1.0
+    self.Sys = detsys.NeuronModel()
+    self.inj_invl = 1.0
+    self.Eve.newInjectionInterval(self.inj_invl)
     # self.inj_invl_changed(Sys, P.tstop)
     # self.M = models.Model(Sys, Obs, P)
-    self.Data = self.__data(fl,self.M)
+    self.Data = self.__data(fl,self.Eve)
     self.pf = self.getParmFitness()
 
-  def __data(self,fl,M):
+  def __data(self,fl,Eve):
     counter = [0]*(len(fl))
     Data = []
-    for idx, time in enumerate(M.collectionTimes):
-      obindices = M.ObsNum[idx]
+    for idx, time in enumerate(Eve.collectionTimes):
+      obindices = Eve.ObsNum[idx]
       DataEV = []
       for i in obindices:
         x = fl.o(i).xdat_
@@ -60,7 +61,7 @@ class NrnBFilt(object):
       Data.append(numpy.matrix(DataEV).T)
     for i in range(len(fl)):
         assert(counter[i] == len(fl.o(i).xdat_))
-    print 'Collection Times\n', M.collectionTimes, '\nData\n', Data
+    print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
     return Data
 
   def likelihood(self):
@@ -109,7 +110,7 @@ class NrnBFilt(object):
     h.xpanel('')
     h.xlabel('Likelihood numerical parameters')
     h.xlabel('    Measurement noise')
-    c =  self.M.Obs.C
+    c =  self.Eve.Obs.C
     for o in c:
       h.xvalue('sigma: '+o.hpt.s(), (o, 'sigma'), 1)
     h.xlabel('    Process noise')

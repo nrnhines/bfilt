@@ -6,6 +6,8 @@ from myscipy import linalg
 from neuron import h
 import fitglobals
 
+toler = 1e-8
+
 def rmDupsWithToler(L,tol):
     lenL = len(L)
     i = 0
@@ -19,7 +21,6 @@ def rmDupsWithToler(L,tol):
 class EventTimed:
     def __init__(self, times=None):
         self.Times = times
-        self.toler = 1e-8
 
     def erange(self, tstart, tstop, dt):
         self.Times = numpy.arange(tstart+0.0, tstop+dt/2.0,  dt+0.0).tolist()
@@ -35,7 +36,7 @@ class EventTimed:
         lenList = len(listReturn)
         index = 1
         while index < lenList:
-            if (listReturn[index] - listReturn[index-1]) < dt/2.0 + self.toler:
+            if (listReturn[index] - listReturn[index-1]) < dt/2.0 + toler:
                 del listReturn[index]
                 lenList -= 1
             else:
@@ -51,8 +52,8 @@ class EventTable:
         self.Obs = obs
         self.tab()
 
-    def newInjectionInterval(self,dt)
-        print 'New II'
+    def newInjectionInterval(self,dt):
+        print 'New II', dt
         self.Sto.updateInjectionInterval(dt)
         self.tab()
 
@@ -78,6 +79,7 @@ class EventTable:
                 injectionsForThisData.append(timeNextOb)
             self.injectionTimes.append(injectionsForThisData)
             injectionsForThisData = [injectionsForThisData[-1]]  # start next list with last item of previous
+        print 'ITs', self.injectionTimes
 
         #Create ObsNum list
         self.ObsNum = []

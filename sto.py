@@ -19,7 +19,7 @@ class StochasticModel(object):
     def updateInjectionInterval(self,dt):
         self.Injection.erange(0.0,self.tlast,dt)
 
-    def noiseJac(self, injectionTImes):
+    def noiseJac(self, injectionTimes):
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]
         return self.B*math.sqrt(tFinal - inject0)

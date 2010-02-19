@@ -11,6 +11,9 @@ class NeuronModel(object):
         h.cvode.atol(1e-6)
         h.cvode_active(1)
         h.stdinit()
+        s = h.Vector()
+        h.cvode.states(s)
+        self.Initial = numpy.matrix(s).T
 
     def dim(self):
         s = h.Vector()
