@@ -31,7 +31,9 @@ class NrnBFilt(object):
     h.cvode.states(s)
     assert(len(s) > 0)
     assert(len(vl) > 0)
-    Sto = sto.StochasticModel(len(s),tlast)
+    self.covGrowthTime = 100
+    self.varTerm = 1
+    Sto = sto.StochasticModel(len(s),tlast,self.covGrowthTime,self.varTerm)
     self.processNoise = []
     for i in range(len(s)):
       self.processNoise.append(WrappedVal(Sto.B[i, i]))
