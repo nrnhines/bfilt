@@ -100,12 +100,16 @@ class NrnBFilt(object):
     self.pf.parm(hvec)
 
   def fillPB(self, i):
-    self.M.P.B[i,i] = self.processNoise[i].x
-    print i, self.M.P.B
+    self.Eve.Sto.B[i,i] = self.processNoise[i].x
+    Initial_changed()
+    print i, self.Eve.Sto.B
 
   def inj_invl_changed(self):
     self.Eve.newInjectionInterval(self.inj_invl)
     self.Data = self.__data(self.rf.fitnesslist,self.Eve)
+
+  def Initial_changed(self):
+    self.Eve.Sto.updateInitial(self.covGrowthTime,self.varTerm)
 
   def paramPanel(self):
     self.box = h.VBox()
@@ -124,6 +128,9 @@ class NrnBFilt(object):
     for i in range(len(s)):
       h.cvode.statename(i, sref, 1)
       h.xvalue('P.B[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
+    h.xlabel('    Initial Uncertainty')
+    h.xvalue('Covariance Growth Time', (self, 'covGrowthTime'), 1, self.Initial_changed)
+    h.xvalue('Additional Variance', (self, 'varTerm'), 1, self.Initial_changed)
     h.xpanel()
     self.box.intercept(0)
     self.box.map('Likelihood parameters')

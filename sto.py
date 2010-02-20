@@ -16,6 +16,10 @@ class StochasticModel(object):
         self.Injection = eve.EventTimed(times)
         self.InitialCov = self.B*self.B.T*covGrowthTime + varTerm*numpy.eye(dim)
 
+    def updateInitial(self, covGrowthTime, varTerm):
+        dim = self.B.shape[0]
+        self.InitialCov = self.B*self.B.T*covGrowthTime + varTerm*numpy.eye(dim)
+
     def updateInjectionInterval(self,dt):
         self.Injection.erange(0.0,self.tlast,dt)
 
