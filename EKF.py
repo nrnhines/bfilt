@@ -4,15 +4,22 @@ import numpy
 import fitglobals
 import HHBounds
 
-def initializeErrorBars(Obs):
-    global saveErrorBars, Etime, Ecenter, Ewidth
+def initializeErrorBars(Obs,Sys):
+    global saveErrorBars, Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
     saveErrorBars = True
     Etime = []
     Ecenter = []
     Ewidth = []
+    Scenter = []
+    Swidth = []
+    Ps = []
+    ms = []
     for i in range(Obs.D):
         Ecenter.append([])
         Ewidth.append([])
+    for i in range(Sys.dim()):
+        Scenter.append([])
+        Swidth.append([])
     return (Etime,Ecenter,Ewidth)
 
 def initialStateCov(Sto,Sys):
@@ -26,15 +33,26 @@ def modelMeasurement(Obs,time,ObsNum,m,P):
     H = Obs.Dstate([time], m, ObsNum)
     V = Obs.Dnoise([time], m, ObsNum)
     S = H*P*H.T + V*V.T
+    return (hh,S,H,V)
 
+def saveData(Obs,time,m,P):
     global saveErrorBars
     if saveErrorBars:
-        global Etime, Ecenter, Ewidth
+        ObsNum = range(Obs.D)
+        hh = Obs.mean([time], m, ObsNum)
+        H = Obs.Dstate([time], m, ObsNum)
+        V = Obs.Dnoise([time], m, ObsNum)
+        S = H*P*H.T + V*V.T
+        global Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
         Etime.append(time)
-        for iObs in range(len(ObsNum)):
-            Ecenter[ObsNum[iObs]].append(hh[iObs,0])
-            Ewidth[ObsNum[iObs]].append(math.sqrt(S[iObs,iObs]))
-    return (hh,S,H,V)
+        for iObs in range(Obs.D):
+            Ecenter[iObs].append(hh[iObs,0])
+            Ewidth[iObs].append(math.sqrt(S[iObs,iObs]))
+        for s in range(P.shape[0]):
+            Scenter[s].append(m[s])
+            Swidth[s].append(math.sqrt(P[s,s]))
+        Ps.append(P)
+        ms.append(m)
 
 def updateInBounds(K,e,mb,bounds):
 # Boundaries are B*x >= b where B=bounds[i][0], B is a row-matrix, b=bounds[i][1], x=State
@@ -66,11 +84,12 @@ def updateInBounds(K,e,mb,bounds):
 
 def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     (hh,S,H,V) = modelMeasurement(Obs,time,ObsNum,mb,Pb)
+    saveData(Obs,time,mb,Pb)
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
     m = mb + updateInBounds(K,e,mb,bounds)
-    modelMeasurement(Obs,time,ObsNum,m,P)  # Saves error bars
+    saveData(Obs,time,m,P)  # Saves error bars
     return (m,P,e,S)
 
 def predict(Eve,Sys,m,P,t0,t1,injectionTime):
@@ -106,7 +125,7 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTime):
             Wm = numpy.bmat('New Wm')
         Am_temp = Am*As[0]
         Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
-        modelMeasurement(Eve.Obs,injectionTime[i+1],[0],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
+        saveData(Eve.Obs,injectionTime[i+1],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
@@ -121,7 +140,7 @@ def ekf(data, Eve, Sys):
     # Initialize
     smll = 0.0
     time = 0.0
-    initializeErrorBars(Eve.Obs)
+    initializeErrorBars(Eve.Obs, Sys)
     collectionTimes = Eve.collectionTimes
     injectionTimes = Eve.injectionTimes
     bounds = HHBounds.bounds # model.stateBoundaries
