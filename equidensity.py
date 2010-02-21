@@ -9,7 +9,7 @@ def equipoints(k,state0,state1,num):
     U = decomp[0]
     std0 = math.sqrt(decomp[1][0])
     std1 = math.sqrt(decomp[1][1])
-    SLam = [[std0,0.0],[std1,0.0]]
+    SLam = [[std0,0.0],[0.0,std1]]
     m = [[EKF.ms[k][state0,0]],[EKF.ms[k][state1,0]]]
     m = numpy.matrix(m)
     SLam = numpy.matrix(SLam)
