@@ -25,10 +25,10 @@ def predict(model,X,t0,t1,injectionTime):
     assert(injectionTime[0] <= t0)
     assert(injectionTime[1] > t0)
     assert(injectionTime[-1] <= t1)
-
+    
     numNoise = model.P.B.shape[1]
     Y = ()
-
+    
     for i in range(len(X)):
         xtemp = X[i]
         for itime in range(len(injectionTime)):

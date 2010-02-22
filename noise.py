@@ -21,8 +21,8 @@ class ZeroNoise:
     #    P should be the same for all noise processes in a model
     #    I should be different for each noise process in a model
     def __init__(self, p, i):
-      self.base_init(p, i)
-
+        self.base_init(p, i)
+    
     def base_init(self, p, i):
         self.R = random.Random()
         # save local copies of P and I
@@ -34,7 +34,7 @@ class ZeroNoise:
     # just change P not I
     def change(self, p):
         self.base_init(p, self.I)
-        
+    
     # Return Zero process
     def clear(self):
         # set seed for new noise generation
@@ -45,11 +45,11 @@ class ZeroNoise:
         else:
             kstop = 0
         return [0.0]*kstop
-        
+    
     # Calculate (zero) process: subclasses will overload this function
     def calc(self):
         return self.clear()
-        
+    
     # Eavaluate at a specified time
     def eval(self,t):
         if t > self.P.tstop:
@@ -94,17 +94,17 @@ class ZeroVector:
         while k < d:
             self.C.append(self.scalar(p, i0+k))
             k += 1
-            
+    
     # Function scalar overloaded in subclasses
     def scalar(self, p, i):
         return ZeroNoise(p, i)
-        
+    
     # Change parameters
     def change(self, p):
         i0 = self.I
         d = self.D
         self.__init__(p, i0, d)
-        
+    
     # Evaluate the vector at a given time
     def eval(self, t):
         k=0
@@ -117,11 +117,11 @@ class ZeroVector:
 class WienerVector(ZeroVector):
     def scalar(self, p, i):
         return Wiener(p, i)
-        
+
 class GaussVector(ZeroVector):
     def scalar(self, p, i):
         return Gauss(p, i)
-        
+
 # Noise class gives you:
 # a vector of Wiener (process noise), and
 # a vector of Gauss (measurement noise)

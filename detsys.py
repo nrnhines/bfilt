@@ -14,18 +14,18 @@ class NeuronModel(object):
         s = h.Vector()
         h.cvode.states(s)
         self.Initial = numpy.matrix(s).T
-
+    
     def dim(self):
         s = h.Vector()
         h.cvode.states(s)
         return len(s)
-
+    
     def vfield(self, time, state, discrete=None):
         s = h.Vector(state)
         d = h.Vector()
         h.cvode.f(time, s, d)
         return numpy.matrix(d)
-
+    
     def moveto(self, t0):
         h.t = t0
         return
@@ -38,7 +38,7 @@ class NeuronModel(object):
         elif h.t > t0:
             h.stdinit()
             h.cvode.solve(t0)
-
+    
     def flow(self, Times, state0, discrete=None):
         if discrete:
             discrete.restore()
@@ -50,7 +50,7 @@ class NeuronModel(object):
         s = h.Vector()
         h.cvode.states(s)
         return numpy.matrix(s).T
-
+    
     # jacobian of the flow with respect to state variables
     def Dstate(self, Times, state0, discrete=None):
         x = numpy.matrix(state0)
@@ -70,7 +70,7 @@ class NeuronModel(object):
             x[i] = temp
             DFx[:,i] = (df - value)/h
         return DFx
-
+    
     def flowJac(self, tStart, injectionTimes,m,discrete=None):
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]

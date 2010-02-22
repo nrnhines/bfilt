@@ -28,7 +28,7 @@ def initialStateCov(Sto,Sys):
     return (m0, P0)
 
 def modelMeasurement(Obs,time,ObsNum,m,P):
-# Returns the measurement and covariance plus Jacobians
+    # Returns the measurement and covariance plus Jacobians
     hh = Obs.mean([time], m, ObsNum)
     H = Obs.Dstate([time], m, ObsNum)
     V = Obs.Dnoise([time], m, ObsNum)
@@ -55,8 +55,8 @@ def saveData(Obs,time,m,P):
         ms.append(m)
 
 def updateInBounds(K,e,mb,bounds):
-# Boundaries are B*x >= b where B=bounds[i][0], B is a row-matrix, b=bounds[i][1], x=State
-# The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
+    # Boundaries are B*x >= b where B=bounds[i][0], B is a row-matrix, b=bounds[i][1], x=State
+    # The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
     alpha = 1  # default update assuming its in bounds
     tolfactor = 1  # tolfactor reduces alpha more to prevent numerical issues
     tolbound = 1e-7 # tolerance for evaluating boudnaries
@@ -146,7 +146,7 @@ def ekf(data, Eve, Sys):
     bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = Eve.ObsNum
     (m0, P0) = initialStateCov(Eve.Sto,Sys)
-
+    
     # Main loop
     if collectionTimes[0] == 0.0:
         (m,P,e,S) = update(Eve.Obs,data[0],collectionTimes[0],ObsNum[0],m0,P0,bounds)

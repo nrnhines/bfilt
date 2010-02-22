@@ -8,7 +8,7 @@ def calc0(MS):
     Mfit = copy.deepcopy(MS.M)
     LL = fitEKF.ekf(MS.Data,Mfit)
     print 'Like =', LL
-    
+
 def calc1(MS,R0=None):
     if R0 == None:
         R0 = numpy.arange(0.05,1.0,0.05)
@@ -38,7 +38,7 @@ def calc2(MS,R0=None,R1=None):
         R0 = numpy.arange(0.05,1.0,0.05)
     if R1 == None:
         R1 = numpy.arange(0.05,1.1,0.05)
-
+    
     LLmax = float('-inf')
     Mfit = copy.deepcopy(MS.M)
     print('Turning debugging OFF')
@@ -63,5 +63,3 @@ def calc2(MS,R0=None,R1=None):
     simParams = MS.getParams()
     LLsim = MS.loglike(simParams[0],simParams[1])
     print 'Sim Like =', LLsim, '@ (A0, A1) =', simParams[0], simParams[1]
-
-    

@@ -11,43 +11,43 @@ import eve
 class ObserveStateK(object):
     def __init__(self, times=None):
         self.__init(times)
-
+    
     def __init(self, times=None):
         self.Times = eve.EventTimed(times)
         self.sigma = 0.001
         self.K = 0
-
+    
     def mean(self, time, state):
         return state[self.K, 0]
-
+    
     def Dstate(self, time, state):
         J = numpy.matrix(numpy.zeros((1, state.shape[0])))
         J[0, self.K] = 1
         return J
-
+    
     def Dnoise(self, time, state):
         return numpy.matrix(self.sigma)
 
 class NeuronObservable(ObserveStateK):
     #TAKE OUT p and i: def __init__(self, hpointer, p, i, times=None):
     def __init__(self, hpointer, times=None):
-       if (times == None):
-         raise RuntimeError, "unrecoverable"
-       self.hpt = hpointer
-       ObserveStateK.__init__(self, times)
-
+        if (times == None):
+            raise RuntimeError, "unrecoverable"
+        self.hpt = hpointer
+        ObserveStateK.__init__(self, times)
+    
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
         ss = h.Vector() #save
         h.cvode.states(ss)
-
+        
         ds = h.Vector()
         h.cvode.f(time, h.Vector(state), ds)
         #measurement goes here
         x = self.hpt.val
-
+        
         h.cvode.yscatter(ss) #restore
         return x
-
+    
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
         x = numpy.matrix(state)
         value = self.mean(time,state)
@@ -75,7 +75,7 @@ class ObservationModel:
     def __init__(self, c):
         self.D = len(c)
         self.C = c
-
+    
     # Evaluate the mean measurement at a given time
     def mean(self, time, state, List=None):
         time = time[len(time)-1]
@@ -85,7 +85,7 @@ class ObservationModel:
         for k in List:
             E.append(self.C[k].mean(time, state))
         return numpy.matrix(E).T
-
+    
     def Dstate(self, time, state, List=None):
         time = time[len(time)-1]
         if List == None:
@@ -96,7 +96,7 @@ class ObservationModel:
             E[Eindex, :] = self.C[k].Dstate(time, state)
             Eindex += 1
         return E
-
+    
     def Dnoise(self, time, state, List=None):
         time = time[len(time)-1]
         if List == None:

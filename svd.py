@@ -60,7 +60,7 @@ import math
 
 def svd(a):
     '''Compute the singular value decomposition of array.'''
-
+    
     # Golub and Reinsch state that eps should not be smaller than the
     # machine precision, ie the smallest number
     # for which 1+e>1.  tol should be beta/e where beta is the smallest
@@ -74,21 +74,21 @@ def svd(a):
     m = len(a)
     n = len(a[0])
     #if __debug__: print 'a is ',m,' by ',n
-
+    
     if m < n:
         if __debug__: print 'Error: m is less than n'
         raise ValueError,'SVD Error: m is less than n.'
-
+    
     e = [0.0]*n  # allocate arrays
     q = [0.0]*n
     v = []
     for k in range(n): v.append([0.0]*n)
- 
+    
     # Householder's reduction to bidiagonal form
-
+    
     g = 0.0
     x = 0.0
-
+    
     for i in range(n):
         e[i] = g
         s = 0.0
@@ -256,9 +256,9 @@ def svd(a):
             e[l] = 0.0
             e[k] = f
             q[k] = x
-            # goto test f splitting
-        
-            
+    # goto test f splitting
+    
+    
     #vt = transpose(v)
     #return (u,q,vt)
     return (u,q,v)
@@ -312,16 +312,16 @@ def matrixmultiply(a,b):
                     c[i][j] += a[i][k]*b[k][j]
     
     return c
- 
-## 		    GNU GENERAL PUBLIC LICENSE
-## 		       Version 2, June 1991
+
+##                  GNU GENERAL PUBLIC LICENSE
+##                     Version 2, June 1991
 
 ##  Copyright (C) 1989, 1991 Free Software Foundation, Inc.
 ##                        59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ##  Everyone is permitted to copy and distribute verbatim copies
 ##  of this license document, but changing it is not allowed.
 
-## 			    Preamble
+##                          Preamble
 
 ##   The licenses for most software are designed to take away your
 ## freedom to share and change it.  By contrast, the GNU General Public
@@ -371,7 +371,7 @@ def matrixmultiply(a,b):
 ##   The precise terms and conditions for copying, distribution and
 ## modification follow.
 ## 
-## 		    GNU GENERAL PUBLIC LICENSE
+##                  GNU GENERAL PUBLIC LICENSE
 ##    TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
 ##   0. This License applies to any program or other work which contains
@@ -570,7 +570,7 @@ def matrixmultiply(a,b):
 ## of preserving the free status of all derivatives of our free software and
 ## of promoting the sharing and reuse of software generally.
 
-## 			    NO WARRANTY
+##                          NO WARRANTY
 
 ##   11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
 ## FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
@@ -592,5 +592,5 @@ def matrixmultiply(a,b):
 ## PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGES.
 
-## 		     END OF TERMS AND CONDITIONS
+##                   END OF TERMS AND CONDITIONS
 ## 

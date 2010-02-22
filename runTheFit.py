@@ -22,7 +22,7 @@ M = models.Model(Sys,Obs,P)
 
 # Turn noise off and simulate
 P.B = numpy.matrix([0,0,0])
-  # Not needed: change(P)
+# Not needed: change(P)
 M.Obs.C[0].sigma = 0
 M.Obs.C[1].sigma = 0
 Data = M.sim()
@@ -30,7 +30,7 @@ Data = M.sim()
 
 # Turn noise back on and calculate log-likelihood
 P.B = numpy.matrix([0.5, 0.4, 0.3])
-  # Not needed: change(P)
+# Not needed: change(P)
 M.Obs.C[0].sigma = 0.001
 M.Obs.C[1].sigma = 0.0001
 LL = fitEKF.ekf(Data,M)

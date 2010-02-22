@@ -15,14 +15,14 @@ class StochasticModel(object):
         times = numpy.arange(0.0,tlast,1.0)
         self.Injection = eve.EventTimed(times)
         self.InitialCov = self.B*self.B.T*covGrowthTime + varTerm*numpy.eye(dim)
-
+    
     def updateInitial(self, covGrowthTime, varTerm):
         dim = self.B.shape[0]
         self.InitialCov = self.B*self.B.T*covGrowthTime + varTerm*numpy.eye(dim)
-
+    
     def updateInjectionInterval(self,dt):
         self.Injection.erange(0.0,self.tlast,dt)
-
+    
     def noiseJac(self, injectionTimes):
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]

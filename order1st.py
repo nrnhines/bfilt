@@ -17,5 +17,5 @@ class Order1st(wiener.Wiener):
         a = 0.5
         sigp = 0.01
         sigm = 0.001
-        
-        
+
+

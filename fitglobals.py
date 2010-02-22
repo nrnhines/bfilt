@@ -1,8 +1,8 @@
 
 def debugon():
-	global debug
-	debug = True
-	
+    global debug
+    debug = True
+
 def debugoff():
-	global debug
-	debug = False
+    global debug
+    debug = False

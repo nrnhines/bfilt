@@ -30,14 +30,14 @@ M = models.Model(Sys,Obs,P,Initial)
 
 # Turn noise off and simulate
 P.B = numpy.matrix([[0.,0.],[0.,0.]])
-  # Not needed: change(P)
+# Not needed: change(P)
 M.Obs.C[0].sigma = 0
 M.Obs.C[1].sigma = 0
 Data = M.sim()
 
 # Turn noise back on and calculate log-likelihood
 P.B = numpy.matrix([[0.5, 0], [0, 0.4]])
-  # Not needed: change(P)
+# Not needed: change(P)
 M.Obs.C[0].sigma = 0.001
 M.Obs.C[1].sigma = 0.0001
 print 'debug', fitglobals.debug
@@ -46,10 +46,9 @@ LL = fitEKF.ekf(Data,M)
 fitglobals.debugoff()
 
 def setParams(Mset,A0set,A1set):
-	Mset.P.A = numpy.matrix([[A0set, 0], [0,A1set]])
-	
+    Mset.P.A = numpy.matrix([[A0set, 0], [0,A1set]])
+
 def getParams(Mget):
-	A0get = Mget.P.A[0,0]
-	A1get = Mget.P.A[1,1]
-	return [A0get, A1get]
-	
+    A0get = Mget.P.A[0,0]
+    A1get = Mget.P.A[1,1]
+    return [A0get, A1get]
