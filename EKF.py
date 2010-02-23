@@ -136,8 +136,10 @@ def minusTwiceLogGaussianPDF(v,S):
     f2 = (v.T*S.I*v).tolist()[0][0]
     return (f0+f1+f2)
 
-def ekf(data, Eve, Sys):
+def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     # Initialize
+    if DLikeDt_hvec != None:
+        DLikeDt_hvec.resize(0)
     smll = 0.0
     time = 0.0
     initializeErrorBars(Eve.Obs, Sys)
@@ -157,7 +159,13 @@ def ekf(data, Eve, Sys):
     while(k<len(data)):
         (mb,Pb,time) = predict(Eve,Sys,m,P,time,collectionTimes[k],injectionTimes[k])
         (m,P,e,S) = update(Eve.Obs,data[k],collectionTimes[k],ObsNum[k],mb,Pb,bounds)
-        smll += minusTwiceLogGaussianPDF(e,S)
+        mll = minusTwiceLogGaussianPDF(e,S)
+        if DLikeDt_hvec != None:
+            DLikeDt_hvec.append(mll)
+        smll += mll
         k += 1
     return -smll/2.0
+
+
+
 

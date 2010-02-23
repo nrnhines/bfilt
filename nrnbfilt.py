@@ -46,6 +46,7 @@ class NrnBFilt(object):
         # self.M = models.Model(Sys, Obs, P)
         self.Data = self.__data(fl,self.Eve)
         self.pf = self.getParmFitness()
+        self.dlikedt = h.Vector()
     
     def __data(self,fl,Eve):
         counter = [0]*(len(fl))
@@ -67,7 +68,7 @@ class NrnBFilt(object):
         return Data
     
     def likelihood(self):
-        x = EKF.ekf(self.Data, self.Eve, self.Sys)
+        x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         x = float(x)
         return -x
     
