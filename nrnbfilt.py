@@ -102,7 +102,7 @@ class NrnBFilt(object):
     
     def fillPB(self, i):
         self.Eve.Sto.B[i,i] = self.processNoise[i].x
-        Initial_changed()
+        self.Initial_changed()
         print i, self.Eve.Sto.B
     
     def inj_invl_changed(self):
