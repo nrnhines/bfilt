@@ -91,8 +91,13 @@ func efun() {local i, e, use_t, tssav, mintstop
 	return e
 }
 
-func likelihood() {
-	return po.likelihood()
+func likelihood() {local l  localobj f
+	l = po.likelihood()
+	if (plt_llike) {
+		f = fitnesslist.o(dshow)
+		po.dlikedt.line(f.g, f.xdat_)
+	}
+	return l
 }
 
 proc plot_likelihood_result() {local i  localobj m, w, x
@@ -124,6 +129,7 @@ func gview() {local i, j, l,b,r,t
 
 proc init() {
 	use_likelihood = 0
+	plt_llike = 0
 	title = "Unnamed single run protocol"
 	context_ = 1
 	sprint(tag, "%s", this)
@@ -428,6 +434,7 @@ proc map() {local i
 		xpvalue("-log(likelihood)", &errval, 0, "efun() plot_likelihood_result()")
 		xmenu("extra")
 			xbutton("Noise", "po.paramPanel()")
+			xcheckbox("Plot llikelihood", &plt_llike)
 		xmenu()
 	xpanel()
 	ldeck.intercept(0)
