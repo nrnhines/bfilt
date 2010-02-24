@@ -19,7 +19,9 @@ class NrnBFilt(object):
         vl = self.rf.yvarlist
         fl = self.rf.fitnesslist
         tlast = 0
+        self.n_chdat = 0
         for i in range(len(vl)):
+            self.n_chdat += fl.o(i).n_chdat
             tl = list(fl.o(i).xdat_)
             o = obs.NeuronObservable(vl.o(i), tl)
             o.sigma = 0.01
@@ -68,10 +70,19 @@ class NrnBFilt(object):
         return Data
     
     def likelihood(self):
+        self.ifchdat()
         x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         x = float(x)
         return -x
     
+    def ifchdat(self):
+        fl = self.rf.fitnesslist
+        n = 0
+        for i in range(len(fl)):
+            n += fl.o(i).n_chdat
+        if n != self.n_chdat:
+            self.data_change()
+
     def Etime(self):
         return h.Vector(EKF.Etime)
     
@@ -136,3 +147,23 @@ class NrnBFilt(object):
         self.box.intercept(0)
         self.box.map('Likelihood parameters')
 
+    def data_change(self):
+        inj_invl = self.inj_invl
+        covGrowthTime = self.covGrowthTime
+        varTerm = self.varTerm
+        c = self.Eve.Obs.C
+        pn = self.processNoise
+
+        self.__init__(self.rf)
+
+        self.inj_invl = inj_invl
+        self.covGrowthTime = covGrowthTime
+        self.varTerm = varTerm
+        cnew = self.Eve.Obs.C
+        for i in range(len(c)):
+            cnew[i].sigma = c[i].sigma
+        for i in range(len(pn)):
+            self.processNoise[i].x = pn[i].x
+            self.Eve.Sto.B[i,i] = pn[i].x
+        self.Initial_changed()
+        self.inj_invl_changed()       
