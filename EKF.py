@@ -152,6 +152,10 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     # Main loop
     if collectionTimes[0] == 0.0:
         (m,P,e,S) = update(Eve.Obs,data[0],collectionTimes[0],ObsNum[0],m0,P0,bounds)
+        mll = minusTwiceLogGaussianPDF(e,S)
+        if DLikeDt_hvec != None:
+            DLikeDt_hvec.append(mll*0.5)
+        smll += mll
         k = 1
     else:
         (m,P) = (m0,P0)
@@ -161,7 +165,7 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
         (m,P,e,S) = update(Eve.Obs,data[k],collectionTimes[k],ObsNum[k],mb,Pb,bounds)
         mll = minusTwiceLogGaussianPDF(e,S)
         if DLikeDt_hvec != None:
-            DLikeDt_hvec.append(mll)
+            DLikeDt_hvec.append(mll*0.5)
         smll += mll
         k += 1
     return -smll/2.0

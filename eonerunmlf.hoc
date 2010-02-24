@@ -100,15 +100,19 @@ func likelihood() {local l  localobj f
 	return l
 }
 
-proc plot_likelihood_result() {local i  localobj m, w, x
+proc plot_likelihood_result() {local i  localobj m, w, x, f
 	x = po.Etime()
 	for i=0, fitnesslist.count - 1 {
-		execute("mserrlabel=\"\" redraw()", fitnesslist.o(i))
+		f = fitnesslist.o(i)
+		execute("mserrlabel=\"\" redraw()", f)
 		m = po.Ecenter(i)
 		w = po.Ewidth(i)
-		m.c.add(w).line(fitnesslist.o(i).g, x)
-		m.c.sub(w).line(fitnesslist.o(i).g, x)
-		fitnesslist.o(i).g.flush()
+		m.c.add(w).line(f.g, x)
+		m.c.sub(w).line(f.g, x)
+		if (plt_llike) {
+			po.dlikedt.line(f.g, f.xdat_)
+		}
+		f.g.flush()
 	}
 }
 
