@@ -87,6 +87,60 @@ def perturbedEval(pert,nbf,dir,alpha):
     # print '4:there', v[1]
     return pMinusAlpha(nbf,v,alpha)
 
+def polarEval(r,theta,nbf,alpha):
+    global MLE
+    v = MLE.c()
+    d = h.Vector(2)
+    d.x[0] = r*math.cos(theta)
+    d.x[1] = r*math.sin(theta)
+    v.add(d)
+    return pMinusAlpha(nbf,v,alpha)
+
+def polarFind(theta, nbf, alpha):
+    global MLE
+    nbf.setParm(MLE)
+    r0 = 1
+    while polarEval(r0,theta,nbf,alpha) > 0.0:
+        r0 = r0*5
+        assert(r0 < 500000)
+    print 'f(a)', polarEval(0,theta,nbf,alpha)
+    print 'f(b)', polarEval(r0,theta,nbf,alpha)
+    r = optimize.brentq(polarEval,0,r0,(theta,nbf,alpha))
+    return r
+
+def polarInitial(r0,theta,nbf,alpha):
+    global MLE
+    nbf.setParm(MLE)
+    z = polarEval(r0,theta,nbf,alpha)
+    if z > 0.0:
+        a = r0
+        b = r0*1.1
+        while polarEval(b,theta,nbf,alpha) > 0:
+            b= b*1.1
+    elif z<0.0:
+        b = r0
+        a = r0*0.9
+        while polarEval(a,theta,nbf,alpha) < 0:
+            a = a*0.9
+    r = optimize.brentq(polarEval,a,b,(theta,nbf,alpha))
+    return r
+
+
+def polarContinue(theta0, nbf, alpha, points):
+    r = polarFind(theta0, nbf, alpha)
+    rt = [[r,theta0]]
+    for i in range(points):
+        theta = theta0 + 2*math.pi*(i+1)/points
+        r = polarInitial(r,theta,nbf,alpha)
+        rt.append([r,theta])
+    return rt
+
+def polar2xy(rt):
+    xy = []
+    for rtheta in rt:
+        xy.append([rtheta[0]*math.cos(rtheta[1]), rtheta[1]*math.sin(rtheta[1])])
+    return xy
+
 def findSignificant(nbf,alpha):
     global ML, MLE
     nbf.setParm(MLE)
@@ -106,5 +160,3 @@ def findSignificant(nbf,alpha):
     p = optimize.brentq(perturbedEval,0,pert,(nbf,dir,alpha))
     dir.mul(p)
     return dir
-
-
