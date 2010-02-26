@@ -100,7 +100,7 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
 def predict(Eve,Sys,m,P,t0,t1,injectionTime):
     tol = 1e-7
     assert(injectionTime[0] <= t0 + tol)
-    assert(injectionTime[1] > t0)
+    assert(injectionTime[1] + tol > t0)
     assert(injectionTime[-1] <= t1 + tol)
     mb = m
     tStart = t0
