@@ -3,6 +3,7 @@ from myscipy import linalg
 import numpy
 import fitglobals
 import HHBounds
+import svd
 
 def initializeErrorBars(Obs,Sys):
     global saveErrorBars, Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
@@ -90,6 +91,10 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     P = Pb - K*S*K.T
     m = mb + updateInBounds(K,e,mb,bounds)
     saveData(Obs,time,m,P)  # Saves error bars
+    if fitglobals.debug:
+        print 'New Pb'
+        print 'Pb values', svd.svd(Pb.tolist())[1]
+        print 'P values', svd.svd(P.tolist())[1]
     return (m,P,e,S)
 
 def predict(Eve,Sys,m,P,t0,t1,injectionTime):
@@ -148,7 +153,7 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = Eve.ObsNum
     (m0, P0) = initialStateCov(Eve.Sto,Sys)
-    
+
     # Main loop
     if collectionTimes[0] == 0.0:
         (m,P,e,S) = update(Eve.Obs,data[0],collectionTimes[0],ObsNum[0],m0,P0,bounds)

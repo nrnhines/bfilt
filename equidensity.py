@@ -2,6 +2,10 @@ import svd
 import EKF
 import math
 import numpy
+import Gnuplot
+import nrnbfilt
+
+G = Gnuplot.Gnuplot()
 
 def equipoints(k,state0,state1,num):
     mat = [[EKF.Ps[k][state0, state0],EKF.Ps[k][state0, state1]],[EKF.Ps[k][state1, state0],EKF.Ps[k][state1, state1]]]
@@ -14,11 +18,22 @@ def equipoints(k,state0,state1,num):
     m = numpy.matrix(m)
     SLam = numpy.matrix(SLam)
     U = numpy.matrix(U)
-    x = []
-    y = []
+    xy = []
     for angle in numpy.arange(0,2*math.pi+2*math.pi/num,2*math.pi/num):
         circlepoint = numpy.matrix([[math.cos(angle)],[math.sin(angle)]])
         xypoints = m + U*SLam*circlepoint
-        x.append(xypoints[0,0])
-        y.append(xypoints[1,0])
-    return (x,y)
+        xy.append([xypoints[0,0], xypoints[1,0]])
+    return xy
+
+def frame(k,state0,state1,num):
+    xy = equipoints(k,state0,state1,num)
+    global G
+    G.plot(xy)
+    G.reset()
+
+def movie(state0,state1,num=200):
+    n = len(EKF.ms)
+    for k in range(n):
+        print k
+        frame(k,state0,state1,num)
+        raw_input()
