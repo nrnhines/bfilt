@@ -90,6 +90,15 @@ def updateInBounds(K,e,mb,bounds):
     # print 'Ke', Ke
     return Ke*alpha*tolfactor
 
+def defineConstraints():
+    D = numpy.matrix([[1.0, 1.0, 1.0]])
+    d = numpy.matrix([[1]])
+    return (D,d)
+
+def project(m,P,D,d):
+    mtilde = m - P*D.T*(D*P*D.T).I*(D*m - d)
+    return mtilde
+
 def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     (hh,S,H,V) = modelMeasurement(Obs,time,ObsNum,mb,Pb)
     saveData(Obs,time,mb,Pb)
@@ -97,6 +106,8 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
     m = mb + updateInBounds(K,e,mb,bounds)
+    (D,d) = defineConstraints()
+    m = project(m,P,D,d)
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
