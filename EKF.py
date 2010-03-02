@@ -69,6 +69,13 @@ def updateInBounds(K,e,mb,bounds):
             # print 'bounds[i][0]', bounds[i][0]
             # print 'mb', mb
             # print 'Ke', Ke
+            if (bounds[i][0]*mb + tolbound < bounds[i][1]):
+                print 'i', i
+                print 'bounds[i][1]', bounds[i][1]
+                print 'bounds[i][0]', bounds[i][0]
+                print 'mb', mb
+                print 'tolbound', tolbound
+                print  'bounds[i][0]*mb + tolbound', bounds[i][0]*mb + tolbound
             assert(bounds[i][0]*mb + tolbound >= bounds[i][1])
             # solves for alpha such that update on boundary
             newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
