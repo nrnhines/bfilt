@@ -91,11 +91,15 @@ def updateInBounds(K,e,mb,bounds):
     return Ke*alpha*tolfactor
 
 def defineConstraints():
-    D = numpy.matrix([[1.0, 1.0, 1.0]])
+    D = numpy.matrix([[0.0, 1.0, 1.0, 1.0]])
     d = numpy.matrix([[1]])
     return (D,d)
 
 def project(m,P,D,d):
+    # print 'm', m
+    # print 'P', P
+    # print 'D', D
+    # print 'd', d
     mtilde = m - P*D.T*(D*P*D.T).I*(D*m - d)
     return mtilde
 

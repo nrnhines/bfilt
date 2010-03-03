@@ -65,6 +65,8 @@ def pMinusAlpha(nbf,v,alpha):
     # print 'before',v
     # print 'here', v[0]
     # print 'there', v[1]
+    print 'likelihood', nbf.likelihood()
+    print 'ML', ML
     nbf.setParm(v)
     CS = 2.0*(nbf.likelihood() - ML)
     return stats.chisqprob(CS,v.size()) - alpha
@@ -100,8 +102,12 @@ def polarFind(theta, nbf, alpha):
     global MLE
     nbf.setParm(MLE)
     r0 = 1
-    while polarEval(r0,theta,nbf,alpha) > 0.0:
+    pe = polarEval(r0,theta,nbf,alpha)
+    print 'pe', pe
+    while pe > 0.0:
         r0 = r0*5
+        pe = polarEval(r0,theta,nbf,alpha)
+        print 'peI', pe
         assert(r0 < 500000)
     print 'f(a)', polarEval(0,theta,nbf,alpha)
     print 'f(b)', polarEval(r0,theta,nbf,alpha)
