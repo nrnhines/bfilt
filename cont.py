@@ -37,7 +37,7 @@ def jac1(FUN,args,n,ic,fv=None):
   cargs = (a[ic],FUN,args,n,ic)
   DF = jac(cFUN,cargs,n,fv)
 
-def newtn(FUN, x, args)  # returns (x, fx, its)
+def newtn(FUN, x, args): # returns (x, fx, its)
   dx = numpy.inf
   global maxiter, tolf, tolx
 
@@ -48,9 +48,9 @@ def newtn(FUN, x, args)  # returns (x, fx, its)
     if dx == numpy.inf:
       print ' Iteration #', i, 'norm(F)', normf
     else:
-      print(' Iteration #', i, 'norm(F)', normf, 'norm(dx)', normdx
-    if normf <= tolf and normdx <= tolx
-      disp(' Convergence!')
+      print ' Iteration #', i, 'norm(F)', normf, 'norm(dx)', normdx
+    if (normf <= tolf and normdx <= tolx):
+      print ' Convergence!'
       return (x,fx,i)
 
     Df = jac(FUN,x,args,fx)
@@ -102,14 +102,14 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
         laststep = step
         step = (aicf - a0)/ta
         x = x0 + step*tx
-        a(ic) = aicf
+        a[ic] = aicf
 
       (x,fx,its) = newtn(FUN, x, (a,)+args)
 
-      print 'step =', step, 'its =' its, 'a(ic) = ', a[ic]
+      print 'step =', step, 'its =', its, 'a(ic) = ', a[ic]
 
       if its == numpy.inf:
-      atend = False
+        atend = False
 
       if its > 10:
         step = step * 0.5
