@@ -8,9 +8,13 @@ tolx = numpy.inf
 minstep = 1e-5
 
 def jac(FUN,args,n,fv=None):
+  print 'jac a:', args
+  print 'jac an:', n
+  print 'jac FUN', FUN
   if fv == None:
+    print 'fv args', args
     fv = FUN(*args)
-  DF = numpy.zeros([1,len(args[n])])  # nongeneral should be len(fv)
+  DF = numpy.matrix(numpy.zeros([1,len(args[n])]))  # nongeneral should be len(fv)
   for j in range(len(args[n])):
     temp = args[n][j]
     if abs(temp) > 1:
@@ -28,13 +32,22 @@ def jac(FUN,args,n,fv=None):
     DF[:,j] = (f - fv)/h
   return DF
 
-def jac1(FUN,args,n,ic,fv):
+def jac1(FUN,args,n,ic,fv=None):
+  print 'jac 1', [args[n][ic]]
+  cargs = ([args[n][ic]],FUN,args,n,ic)
+  DF = jac(cFUN,cargs,0,fv)  # derivative wrt 0th comp of args
+  return DF
 
 def cFUN(aic,FUN,args,n,ic):
   temp = args[n][ic]
-  args[n][ic] = aic
+  args[n][ic] = aic[0]
+  print 'cFUN temp', temp
+  print 'cFUN args', args
+  print 'cFUN aic', aic
   fx = FUN(*args)
   args[n][ic] = temp
+  print 'cFUN args[n][ic]', args[n][ic]
+  print 'cFUN fx', fx
   return fx
 
 def newtn(FUN, x, args): # returns (x, fx, its)
@@ -53,12 +66,13 @@ def newtn(FUN, x, args): # returns (x, fx, its)
       print ' Convergence!'
       return (x,fx,i)
 
-    Df = jac(FUN,x,args,fx)
+    Df = jac(FUN,(x,)+args,0,fx)
     dx = - Df.I*fx
     x = x + dx
 
   i = numpy.inf
   print ' Maximum number of iterations exceeded'
+  return (x,fx,i)
 
 
 def cont(FUN, x0, a0, args, ic, aicf, step):
@@ -79,6 +93,8 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
   print 'x', x
   DxF = jac(FUN,(x,a)+args,0)
   DaF = jac1(FUN,(x,a)+args,1,ic)
+  print 'DxF', DxF
+  print 'DaF', DaF
   DaX = -DxF.I*DaF
   atbegin = True
 
