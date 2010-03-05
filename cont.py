@@ -3,14 +3,14 @@ import math
 
 sqrteps = math.sqrt(numpy.finfo(numpy.double).eps)
 maxiter = 20
-tolfun = 1e-10
+tolf = 1e-10
 tolx = numpy.inf
 minstep = 1e-5
 
 def jac(FUN,args,n,fv=None):
   if fv == None:
     fv = FUN(*args)
-  DF = numpy.zeros([len(fv),len(args[n])])
+  DF = numpy.zeros([1,len(args[n])])  # nongeneral should be len(fv)
   for j in range(len(args[n])):
     temp = args[n][j]
     if abs(temp) > 1:
@@ -28,23 +28,23 @@ def jac(FUN,args,n,fv=None):
     DF[:,j] = (f - fv)/h
   return DF
 
-def cFUN(aic,FUN,args,n,ic):
-  args[n][ic] = aic
-  FUN(x,*args)
+def jac1(FUN,args,n,ic,fv):
 
-def jac1(FUN,args,n,ic,fv=None):
-  global cFUN
-  cargs = (a[ic],FUN,args,n,ic)
-  DF = jac(cFUN,cargs,n,fv)
+def cFUN(aic,FUN,args,n,ic):
+  temp = args[n][ic]
+  args[n][ic] = aic
+  fx = FUN(*args)
+  args[n][ic] = temp
+  return fx
 
 def newtn(FUN, x, args): # returns (x, fx, its)
   dx = numpy.inf
   global maxiter, tolf, tolx
 
   for i in range(maxiter):
-    fx = feval(FUN,x,*args)
-    normf = sqrt((fx.T*fx)[0,0]);
-    normdx = sqrt((dx.T*dx)[0,0]);
+    fx = FUN(x,*args)
+    normf = math.sqrt(fx*fx)  # nongeneral: should be dot product
+    normdx = math.sqrt(dx*dx)  # nongeneral: should be dot product
     if dx == numpy.inf:
       print ' Iteration #', i, 'norm(F)', normf
     else:
@@ -76,6 +76,7 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
     step = step * (-1)
   atend = False
 
+  print 'x', x
   DxF = jac(FUN,(x,a)+args,0)
   DaF = jac1(FUN,(x,a)+args,1,ic)
   DaX = -DxF.I*DaF
@@ -130,9 +131,12 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
   return (px,pa)
 
 def testFUN(x,a,val):
-  return x*x + a*a - val
+  print 'test x', x
+  print 'test a', a
+  print 'test val', val
+  return x[0]*x[0] + a[0]*a[0] - val
 
 def test():
   global testFUN
-  (px,pa) = cont(testFUN,1,1,(2,),1,0,0.01)
+  (px,pa) = cont(testFUN,[1.0],[1.0],(2,),0,0,0.01)
   return (px, pa)
