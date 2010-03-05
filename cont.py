@@ -41,14 +41,13 @@ def jac1(FUN,args,n,ic,fv=None):
 def cFUN(aic,FUN,args,n,ic):
   temp = args[n][ic]
   args[n][ic] = aic[0]
-  # print 'cFUN temp', temp
-  # print 'cFUN args', args
-  # print 'cFUN aic', aic
   fx = FUN(*args)
   args[n][ic] = temp
-  # print 'cFUN args[n][ic]', args[n][ic]
-  # print 'cFUN fx', fx
   return fx
+
+def newt1(FUN, xx, args, n, ix):
+  (x,fx,its) = newtn(cFUN, xx, (FUN, args, n, ix))
+  return (x,fx,its)
 
 def newtn(FUN, x, args): # returns (x, fx, its)
   dx = numpy.inf
@@ -80,15 +79,13 @@ def newtn(FUN, x, args): # returns (x, fx, its)
   print ' Maximum number of iterations exceeded'
   return (x,fx,i)
 
-
-def cont(FUN, x0, a0, args, ic, aicf, step):
+def cont(FUN, px, pa, args, ic, aicf, step):
   global minstep
-  (x,fx,its)  = newtn(FUN, numpy.matrix(x0), (a0,)+args)
+  a0 = numpy.matrix(pa[-1])
+  (x,fx,its)  = newtn(FUN, numpy.matrix(px[-1]), (a0,)+args)
   assert(its < numpy.inf)
 
-  a = numpy.matrix(a0)
-  px = [numpy.matrix(x)]
-  pa = [numpy.matrix(a0)]
+  a = numpy.matrix(pa[-1])
 
   # print 'px', px
   # print 'pa', pa
@@ -109,8 +106,15 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
 
   while not atend:
     if not atbegin:
-      DaX = (px[-1] - px[-2])/(pa[-1][ic] - pa[-2][ic])
+      print 'px[-1]', px[-1]
+      print 'px[-2]', px[-2]
+      print 'pa[-1][0,ic]', pa[-1][0,ic]
+      print 'pa[-2][0,ic]', pa[-2][0,ic]
+      DaX = (px[-1] - px[-2])/(pa[-1][0,ic] - pa[-2][0,ic])
 
+    print 'DaX', DaX
+    print 'pa[-1]', pa[-1]
+    print 'px[-1]', px[-1]
     nt = math.sqrt((DaX*DaX.T)[0,0] + 1)
     tx = DaX/nt
     ta = 1/nt
@@ -128,6 +132,7 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
       a[0,ic] = a[0,ic] + step*ta
       print 'a', a
       print 'a0', a0
+      print 'aicf', aicf
       if (aicf - a[0,ic])*step <= 0:
         atend = True
         laststep = step
@@ -157,6 +162,88 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
 
     px.append(x.copy())
     pa.append(a.copy())
+    atbegin = False
+    # print 'add px', px
+    # print 'add pa', pa
+
+  return (px,pa)
+
+def cont1(FUN, px, args, ix, ia, aicf, step):
+  global minstep
+  x0 = numpy.matrix(px[-1])
+  (x,fx,its)  = newt1(FUN, x[0,ix], args, 0, ix)
+  assert(its < numpy.inf)
+
+  a = numpy.matrix(px[-1][0,ia])
+
+  if aicf == a[0,ic]:
+    return (px,pa)
+  elif (aicf - a[0,ic])*step < 0:
+    step = step * (-1)
+  atend = False
+
+  # print 'x', x
+  DxF = jac1(FUN,(x,)+args,0,ix)
+  DaF = jac1(FUN,(x,)+args,0,ia)
+  # print 'DxF', DxF
+  # print 'DaF', DaF
+  DaX = -DxF.I*DaF
+  atbegin = True
+
+  while not atend:
+    if not atbegin:
+      DaX = (px[-1][0,ix] - px[-2][0,ix])/(px[-1][0,ia] - px[-2][0,ia])
+
+    print 'DaX', DaX
+    print 'pa[-1]', pa[-1]
+    print 'px[-1]', px[-1]
+    nt = math.sqrt((DaX*DaX.T)[0,0] + 1)
+    tx = DaX/nt
+    ta = 1/nt
+
+    # print 'px & px[-1]', px, px[-1]
+    # print 'pa & pa[-1]', pa, pa[-1]
+
+    x0 = px[-1][0,ix]
+    a0 = px[-1][0,ia]
+    its = numpy.inf
+
+    while its == numpy.inf:
+      x = x0 + step*tx
+      a = a0
+      a = a + step*ta
+      print 'a', a
+      print 'a0', a0
+      print 'aicf', aicf
+      if (aicf - a)*step <= 0:
+        atend = True
+        laststep = step
+        step = (aicf - a0)/ta
+        x = x0 + step*tx
+        a = aicf
+
+      (x,fx,its) = newt1(FUN, x, args, 0, ix)
+
+      print 'step =', step, 'its =', its
+
+      if its == numpy.inf:
+        atend = False
+
+      if its > 10:
+        step = step * 0.5
+      elif its < 4:
+        step = step * 1.3
+
+      if numpy.abs(step) < minstep:
+        print 'STEP less than MINSTEP; exiting ...'
+        return (px,pa)
+
+      if numpy.abs(step*ta) < minstep:
+        print 'Increment to contin variable less than MINSTEP; exiting ...'
+        return (px,pa)
+
+    px.append(x.copy())
+    atbegin = False
     # print 'add px', px
     # print 'add pa', pa
 
@@ -176,5 +263,5 @@ def testFUN(x,a,val):
 
 def test():
   global testFUN
-  (px,pa) = cont(testFUN,[1.0],[1.0],(2,),0,0,0.01)
+  (px,pa) = cont(testFUN,[numpy.matrix([[1.0]])],[numpy.matrix([[1.0]])],(2,),0,-1.0,0.01)
   return (px, pa)
