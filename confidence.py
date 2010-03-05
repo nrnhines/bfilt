@@ -65,8 +65,8 @@ def pMinusAlpha(nbf,v,alpha):
     # print 'before',v
     # print 'here', v[0]
     # print 'there', v[1]
-    print 'likelihood', nbf.likelihood()
-    print 'ML', ML
+    # print 'likelihood', nbf.likelihood()
+    # print 'ML', ML
     nbf.setParm(v)
     CS = 2.0*(nbf.likelihood() - ML)
     return stats.chisqprob(CS,v.size()) - alpha
@@ -91,12 +91,10 @@ def perturbedEval(pert,nbf,dir,alpha):
 
 def polarEval(r,theta,nbf,alpha):
     global MLE
-    v = MLE.c()
     d = h.Vector(2)
-    d.x[0] = r*math.cos(theta)
-    d.x[1] = r*math.sin(theta)
-    v.add(d)
-    return pMinusAlpha(nbf,v,alpha)
+    d.x[0] = MLE[0] + r*math.cos(theta)
+    d.x[1] = MLE[1] + r*math.sin(theta)
+    return pMinusAlpha(nbf,d,alpha)
 
 def polarFind(theta, nbf, alpha):
     global MLE
@@ -141,11 +139,28 @@ def polarContinue(theta0, nbf, alpha, points):
         rt.append([r,theta])
     return rt
 
-def polar2xy(rt):
+def polar2xy(rt,origin=None):
+    global MLE
     xy = []
+    if origin == None:
+        M = MLE
+    else:
+        M = origin
+        xy.append([M[0],M[1]])
     for rtheta in rt:
-        xy.append([rtheta[0]*math.cos(rtheta[1]), rtheta[1]*math.sin(rtheta[1])])
+        xy.append([M[0] + rtheta[0]*math.cos(rtheta[1]), M[1] + rtheta[1]*math.sin(rtheta[1])])
     return xy
+
+def testxy(nbf, List):
+    for xy in List:
+        p = nbf.getParm()
+        p.x[0] = xy[0]
+        p.x[1] = xy[1]
+        nbf.setParm(p)
+        like = nbf.likelihood()
+        print 'xy', xy
+        print 'L', like
+        print 'p-alpha', pMinusAlpha(nbf,p,0.05)
 
 def findSignificant(nbf,alpha):
     global ML, MLE
