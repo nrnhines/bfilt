@@ -77,6 +77,15 @@ def newtn(FUN, x, args): # returns (x, fx, its)
   return (x,fx,i)
 
 
+def ctest(a0):
+  pa = [numpy.matrix(a0)]
+  print 'pa & pa[-1]', pa, pa[-1]
+  return pa
+
+def cctest():
+  pa = conttest(1)
+  return pa
+
 def cont(FUN, x0, a0, args, ic, aicf, step):
   global minstep
   (x,fx,its)  = newtn(FUN, x0, (a0,)+args)
@@ -85,6 +94,11 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
   a = a0
   px = [numpy.matrix(x)]
   pa = [numpy.matrix(a0)]
+  print 'px & px[-1]', px, px[-1]
+  print 'pa & pa[-1]', pa, pa[-1]
+  temp = pa
+  print 'temp & temp[-1]', temp, temp[-1]
+  return (px,pa)
 
   print 'px', px
   print 'pa', pa
