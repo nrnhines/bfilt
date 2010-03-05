@@ -75,7 +75,7 @@ def updateInBounds(K,e,mb,bounds):
                 print 'bounds[i][0]', bounds[i][0]
                 print 'mb', mb
                 print 'tolbound', tolbound
-                print  'bounds[i][0]*mb + tolbound', bounds[i][0]*mb + tolbound
+                print 'bounds[i][0]*mb + tolbound', bounds[i][0]*mb + tolbound
             assert(bounds[i][0]*mb + tolbound >= bounds[i][1])
             # solves for alpha such that update on boundary
             newalpha = (bounds[i][1]-bounds[i][0]*mb)/(bounds[i][0]*Ke)
@@ -90,12 +90,36 @@ def updateInBounds(K,e,mb,bounds):
     # print 'Ke', Ke
     return Ke*alpha*tolfactor
 
-def defineConstraints():
-    D = numpy.matrix([[1.0, 1.0, 1.0]])
+def equalityConstraints():
+    D = numpy.matrix([[0.0, 1.0, 1.0, 1.0]])
     d = numpy.matrix([[1]])
     return (D,d)
 
+def addInequalitiesViolated(m,bounds,D,d):
+    tol = 1e-7
+    first = (D == None)
+    allSatisfied = True
+    for i in range(len(bounds)):
+        if bounds[i][0]*m + tol < bounds[i][1]:
+            allSatisfied = False
+            Dnew = bounds[i][0]
+            dnew = numpy.matrix(bounds[i][1])
+            if first:
+                D = Dnew
+                d = dnew
+                first = False
+            else:
+                # print 'd', d
+                # print 'dnew', dnew
+                D = numpy.bmat('D; Dnew')
+                d = numpy.bmat('d; dnew')
+    return (D,d,allSatisfied)
+
 def project(m,P,D,d):
+    # print 'm', m
+    # print 'P', P
+    # print 'D', D
+    # print 'd', d
     mtilde = m - P*D.T*(D*P*D.T).I*(D*m - d)
     return mtilde
 
@@ -105,9 +129,14 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    m = mb + updateInBounds(K,e,mb,bounds)
-    (D,d) = defineConstraints()
-    m = project(m,P,D,d)
+    # m = mb + updateInBounds(K,e,mb,bounds)
+    m = mb + K*e
+    (D,d) = equalityConstraints()
+    (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
+    allSatisfied = (D==None)
+    while not allSatisfied:
+        m = project(m,P,D,d)
+        (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
