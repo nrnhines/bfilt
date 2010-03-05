@@ -3,14 +3,14 @@ import math
 
 sqrteps = math.sqrt(numpy.finfo(numpy.double).eps)
 maxiter = 20
-tolf = 1e-10
+tolf = 1e-5
 tolx = numpy.inf
 minstep = 1e-5
 
 def jac(FUN,args,n,fv=None):
-  print 'jac a:', args
-  print 'jac an:', n
-  print 'jac FUN', FUN
+  # print 'jac a:', args
+  # print 'jac an:', n
+  # print 'jac FUN', FUN
   if fv == None:
     print 'fv args', args
     fv = FUN(*args)
@@ -28,12 +28,12 @@ def jac(FUN,args,n,fv=None):
     arglist[n] = x
     argtuple = tuple(arglist)
     f = FUN(*argtuple)
-    print argtuple #for debugging remove later
+    # print argtuple #for debugging remove later
     DF[:,j] = (f - fv)/h
   return DF
 
 def jac1(FUN,args,n,ic,fv=None):
-  print 'jac 1', [args[n][ic]]
+  # print 'jac 1', [args[n][ic]]
   cargs = ([args[n][ic]],FUN,args,n,ic)
   DF = jac(cFUN,cargs,0,fv)  # derivative wrt 0th comp of args
   return DF
@@ -41,13 +41,13 @@ def jac1(FUN,args,n,ic,fv=None):
 def cFUN(aic,FUN,args,n,ic):
   temp = args[n][ic]
   args[n][ic] = aic[0]
-  print 'cFUN temp', temp
-  print 'cFUN args', args
-  print 'cFUN aic', aic
+  # print 'cFUN temp', temp
+  # print 'cFUN args', args
+  # print 'cFUN aic', aic
   fx = FUN(*args)
   args[n][ic] = temp
-  print 'cFUN args[n][ic]', args[n][ic]
-  print 'cFUN fx', fx
+  # print 'cFUN args[n][ic]', args[n][ic]
+  # print 'cFUN fx', fx
   return fx
 
 def newtn(FUN, x, args): # returns (x, fx, its)
@@ -62,6 +62,8 @@ def newtn(FUN, x, args): # returns (x, fx, its)
       print ' Iteration #', i, 'norm(F)', normf
     else:
       print ' Iteration #', i, 'norm(F)', normf, 'norm(dx)', normdx
+    # print 'normf', normf, 'tolf', tolf, 'normdx', normdx, 'tolx', tolx
+    # print (normf <= tolf and normdx <= tolx)
     if (normf <= tolf and normdx <= tolx):
       print ' Convergence!'
       return (x,fx,i)
@@ -81,8 +83,11 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
   assert(its < numpy.inf)
 
   a = a0
-  px = [x]
-  pa = [a0]
+  px = [numpy.matrix(x)]
+  pa = [numpy.matrix(a0)]
+
+  print 'px', px
+  print 'pa', pa
 
   if aicf == a[ic]:
     return (px,pa)
@@ -93,8 +98,8 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
   print 'x', x
   DxF = jac(FUN,(x,a)+args,0)
   DaF = jac1(FUN,(x,a)+args,1,ic)
-  print 'DxF', DxF
-  print 'DaF', DaF
+  # print 'DxF', DxF
+  # print 'DaF', DaF
   DaX = -DxF.I*DaF
   atbegin = True
 
@@ -106,18 +111,25 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
     tx = DaX/nt
     ta = 1/nt
 
+    print 'px & px[-1]', px, px[-1]
+    print 'pa & pa[-1]', pa, pa[-1]
+    temp = pa
+    print 'temp & temp[-1]', temp, temp[-1]
+    return (px,pa)
     x0 = px[-1]
-    a0 = pa[-1][ic]
+    a0 = pa[-1]
     its = numpy.inf
 
     while its == numpy.inf:
       x = x0 + step*tx
-      a[ic] = a0 + step*ta
+      print 'a', a
+      print 'a0', a0
+      a[0,ic] = a0[0,ic] + step*ta
 
-      if (aicf - a[ic])*step <= 0:
+      if (aicf - a[0,ic])*step <= 0:
         atend = True
         laststep = step
-        step = (aicf - a0)/ta
+        step = (aicf - a0[0,ic])/ta
         x = x0 + step*tx
         a[ic] = aicf
 
@@ -143,13 +155,15 @@ def cont(FUN, x0, a0, args, ic, aicf, step):
 
     px.append(x)
     pa.append(a)
+    print 'add px', px
+    print 'add pa', pa
 
   return (px,pa)
 
 def testFUN(x,a,val):
-  print 'test x', x
-  print 'test a', a
-  print 'test val', val
+  # print 'test x', x
+  # print 'test a', a
+  # print 'test val', val
   return x[0]*x[0] + a[0]*a[0] - val
 
 def test():
