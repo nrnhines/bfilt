@@ -1,5 +1,6 @@
 import numpy
 import math
+import copy
 
 sqrteps = math.sqrt(numpy.finfo(numpy.double).eps)
 maxiter = 20
@@ -13,39 +14,75 @@ def jac(FUN,args,n,fv=None):
   # print 'jac FUN', FUN
   if fv == None:
     fv = FUN(*args)
+    print 'j -1: fv', fv
   DF = numpy.matrix(numpy.zeros([1,len(args[n])]))  # nongeneral should be len(fv)
   for j in range(len(args[n])):
-    temp = args[n][j]
+    temp = args[n][0,j]
     if abs(temp) > 1:
       h = sqrteps*abs(temp)
     else:
       h=sqrteps
     # print 'args[n]', args[n]
     x = args[n].copy()
-    x[j] = temp+h
-    h = x[j] - temp  # trick to reduce finite precision error
+    # if type(x) is numpy.core.defmatrix.matrix:
+    # x[0,j] = temp + h
+    # h = x[0,j] + h
+    # else:
+    x[0,j] = temp+h
+    h = x[0,j] - temp  # trick to reduce finite precision error
     arglist = list(args)
     arglist[n] = x
     argtuple = tuple(arglist)
+    print 'ARGTUPLE', argtuple
     f = FUN(*argtuple)
+    print 'j', j, 'f', f
     # print argtuple #for debugging remove later
     DF[:,j] = (f - fv)/h
   return DF
 
 def jac1(FUN,args,n,ic,fv=None):
   # print 'jac 1', [args[n][ic]]
-  cargs = (numpy.matrix([[args[n][0,ic]]]),FUN,args,n,ic)
+  argsn = args[n]
+  if type(argsn) is numpy.core.defmatrix.matrix:
+    v = argsn[0,ic]
+  elif type(argsn) is list:
+    v = argsn[ic]
+  else:
+    v = argsn
+  cargs = (numpy.matrix(v),FUN,args,n,ic)
   DF = jac(cFUN,cargs,0,fv)  # derivative wrt 0th comp of args
   return DF
 
 def cFUN(aic,FUN,args,n,ic):
-  temp = args[n][ic]
-  args[n][ic] = aic[0]
-  fx = FUN(*args)
-  args[n][ic] = temp
+  print 'CFUN args', args
+  print 'CFUN n', n
+  print 'CFUN FUN', FUN
+  print 'CFUN aic', aic
+
+  argscopy = copy.deepcopy(args)
+  if type(argscopy[n]) is numpy.core.defmatrix.matrix:
+    temp = argscopy[n][0,ic]
+  elif type(argscopy[n]) is list:
+    temp = argscopy[n][ic]
+  else:
+    temp= argscopy
+  if type(aic) is list:
+    argscopy[n][ic] = aic[0]
+  else:
+    if type(argscopy[n]) is numpy.core.defmatrix.matrix:
+      argscopy[n][0,ic] = aic
+    else:
+      argscopy[n][ic] = aic
+  fx = FUN(*argscopy)
+
   return fx
 
 def newt1(FUN, xx, args, n, ix):
+  print 'newt1 FUN', FUN
+  print 'newt1 xx', xx
+  print 'newt1 args', args
+  print 'newt1 n', n
+  print 'newt1 ix', ix
   (x,fx,its) = newtn(cFUN, xx, (FUN, args, n, ix))
   return (x,fx,its)
 
@@ -171,14 +208,16 @@ def cont(FUN, px, pa, args, ic, aicf, step):
 def cont1(FUN, px, args, ix, ia, aicf, step):
   global minstep
   x0 = numpy.matrix(px[-1])
-  (x,fx,its)  = newt1(FUN, x[0,ix], args, 0, ix)
+  (xix,fx,its)  = newt1(FUN, x0[0,ix], (x0,)+args, 0, ix)
   assert(its < numpy.inf)
 
+  x = numpy.matrix(x0)
+  x0[0,ix] = xix
   a = numpy.matrix(px[-1][0,ia])
 
-  if aicf == a[0,ic]:
+  if aicf == a:
     return (px,pa)
-  elif (aicf - a[0,ic])*step < 0:
+  elif (aicf - a)*step < 0:
     step = step * (-1)
   atend = False
 
@@ -192,10 +231,9 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
 
   while not atend:
     if not atbegin:
-      DaX = (px[-1][0,ix] - px[-2][0,ix])/(px[-1][0,ia] - px[-2][0,ia])
+      DaX = numpy.matrix(px[-1][0,ix] - px[-2][0,ix])/(px[-1][0,ia] - px[-2][0,ia])
 
     print 'DaX', DaX
-    print 'pa[-1]', pa[-1]
     print 'px[-1]', px[-1]
     nt = math.sqrt((DaX*DaX.T)[0,0] + 1)
     tx = DaX/nt
@@ -222,7 +260,7 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
         x = x0 + step*tx
         a = aicf
 
-      (x,fx,its) = newt1(FUN, x, args, 0, ix)
+      (x,fx,its) = newt1(FUN, x, (px[-1],)+args, 0, ix)
 
       print 'step =', step, 'its =', its
 
@@ -236,18 +274,21 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
 
       if numpy.abs(step) < minstep:
         print 'STEP less than MINSTEP; exiting ...'
-        return (px,pa)
+        return px
 
       if numpy.abs(step*ta) < minstep:
         print 'Increment to contin variable less than MINSTEP; exiting ...'
-        return (px,pa)
+        return px
 
-    px.append(x.copy())
+    newx = px[-1].copy()
+    newx[0,ix] = x[0,0]
+    newx[0,ia] = a
+    px.append(newx)
     atbegin = False
     # print 'add px', px
     # print 'add pa', pa
 
-  return (px,pa)
+  return px
 
 def xypoints(px,pa):
   xy = []
@@ -261,7 +302,18 @@ def testFUN(x,a,val):
   # print 'test val', val
   return x[0]*x[0] + a[0]*a[0] - val
 
+def testFUN1(x,val):
+  print 'testFUN1 x', x
+  print 'testFUN1 v', val
+  f = x[0,0]*x[0,0] + x[0,1]*x[0,1] - val
+  print 'testFUN1 f', f
+  return f
+
 def test():
   global testFUN
   (px,pa) = cont(testFUN,[numpy.matrix([[1.0]])],[numpy.matrix([[1.0]])],(2,),0,-1.0,0.01)
   return (px, pa)
+
+def test1():
+  global testFUN
+  px = cont1(testFUN1, [numpy.matrix([[1.0, 1.0]])], (2,), 0, 1, -1, 0.01)
