@@ -227,11 +227,26 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
   # print 'DxF', DxF
   # print 'DaF', DaF
   DaX = -DxF.I*DaF
+  sign0 = DaX[0,0]
+  if sign0 == 0.0:
+    getnewsign0 = True
+  else:
+    getnewsign0 = False
   atbegin = True
 
   while not atend:
     if not atbegin:
       DaX = numpy.matrix(px[-1][0,ix] - px[-2][0,ix])/(px[-1][0,ia] - px[-2][0,ia])
+
+    sign1 = DaX[0,0]
+    if getnewsign0:
+      sign0 = Dax[0,0]
+      if not sign0 == 0.0:
+        getnewsign0 = False
+    if sign0*sign1 < 0:
+      print 'DaX changed sign, exiting ...'
+      return px
+    atbegin = True
 
     # print 'DaX', DaX
     # print 'px[-1]', px[-1]
@@ -294,10 +309,13 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
   # print 'Now returning px', px
   return px
 
-def xypoints(px,pa):
+def xypoints(px,pa=None):
   xy = []
   for i in range(len(px)):
-    xy.append([px[i][0,0],pa[i][0,0]])
+    if pa == None:
+      xy.append([px[i][0,0],px[i][0,1]])
+    else:
+      xy.append([px[i][0,0],pa[i][0,0]])
   return xy
 
 def testFUN(x,a,val):
@@ -318,7 +336,12 @@ def test():
   (px,pa) = cont(testFUN,[numpy.matrix([[1.0]])],[numpy.matrix([[1.0]])],(2,),0,-1.0,0.01)
   return (px, pa)
 
-def test1():
+def test1(n=1):
   global testFUN
-  px = cont1(testFUN1, [numpy.matrix([[1.0, 1.0]])], (2,), 0, 1, -1, 0.01)
+  px = [numpy.matrix([[1.0, 1.0]])]
+  args = [(0,1,-1,0.01), (1,0,-1,0.01), (0,1,1,0.01), (1,0,1,0.01), (0,1,-1,0.01)]
+
+  for i in range(n):
+    b = args[i]
+    px = cont1(testFUN1, px, (2,), *b)
   return px
