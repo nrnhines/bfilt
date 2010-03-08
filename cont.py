@@ -14,7 +14,7 @@ def jac(FUN,args,n,fv=None):
   # print 'jac FUN', FUN
   if fv == None:
     fv = FUN(*args)
-    print 'j -1: fv', fv
+    # print 'j -1: fv', fv
   DF = numpy.matrix(numpy.zeros([1,len(args[n])]))  # nongeneral should be len(fv)
   for j in range(len(args[n])):
     temp = args[n][0,j]
@@ -33,9 +33,9 @@ def jac(FUN,args,n,fv=None):
     arglist = list(args)
     arglist[n] = x
     argtuple = tuple(arglist)
-    print 'ARGTUPLE', argtuple
+    # print 'ARGTUPLE', argtuple
     f = FUN(*argtuple)
-    print 'j', j, 'f', f
+    # print 'j', j, 'f', f
     # print argtuple #for debugging remove later
     DF[:,j] = (f - fv)/h
   return DF
@@ -54,10 +54,10 @@ def jac1(FUN,args,n,ic,fv=None):
   return DF
 
 def cFUN(aic,FUN,args,n,ic):
-  print 'CFUN args', args
-  print 'CFUN n', n
-  print 'CFUN FUN', FUN
-  print 'CFUN aic', aic
+  # print 'CFUN args', args
+  # print 'CFUN n', n
+  # print 'CFUN FUN', FUN
+  # print 'CFUN aic', aic
 
   argscopy = copy.deepcopy(args)
   if type(argscopy[n]) is numpy.core.defmatrix.matrix:
@@ -78,11 +78,11 @@ def cFUN(aic,FUN,args,n,ic):
   return fx
 
 def newt1(FUN, xx, args, n, ix):
-  print 'newt1 FUN', FUN
-  print 'newt1 xx', xx
-  print 'newt1 args', args
-  print 'newt1 n', n
-  print 'newt1 ix', ix
+  # print 'newt1 FUN', FUN
+  # print 'newt1 xx', xx
+  # print 'newt1 args', args
+  # print 'newt1 n', n
+  # print 'newt1 ix', ix
   (x,fx,its) = newtn(cFUN, xx, (FUN, args, n, ix))
   return (x,fx,its)
 
@@ -233,8 +233,8 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
     if not atbegin:
       DaX = numpy.matrix(px[-1][0,ix] - px[-2][0,ix])/(px[-1][0,ia] - px[-2][0,ia])
 
-    print 'DaX', DaX
-    print 'px[-1]', px[-1]
+    # print 'DaX', DaX
+    # print 'px[-1]', px[-1]
     nt = math.sqrt((DaX*DaX.T)[0,0] + 1)
     tx = DaX/nt
     ta = 1/nt
@@ -250,9 +250,9 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
       x = x0 + step*tx
       a = a0
       a = a + step*ta
-      print 'a', a
-      print 'a0', a0
-      print 'aicf', aicf
+      # print 'a', a
+      # print 'a0', a0
+      # print 'aicf', aicf
       if (aicf - a)*step <= 0:
         atend = True
         laststep = step
@@ -260,7 +260,10 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
         x = x0 + step*tx
         a = aicf
 
-      (x,fx,its) = newt1(FUN, x, (px[-1],)+args, 0, ix)
+      oldx = px[-1].copy()
+      oldx[0,ix] = x[0,0]
+      oldx[0,ia] = a
+      (x,fx,its) = newt1(FUN, x, (oldx,)+args, 0, ix)
 
       print 'step =', step, 'its =', its
 
@@ -288,6 +291,7 @@ def cont1(FUN, px, args, ix, ia, aicf, step):
     # print 'add px', px
     # print 'add pa', pa
 
+  # print 'Now returning px', px
   return px
 
 def xypoints(px,pa):
@@ -303,10 +307,10 @@ def testFUN(x,a,val):
   return x[0]*x[0] + a[0]*a[0] - val
 
 def testFUN1(x,val):
-  print 'testFUN1 x', x
-  print 'testFUN1 v', val
+  # print 'testFUN1 x', x
+  # print 'testFUN1 v', val
   f = x[0,0]*x[0,0] + x[0,1]*x[0,1] - val
-  print 'testFUN1 f', f
+  # print 'testFUN1 f', f
   return f
 
 def test():
@@ -317,3 +321,4 @@ def test():
 def test1():
   global testFUN
   px = cont1(testFUN1, [numpy.matrix([[1.0, 1.0]])], (2,), 0, 1, -1, 0.01)
+  return px
