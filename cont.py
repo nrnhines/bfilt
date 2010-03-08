@@ -93,7 +93,10 @@ def newtn(FUN, x, args): # returns (x, fx, its)
   for i in range(maxiter):
     fx = FUN(x,*args)
     normf = math.sqrt(fx*fx)  # nongeneral: should be dot product
-    normdx = math.sqrt(dx*dx)  # nongeneral: should be dot product
+    if dx == numpy.inf:
+      normdx = numpy.inf
+    else:
+      normdx = math.sqrt(dx*dx)  # nongeneral: should be dot product
     if dx == numpy.inf:
       print ' Iteration #', i, 'norm(F)', normf
     else:
