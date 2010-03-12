@@ -57,10 +57,11 @@ def test4(Parm):
     return HessFun(Parm)
 
 def rememberMLE(nbf):
-    global H, ML, MLE
+    global H, Info, ML, MLE
     MLE = nbf.getParm()
     ML = nbf.likelihood()
-    H = Hessian(nbf)
+    H = numpy.matrix(Hessian(nbf))
+    Info = H.I
 
 def return2MLE(nbf):
     global MLE
@@ -112,20 +113,21 @@ def hessEval(r,theta, nbf, alpha=0.0):
     global H, MLE
     x = r*math.cos(theta)
     y = r*math.sin(theta)
-    HI = numpy.matrix(H).I
+    print 'x', x, 'y', y
+    # HI = numpy.matrix(H).I
     xy = numpy.matrix([[x],[y]])
-    CS = xy.T*HI*xy
+    CS = xy.T*H*xy
     return stats.chisqprob(CS,2)-alpha
 
 def hessTest(List):
     global H,ML
-    HI = numpy.matrix(H).I
+    # HI = numpy.matrix(H).I
     copyList = List[:]
     for xy in copyList:
         xy = numpy.matrix(xy).T
         xy[0] -= MLE[0]
         xy[1] -= MLE[1]
-        CS = xy.T*HI*xy
+        CS = xy.T*H*xy
         print 'p-value:', stats.chisqprob(CS,2)
 
 def polarFind(theta, nbf, alpha):
