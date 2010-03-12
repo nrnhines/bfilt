@@ -113,7 +113,7 @@ def hessEval(r,theta, nbf, alpha=0.0):
     global H, MLE
     x = r*math.cos(theta)
     y = r*math.sin(theta)
-    print 'x', x, 'y', y
+    # print 'x', x, 'y', y
     # HI = numpy.matrix(H).I
     xy = numpy.matrix([[x],[y]])
     CS = xy.T*H*xy
@@ -196,6 +196,8 @@ def polar2xy(rt,origin=None):
         xy.append([M[0],M[1]])
     for rtheta in rt:
         xy.append([M[0] + rtheta[0]*math.cos(rtheta[1]), M[1] + rtheta[0]*math.sin(rtheta[1])])
+        # print 'rtheta', rtheta
+        # print 'xy', xy[-1]
     return xy
 
 def log2linear(List):
