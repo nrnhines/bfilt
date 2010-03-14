@@ -25,6 +25,7 @@ class Confide(object):
         self.convert = self.polar2x_y
         self.plotx = []
         self.ploty = []
+        self.CI = []
 
     def Hessian(self):
         # Read current values of parameters (hopefully MLEs)
@@ -129,6 +130,13 @@ class Confide(object):
         b = self.MLE[k] + delta
         return (a,b)
 
+    def CIs(self):
+        self.CI = []
+        for k in range(self.MLE.size()):
+            (a,b) = self.getInterval(k)
+            self.CI.append([a,b])
+        return self.CI
+
     def polarInitial(self,r0,theta):
         self.return2MLE()
         z = self.funEval(r0,theta)
@@ -189,6 +197,18 @@ class Confide(object):
             xy.append([M[0] + rtheta[0]*math.cos(rtheta[1]), M[1] + rtheta[0]*math.sin(rtheta[1])])
         return xy
 
+    def CIpoints(self, k0, k1):
+        self.CIs()
+        x0 = numpy.arange(self.CI[k0][0],self.CI[k0][1],(self.CI[k0][1]-self.CI[k0][0])/50.0)
+        y0 = []
+        for x in x0:
+            y0.append(self.MLE[1])
+        y1 = numpy.arange(self.CI[k1][0],self.CI[k1][1],(self.CI[k1][1]-self.CI[k1][0])/50.0)
+        x1 = []
+        for y in y1:
+            x1.append(self.MLE[0])
+        return (x0, y0, x1, y1)
+
     def plot(self,true=None):
         assert(len(self.plotx)>0)
         assert(len(self.plotx) == len(self.ploty))
@@ -199,5 +219,8 @@ class Confide(object):
         pyplot.plot([self.MLE[0]],[self.MLE[1]],'go')
         if not true == None:
             pyplot.plot([true[0]],[true[1]],'b+')
+        (x0, y0, x1, y1) = self.CIpoints(0,1)
+        pyplot.plot(x0,y0,'go')
+        pyplot.plot(x1,y1,'go')
         pyplot.ion()
         pyplot.show()
