@@ -22,7 +22,7 @@ class Confide(object):
         self.N = N
         self.setMLE()
         self.funEval = self.hessEval
-        self.intFun = self.profile21
+        self.intFun = self.profile1
         self.convert = self.polar2x_y
         self.plotx = []
         self.ploty = []
@@ -85,13 +85,18 @@ class Confide(object):
         CS = (delta**2)*self.H[k,k]
         return stats.chisqprob(CS,1) - self.alpha
 
-    def profile21(self,delta,k):
-        assert k == 0 or k == 1
-        if k == 0:
-            nuis = 1
-        elif k == 1:
-            nuis = 0
-        CS = (delta**2)*(self.H[k,k] - (self.H[k,nuis]**2)/self.H[nuis,nuis])
+    def profile1(self,delta,k):
+        t = []
+        n = []
+        for i in range(self.MLE.size()):
+            if (i == k):
+                t.append(i)
+            else:
+                n.append(i)
+        A = self.H[numpy.ix_(t,t)]
+        B = self.H[numpy.ix_(t,n)]
+        D = self.H[numpy.ix_(n,n)]
+        CS = (delta**2)*(A - B*D.I*B.T)[0,0]
         return stats.chisqprob(CS,2) - self.alpha
 
     def hessTest(self,L):
@@ -142,7 +147,7 @@ class Confide(object):
 
     def CIs(self):
         self.CI = []
-        for k in range(self.MLE.size()):
+        for k in range(int(self.MLE.size())):
             (a,b) = self.getInterval(k)
             self.CI.append([a,b])
         return self.CI
