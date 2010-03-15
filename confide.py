@@ -22,6 +22,7 @@ class Confide(object):
         self.N = N
         self.setMLE()
         self.funEval = self.hessEval
+        self.intFun = self.profile21
         self.convert = self.polar2x_y
         self.plotx = []
         self.ploty = []
@@ -80,9 +81,18 @@ class Confide(object):
         CS = xy.T*self.H*xy
         return stats.chisqprob(CS,2) - self.alpha
 
-    def hess1(self,delta,k):
+    def meeker1(self,delta,k):
         CS = (delta**2)*self.H[k,k]
         return stats.chisqprob(CS,1) - self.alpha
+
+    def profile21(self,delta,k):
+        assert k == 0 or k == 1
+        if k == 0:
+            nuis = 1
+        elif k == 1:
+            nuis = 0
+        CS = (delta**2)*(self.H[k,k] - (self.H[k,nuis]**2)/self.H[nuis,nuis])
+        return stats.chisqprob(CS,2) - self.alpha
 
     def hessTest(self,L):
         matrixList = L[:]
@@ -116,12 +126,12 @@ class Confide(object):
     def find1(self,k):
         self.return2MLE()
         d0 = 1
-        pe = self.hess1(d0,k)
+        pe = self.intFun(d0,k)
         while pe > 0.0:
             d0 = d0*5
-            pe = self.hess1(d0,k)
+            pe = self.intFun(d0,k)
             assert(d0 < 5e7)
-        delta = optimize.brentq(self.hess1,0,d0,(k,))
+        delta = optimize.brentq(self.intFun,0,d0,(k,))
         return delta
 
     def getInterval(self,k):
