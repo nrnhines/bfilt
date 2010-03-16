@@ -21,12 +21,18 @@ class Confide(object):
         self.alpha = alpha
         self.N = N
         self.setMLE()
-        self.funEval = self.hessEval
+        self.funEval = self.profile2
         self.intFun = self.profile1
         self.convert = self.polar2x_y
+        self.param0 = 0
+        self.param1 = 1
         self.plotx = []
         self.ploty = []
         self.CI = []
+
+    def setPlotParms(self,k0,k1):
+        self.param0 = k0
+        self.param1 = k1
 
     def Hessian(self):
         # Read current values of parameters (hopefully MLEs)
@@ -86,17 +92,38 @@ class Confide(object):
         return stats.chisqprob(CS,1) - self.alpha
 
     def profile1(self,delta,k):
-        t = []
+        t = [k]
         n = []
-        for i in range(self.MLE.size()):
-            if (i == k):
-                t.append(i)
-            else:
+        for i in range(int(self.MLE.size())):
+            if not (i == k):
                 n.append(i)
         A = self.H[numpy.ix_(t,t)]
-        B = self.H[numpy.ix_(t,n)]
-        D = self.H[numpy.ix_(n,n)]
-        CS = (delta**2)*(A - B*D.I*B.T)[0,0]
+        if len(n)>0:
+            B = self.H[numpy.ix_(t,n)]
+            D = self.H[numpy.ix_(n,n)]
+            CS = (delta**2)*(A - B*D.I*B.T)[0,0]
+        else:
+            CS = (delta**2)*A[0,0]
+        return stats.chisqprob(CS,2) - self.alpha
+
+    def profile2(self,r,theta):
+        k0 = self.param0
+        k1 = self.param1
+        x = r*math.cos(theta)
+        y = r*math.sin(theta)
+        delta = numpy.matrix([[x],[y]])
+        t = [k0,k1]
+        n = []
+        for i in range(int(self.MLE.size())):
+            if not (i ==k0 or i == k1):
+                n.append(i)
+        A = self.H[numpy.ix_(t,t)]
+        if len(n)>0:
+            B = self.H[numpy.ix_(t,n)]
+            D = self.H[numpy.ix_(n,n)]
+            CS = (delta.T*(A - B*D.I*B.T)*delta)[0,0]
+        else:
+            CS = (delta.T*A*delta)[0,0]
         return stats.chisqprob(CS,2) - self.alpha
 
     def hessTest(self,L):
@@ -191,11 +218,11 @@ class Confide(object):
             M = self.MLE
         else:
             M = origin
-            self.plotx.append(M[0])
-            self.ploty.append(M[1])
+            self.plotx.append(M[self.param0])
+            self.ploty.append(M[self.param1])
         for rtheta in rt:
-            self.plotx.append(M[0] + rtheta[0]*math.cos(rtheta[1]))
-            self.ploty.append(M[1] + rtheta[0]*math.sin(rtheta[1]))
+            self.plotx.append(M[self.param0] + rtheta[0]*math.cos(rtheta[1]))
+            self.ploty.append(M[self.param1] + rtheta[0]*math.sin(rtheta[1]))
         return (self.plotx,self.ploty)
 
     def polar2polar(self,rt,origin=None):
@@ -214,14 +241,19 @@ class Confide(object):
 
     def CIpoints(self, k0, k1):
         self.CIs()
-        x0 = numpy.arange(self.CI[k0][0],self.CI[k0][1],(self.CI[k0][1]-self.CI[k0][0])/50.0)
+        n = 50
+        frac = (numpy.matrix(numpy.arange(0,n+1))/float(n))
+        # print frac
+        x0 = self.CI[k0][0] + frac*(self.CI[k0][1] - self.CI[k0][0])
+        # x0 = numpy.arange(self.CI[k0][0],self.CI[k0][1],(self.CI[k0][1]-self.CI[k0][0])/50.0)
         y0 = []
-        for x in x0:
-            y0.append(self.MLE[1])
-        y1 = numpy.arange(self.CI[k1][0],self.CI[k1][1],(self.CI[k1][1]-self.CI[k1][0])/50.0)
+        for x in x0.tolist():
+            y0.append(self.MLE[k1])
+        y1 = self.CI[k1][0] + frac*(self.CI[k1][1] - self.CI[k1][0])
+        # y1 = numpy.arange(self.CI[k1][0],self.CI[k1][1],(self.CI[k1][1]-self.CI[k1][0])/50.0)
         x1 = []
-        for y in y1:
-            x1.append(self.MLE[0])
+        for y in y1.tolist():
+            x1.append(self.MLE[k0])
         return (x0, y0, x1, y1)
 
     def plot(self,true=None):
@@ -231,10 +263,11 @@ class Confide(object):
         pyplot.hold(False)
         pyplot.plot(self.plotx,self.ploty,'r*')
         pyplot.hold(True)
-        pyplot.plot([self.MLE[0]],[self.MLE[1]],'go')
+        pyplot.plot([self.MLE[self.param0]],[self.MLE[self.param1]],'go')
         if not true == None:
-            pyplot.plot([true[0]],[true[1]],'b+')
-        (x0, y0, x1, y1) = self.CIpoints(0,1)
+            pyplot.plot([true[self.param0]],[true[self.param1]],'b+')
+        (x0, y0, x1, y1) = self.CIpoints(self.param0,self.param1)
+        # print 'x0', x0, 'y0', y0, 'x1', x1, 'y1', y1
         pyplot.plot(x0,y0,'go')
         pyplot.plot(x1,y1,'go')
         pyplot.ion()
