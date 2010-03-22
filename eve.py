@@ -21,13 +21,13 @@ def rmDupsWithToler(L,tol):
 class EventTimed:
     def __init__(self, times=None):
         self.Times = times
-    
+
     def erange(self, tstart, tstop, dt):
         self.Times = numpy.arange(tstart+0.0, tstop+dt/2.0,  dt+0.0).tolist()
-    
+
     def set(self, times):
         self.Times = times
-    
+
     def makeIncreasing(self, dt=0.0):
         # 1. Eliminates duplicates
         # 2. Eliminiates non-increasing times.
@@ -51,12 +51,12 @@ class EventTable:
         self.Sto = sto
         self.Obs = obs
         self.tab()
-    
+
     def newInjectionInterval(self,dt):
-        print 'New II', dt
+        # print 'New II', dt
         self.Sto.updateInjectionInterval(dt)
         self.tab()
-    
+
     def tab(self):
         # Create collectionTimes list
         self.collectionTimes = []
@@ -64,7 +64,7 @@ class EventTable:
             self.collectionTimes += self.Obs.C[Index].Times.makeIncreasing()
         self.collectionTimes.sort()
         rmDupsWithToler(self.collectionTimes,toler)
-        
+
         # Create injectionTimes list
         self.injectionTimes = []
         Inj = self.Sto.Injection.makeIncreasing()
@@ -80,7 +80,7 @@ class EventTable:
             self.injectionTimes.append(injectionsForThisData)
             injectionsForThisData = [injectionsForThisData[-1]]  # start next list with last item of previous
         print 'ITs', self.injectionTimes
-        
+
         #Create ObsNum list
         self.ObsNum = []
         OTimes = []  # OTimes will be a list of lists of event times, each list for a different obs

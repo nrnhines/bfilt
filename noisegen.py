@@ -1,16 +1,21 @@
 import random
 import math
+import eve
+import sto
+import detsys
 
 class Wiener(object):
     def __init__(self):
         self.seed = 0
         self.R = random.Random()
         self.R.seed(self.seed)
-        self.processTimes = [0.0]
-        self.processValues = [0.0]
-        self.evalTimes = [0.0]
-        self.evalValues = [0.0]
+        (self.processTimes, self.processValues) = self.initProcess()
+        (self.evalTimes, self.evalValues) = self.initProcess()
         self.TOL = 1e-7
+        self.dW = [0.0]
+
+    def initProcess(self):
+        return ([0.0],[0.0])
 
     def TOLequal(self, a, b):
         return ((a <= b + self.TOL) and (a + self.TOL >= b))
@@ -110,6 +115,11 @@ class Wiener(object):
     def propertimes(self,times):
         return self.TOLequal(times[0],0.0)
 
+    def dWeval(self):
+        self.dW = [0.0]
+        for k in range(1,len(self.evalValues)):
+            self.dW.append(self.evalValues[k] - self.evalValues[k-1])
+
     def refine(self, times):
         times.sort()
         assert self.propertimes(times)
@@ -118,6 +128,12 @@ class Wiener(object):
         (self.processTimes, self.processValues, self.evalValues) = self.constructUnion(times,index)
         self.evalTimes = times
         assert len(self.evalTimes) == len(self.evalValues)
+        self.dW = self.dWeval
+
+    def reseed(self,seed):
+        self.R.seed(seed)
+        (self.processTimes, self.processValues) = self.initProcess()
+        self.refine(self.evalTimes)
 
     def getProc(self):
         return (self.processTimes, self.processValues)
@@ -127,14 +143,19 @@ class Wiener(object):
 
 class Gauss(Wiener):
     def __init__(self):
-        self.seed = 0
+        self.seed = 10000
         self.R = random.Random()
         self.R.seed(self.seed)
-        self.processTimes = []
-        self.processValues = []
-        self.evalTimes = []
-        self.evalValues = []
+        (self.processTimes, self.processValues) = initProcess()
+        (self.evalTimes, self.evalValues) = initProcess()
+        self.dW = None
         self.TOL = 1e-7
+
+    def initProcess(self):
+        return ([], [])
+
+    def dWeval(self):
+        self.dW = None
 
     def propertimes(self,times):
         return times[0] >= 0.0
@@ -165,3 +186,40 @@ class Gauss(Wiener):
         G = self.R.normalvariate(mu,sig)
         unionTimes.append(t)
         unionValues.append(G)
+
+class Gen(object):
+    def __init__(self, N):
+        self.N = N
+        self.W = Wiener()
+        self.G = Gauss()
+        self.seed = 0
+        self.offset = 10000
+        self.reseed(seed)
+
+    def reseed(self,seed):
+        self.W.reseed(seed)
+        self.G.reseed(seed+offset)
+
+    def eventData(self):
+
+    def drawGaussian(self,m,cov):
+
+    def collect(self,time,state):
+
+    def inject(self,time,state,k):
+        state = state + N.Eve.Sto.B*self.W.dW[k]
+
+    def sim(self):
+        (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
+        self.W.refine(injectionList)
+        self.G.refine(collectionList)
+        state = self.drawGaussian(self.N.Sys.Initial, self.Eve.Sto.InitialCov)
+        if iscollect[0]:
+            self.collect(0.0,state)
+        for k in range(1,len(stops)):
+            state = N.Sys.flow([stop[k-1],stop[k]],state)
+            if iscollect[k]:
+                self.collect(stop[k],state)
+            if dWindex[k]:
+                state = self.inject(stop[k],state,dWindex[k])
+
