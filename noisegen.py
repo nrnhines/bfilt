@@ -1,5 +1,7 @@
 import random
 import math
+import scipy
+import scipy.linalg as linalg
 import eve
 import sto
 import detsys
@@ -217,7 +219,8 @@ class Initial(object):
 
     def ic(m, cov):
         B = linalg.cholesky(cov)
-
+        gm = gmatrix()
+        return m + B*gm
 
 class Gen(object):
     def __init__(self, N):
