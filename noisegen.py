@@ -131,6 +131,7 @@ class Wiener(object):
         self.dW = self.dWeval
 
     def reseed(self,seed):
+        self.seed = seed
         self.R.seed(seed)
         (self.processTimes, self.processValues) = self.initProcess()
         self.refine(self.evalTimes)
@@ -187,22 +188,54 @@ class Gauss(Wiener):
         unionTimes.append(t)
         unionValues.append(G)
 
+class Initial(object):
+    def __init__(self, n):
+        self.n = n
+        self.R = random.Random()
+        self.seed = 20000
+        self.g = []
+        self.draw() # self.R.seed set in self.draw()
+
+    def draw(self):
+        mu = 0
+        sig = 1
+        self.R.seed(self.seed)
+        self.g = []
+        for i in range(self.n):
+            self.g.append(self.R.normalvariate(mu,sig))
+
+    def gmatrix(self):
+        return numpy.matrix(self.g).T
+
+    def reseed(self,seed):
+        self.seed = seed
+        self.draw()  # self.R.seed set in self.draw()
+
+    def resize(self,n)
+        self.n = n
+        self.draw()
+
+    def ic(m, cov):
+        B = linalg.cholesky(cov)
+
+
 class Gen(object):
     def __init__(self, N):
         self.N = N
         self.W = Wiener()
         self.G = Gauss()
+        self.IC = Initial(self.N.Sys.Initial.size())
         self.seed = 0
         self.offset = 10000
         self.reseed(seed)
 
     def reseed(self,seed):
+        self.seed = seed
         self.W.reseed(seed)
-        self.G.reseed(seed+offset)
+        self.G.reseed(seed+self.offset)
+        self.IC.reseed(seed+2*self.offset)
 
     def eventData(self):
-
-    def drawGaussian(self,m,cov):
 
     def collect(self,time,state):
 
@@ -213,7 +246,7 @@ class Gen(object):
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
         self.W.refine(injectionList)
         self.G.refine(collectionList)
-        state = self.drawGaussian(self.N.Sys.Initial, self.Eve.Sto.InitialCov)
+        state = self.IC.ic(self.N.Sys.Initial, self.Eve.Sto.InitialCov)
         if iscollect[0]:
             self.collect(0.0,state)
         for k in range(1,len(stops)):
