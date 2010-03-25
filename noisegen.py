@@ -1,5 +1,6 @@
 import random
 import math
+import copy
 import scipy
 import scipy.linalg as linalg
 import eve
@@ -239,11 +240,63 @@ class Gen(object):
         self.IC.reseed(seed+2*self.offset)
 
     def eventData(self):
+        TOL = 1e-7
+        collectionList = copy.deepcopy(self.N.Eve.collectionTimes)
+        injectionList = []
+        lastInjection = 0.0
+        for interval in self.N.Eve.injectionTimes:
+            for it in interval:
+                if it > lastInjection + TOL:
+                    lastInjection = it
+                    injectionList.append(it)
+        ni = len(injectionList)
+        ki = 0
+        nc = len(collectionList)
+        kc = 0
+        dWi = 1
+        dWindex = []
+        stop = []
+        iscollect = []
+        while (ki < ni) and (kc < nc):
+            if ki == ni:
+                stop.append(collectionList[kc])
+                dWindex.append(None)
+                iscollect.append(True)
+                kc += 1
+            elif kc == nc:
+                stop.append(injectionList[ki])
+                dWindex.append(dWi)
+                dWi += 1
+                iscollect.append(False)
+                ki += 1
+            elif TOLequal(collectionList[kc], injectionList[ki]):
+                stop.append(injectionList[ki])
+                dWindex.append(dWi)
+                dWi += 1
+                iscollect.append(True)
+                kc += 1
+                ki += 1
+            elif collectionList[kc] < injectionList[ki]:
+                stop.append(collectionList[kc])
+                dWindex.append(None)
+                iscollect.append(True)
+                kc += 1
+            else:
+                assert(injectionList[ki] < collectionList[kc])
+                stop.append(injectionList[ki])
+                dWindex.append(dWi)
+                dWi += 1
+                iscollect.append(False)
+                ki += 1
+        return (stop,dWindex,iscollect,injectionList,collectionList)
 
-    def collect(self,time,state):
+    def collect(self,time,state,k):
+        m = self.N.Eve.Obs.C[0].mean(time,state)
+        return m + self.G.evalValues[k]
 
     def inject(self,time,state,k):
-        state = state + N.Eve.Sto.B*self.W.dW[k]
+        state.add(h.Vector(N.Eve.Sto.B*self.W.dW[k]))
+        return state
 
     def sim(self):
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
@@ -252,10 +305,14 @@ class Gen(object):
         state = self.IC.ic(self.N.Sys.Initial, self.Eve.Sto.InitialCov)
         if iscollect[0]:
             self.collect(0.0,state)
+            GIndex = 1
+        else:
+            GIndex = 0
         for k in range(1,len(stops)):
             state = N.Sys.flow([stop[k-1],stop[k]],state)
             if iscollect[k]:
-                self.collect(stop[k],state)
+                self.collect(stop[k],state,GIndex)
+                GIndex += 1
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
 
