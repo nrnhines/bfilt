@@ -1,11 +1,13 @@
 import random
 import math
 import copy
+import numpy
 import scipy
 import scipy.linalg as linalg
 import eve
 import sto
 import detsys
+from neuron import h
 
 class Wiener(object):
     def __init__(self):
@@ -15,7 +17,7 @@ class Wiener(object):
         (self.processTimes, self.processValues) = self.initProcess()
         (self.evalTimes, self.evalValues) = self.initProcess()
         self.TOL = 1e-7
-        self.dW = [0.0]
+        self.dWList = [0.0]
 
     def initProcess(self):
         return ([0.0],[0.0])
@@ -119,9 +121,9 @@ class Wiener(object):
         return self.TOLequal(times[0],0.0)
 
     def dWeval(self):
-        self.dW = [0.0]
+        self.dWList = [0.0]
         for k in range(1,len(self.evalValues)):
-            self.dW.append(self.evalValues[k] - self.evalValues[k-1])
+            self.dWList.append(self.evalValues[k] - self.evalValues[k-1])
 
     def refine(self, times):
         times.sort()
@@ -131,7 +133,7 @@ class Wiener(object):
         (self.processTimes, self.processValues, self.evalValues) = self.constructUnion(times,index)
         self.evalTimes = times
         assert len(self.evalTimes) == len(self.evalValues)
-        self.dW = self.dWeval
+        self.dWeval()
 
     def reseed(self,seed):
         self.seed = seed
@@ -150,19 +152,22 @@ class Gauss(Wiener):
         self.seed = 10000
         self.R = random.Random()
         self.R.seed(self.seed)
-        (self.processTimes, self.processValues) = initProcess()
-        (self.evalTimes, self.evalValues) = initProcess()
-        self.dW = None
+        (self.processTimes, self.processValues) = self.initProcess()
+        (self.evalTimes, self.evalValues) = self.initProcess()
+        self.dWList = None
         self.TOL = 1e-7
 
     def initProcess(self):
         return ([], [])
 
     def dWeval(self):
-        self.dW = None
+        self.dWList = None
 
     def propertimes(self,times):
-        return times[0] >= 0.0
+        if len(times) == 0:
+            return True
+        else:
+            return times[0] >= 0.0
 
     def addBetween(self, unionTimes, unionValues, k, t):
         assert self.processTimes[k-1] < t
@@ -214,13 +219,13 @@ class Initial(object):
         self.seed = seed
         self.draw()  # self.R.seed set in self.draw()
 
-    def resize(self,n)
+    def resize(self,n):
         self.n = n
         self.draw()
 
-    def ic(m, cov):
+    def ic(self, m, cov):
         B = linalg.cholesky(cov)
-        gm = gmatrix()
+        gm = self.gmatrix()
         return m + B*gm
 
 class Gen(object):
@@ -228,10 +233,14 @@ class Gen(object):
         self.N = N
         self.W = Wiener()
         self.G = Gauss()
-        self.IC = Initial(self.N.Sys.Initial.size())
+        self.IC = Initial(self.N.Sys.Initial.size)
         self.seed = 0
         self.offset = 10000
-        self.reseed(seed)
+        self.reseed(self.seed)
+        self.TOL = 1e-7
+
+    def TOLequal(self, a, b):
+        return ((a <= b + self.TOL) and (a + self.TOL >= b))
 
     def reseed(self,seed):
         self.seed = seed
@@ -242,7 +251,7 @@ class Gen(object):
     def eventData(self):
         TOL = 1e-7
         collectionList = copy.deepcopy(self.N.Eve.collectionTimes)
-        injectionList = []
+        injectionList = [0.0]
         lastInjection = 0.0
         for interval in self.N.Eve.injectionTimes:
             for it in interval:
@@ -254,7 +263,7 @@ class Gen(object):
         nc = len(collectionList)
         kc = 0
         dWi = 1
-        dWindex = []
+        dWindex = [None]
         stop = []
         iscollect = []
         while (ki < ni) and (kc < nc):
@@ -269,7 +278,7 @@ class Gen(object):
                 dWi += 1
                 iscollect.append(False)
                 ki += 1
-            elif TOLequal(collectionList[kc], injectionList[ki]):
+            elif self.TOLequal(collectionList[kc], injectionList[ki]):
                 stop.append(injectionList[ki])
                 dWindex.append(dWi)
                 dWi += 1
@@ -295,24 +304,24 @@ class Gen(object):
         return m + self.G.evalValues[k]
 
     def inject(self,time,state,k):
-        state.add(h.Vector(N.Eve.Sto.B*self.W.dW[k]))
+        state = state + (self.N.Eve.Sto.B*self.W.dWList[k])
         return state
 
     def sim(self):
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
         self.W.refine(injectionList)
         self.G.refine(collectionList)
-        state = self.IC.ic(self.N.Sys.Initial, self.Eve.Sto.InitialCov)
-        if iscollect[0]:
-            self.collect(0.0,state)
+        state = numpy.matrix(self.IC.ic(self.N.Sys.Initial, self.N.Eve.Sto.InitialCov))
+        data = []
+        GIndex = 0
+        if iscollect[0] and self.TOLequal(stop[0],0.0):
+            data.append(self.collect(0.0,state,GIndex))
             GIndex = 1
-        else:
-            GIndex = 0
-        for k in range(1,len(stops)):
-            state = N.Sys.flow([stop[k-1],stop[k]],state)
-            if iscollect[k]:
-                self.collect(stop[k],state,GIndex)
-                GIndex += 1
+        for k in range(1,len(stop)):
+            state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
-
+            if iscollect[k]:
+                data.append(self.collect(stop[k],state,GIndex))
+                GIndex += 1
+        return data
