@@ -238,6 +238,7 @@ class Gen(object):
         self.offset = 10000
         self.reseed(self.seed)
         self.TOL = 1e-7
+        self.measNum = 0
 
     def TOLequal(self, a, b):
         return ((a <= b + self.TOL) and (a + self.TOL >= b))
@@ -258,26 +259,31 @@ class Gen(object):
                 if it > lastInjection + TOL:
                     lastInjection = it
                     injectionList.append(it)
+        print 'InjectionList', injectionList
+        print 'CollectionList', collectionList
         ni = len(injectionList)
         ki = 0
         nc = len(collectionList)
         kc = 0
-        dWi = 1
-        dWindex = [None]
+        dWi = 0
+        dWindex = []
         stop = []
         iscollect = []
-        while (ki < ni) and (kc < nc):
+        while (ki < ni) or (kc < nc):
+            print 'kc', kc, 'nc', nc, 'ki', ki, 'ni', ni
             if ki == ni:
                 stop.append(collectionList[kc])
                 dWindex.append(None)
                 iscollect.append(True)
                 kc += 1
+                print 'Appending from collection', stop[-1]
             elif kc == nc:
                 stop.append(injectionList[ki])
                 dWindex.append(dWi)
                 dWi += 1
                 iscollect.append(False)
                 ki += 1
+                print 'Appending from injection', stop[-1]
             elif self.TOLequal(collectionList[kc], injectionList[ki]):
                 stop.append(injectionList[ki])
                 dWindex.append(dWi)
@@ -285,11 +291,13 @@ class Gen(object):
                 iscollect.append(True)
                 kc += 1
                 ki += 1
+                print 'Inserting from Both', stop[-1]
             elif collectionList[kc] < injectionList[ki]:
                 stop.append(collectionList[kc])
                 dWindex.append(None)
                 iscollect.append(True)
                 kc += 1
+                print 'Inserting from Collection', stop[-1]
             else:
                 assert(injectionList[ki] < collectionList[kc])
                 stop.append(injectionList[ki])
@@ -297,31 +305,45 @@ class Gen(object):
                 dWi += 1
                 iscollect.append(False)
                 ki += 1
+                print 'Inserting from Injection', stop[-1]
         return (stop,dWindex,iscollect,injectionList,collectionList)
 
     def collect(self,time,state,k):
-        m = self.N.Eve.Obs.C[0].mean(time,state)
-        return m + self.G.evalValues[k]
+        m = self.N.Eve.Obs.C[self.measNum].mean(time,state)
+        r = self.N.Eve.Obs.C[self.measNum].sigma*self.G.evalValues[k]
+        print 'Collect m', m
+        print 'Collect r', r
+        return m + r
 
     def inject(self,time,state,k):
-        state = state + (self.N.Eve.Sto.B*self.W.dWList[k])
+        print 'Inject M', state
+        R = (self.N.Eve.Sto.B*self.W.dWList[k])
+        print 'Inject R', R
+        state = state + R
         return state
 
     def sim(self):
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
+        print 'len s', len(stop), 'stop', stop
+        print 'len dW', len(dWindex), 'dWindex', dWindex
+        print 'len ic', len(iscollect), 'iscollect', iscollect
+        print 'len iL', len(injectionList), 'injectionList', injectionList
+        print 'len cL', len(collectionList), 'collectionList', collectionList
         self.W.refine(injectionList)
         self.G.refine(collectionList)
         state = numpy.matrix(self.IC.ic(self.N.Sys.Initial, self.N.Eve.Sto.InitialCov))
         data = []
         GIndex = 0
         if iscollect[0] and self.TOLequal(stop[0],0.0):
+            print 0.0
             data.append(self.collect(0.0,state,GIndex))
             GIndex = 1
         for k in range(1,len(stop)):
+            print stop[k]
             state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
             if iscollect[k]:
                 data.append(self.collect(stop[k],state,GIndex))
                 GIndex += 1
-        return data
+        return (collectionList,data)
