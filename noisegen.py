@@ -10,8 +10,8 @@ import detsys
 from neuron import h
 
 class Wiener(object):
-    def __init__(self):
-        self.seed = 0
+    def __init__(self, seed):
+        self.seed = seed
         self.R = random.Random()
         self.R.seed(self.seed)
         (self.processTimes, self.processValues) = self.initProcess()
@@ -196,6 +196,12 @@ class Gauss(Wiener):
         unionTimes.append(t)
         unionValues.append(G)
 
+class WienerVector(object):
+    def __init__(self,dim,seed0):
+
+    def refine(self,times):
+
+
 class Initial(object):
     def __init__(self, n):
         self.n = n
@@ -339,11 +345,15 @@ class Gen(object):
             data.append(self.collect(0.0,state,GIndex))
             GIndex = 1
         for k in range(1,len(stop)):
-            print stop[k]
+            print 'stop[k]', stop[k]
+            print 'state0', state
             state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
+            print 'state1', state
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
+                print 'injection state', state
             if iscollect[k]:
                 data.append(self.collect(stop[k],state,GIndex))
                 GIndex += 1
+                print 'collection state', state
         return (collectionList,data)
