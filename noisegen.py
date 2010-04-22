@@ -198,9 +198,16 @@ class Gauss(Wiener):
 
 class WienerVector(object):
     def __init__(self,dim,seed0):
+        self.seed0 = seed0
+        self.dim = dim
+        self.offset = 10000
+        self.C = []
+        for k in range(dim):
+            self.C.append(Wiener(self.seed0+k*self.offset))
 
     def refine(self,times):
-
+        for k in range(self.dim):
+            self.C[k].refine(times)
 
 class Initial(object):
     def __init__(self, n):
