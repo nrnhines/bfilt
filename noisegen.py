@@ -205,9 +205,21 @@ class WienerVector(object):
         for k in range(dim):
             self.C.append(Wiener(self.seed0+k*self.offset))
 
+    def reseed(self,seed0):
+        self.seed0 = seed0
+        for k in range(self.dim):
+            self.C[k].reseed(self.seed0+k*self.offset)
+
     def refine(self,times):
         for k in range(self.dim):
             self.C[k].refine(times)
+
+    def dW(self,k):
+        dWk = []
+        for i in range(self.dim):
+            dWk.append(self.C[i].dWList[k])
+        dWk = numpy.matrix(dWk)
+        return dWk.T
 
 class Initial(object):
     def __init__(self, n):
@@ -244,7 +256,8 @@ class Initial(object):
 class Gen(object):
     def __init__(self, N):
         self.N = N
-        self.W = Wiener()
+        dimWV = self.N.Eve.Sto.B.shape[1]
+        self.W = WienerVector(dimWV,0)
         self.G = Gauss()
         self.IC = Initial(self.N.Sys.Initial.size)
         self.seed = 0
@@ -272,8 +285,6 @@ class Gen(object):
                 if it > lastInjection + TOL:
                     lastInjection = it
                     injectionList.append(it)
-        print 'InjectionList', injectionList
-        print 'CollectionList', collectionList
         ni = len(injectionList)
         ki = 0
         nc = len(collectionList)
@@ -283,20 +294,17 @@ class Gen(object):
         stop = []
         iscollect = []
         while (ki < ni) or (kc < nc):
-            print 'kc', kc, 'nc', nc, 'ki', ki, 'ni', ni
             if ki == ni:
                 stop.append(collectionList[kc])
                 dWindex.append(None)
                 iscollect.append(True)
                 kc += 1
-                print 'Appending from collection', stop[-1]
             elif kc == nc:
                 stop.append(injectionList[ki])
                 dWindex.append(dWi)
                 dWi += 1
                 iscollect.append(False)
                 ki += 1
-                print 'Appending from injection', stop[-1]
             elif self.TOLequal(collectionList[kc], injectionList[ki]):
                 stop.append(injectionList[ki])
                 dWindex.append(dWi)
@@ -304,13 +312,11 @@ class Gen(object):
                 iscollect.append(True)
                 kc += 1
                 ki += 1
-                print 'Inserting from Both', stop[-1]
             elif collectionList[kc] < injectionList[ki]:
                 stop.append(collectionList[kc])
                 dWindex.append(None)
                 iscollect.append(True)
                 kc += 1
-                print 'Inserting from Collection', stop[-1]
             else:
                 assert(injectionList[ki] < collectionList[kc])
                 stop.append(injectionList[ki])
@@ -318,49 +324,35 @@ class Gen(object):
                 dWi += 1
                 iscollect.append(False)
                 ki += 1
-                print 'Inserting from Injection', stop[-1]
         return (stop,dWindex,iscollect,injectionList,collectionList)
 
     def collect(self,time,state,k):
         m = self.N.Eve.Obs.C[self.measNum].mean(time,state)
         r = self.N.Eve.Obs.C[self.measNum].sigma*self.G.evalValues[k]
-        print 'Collect m', m
-        print 'Collect r', r
         return m + r
 
     def inject(self,time,state,k):
-        print 'Inject M', state
-        R = (self.N.Eve.Sto.B*self.W.dWList[k])
-        print 'Inject R', R
+        B = self.N.Eve.Sto.B
+        dW = self.W.dW(k)
+        R = B*dW
         state = state + R
         return state
 
     def sim(self):
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
-        print 'len s', len(stop), 'stop', stop
-        print 'len dW', len(dWindex), 'dWindex', dWindex
-        print 'len ic', len(iscollect), 'iscollect', iscollect
-        print 'len iL', len(injectionList), 'injectionList', injectionList
-        print 'len cL', len(collectionList), 'collectionList', collectionList
         self.W.refine(injectionList)
         self.G.refine(collectionList)
         state = numpy.matrix(self.IC.ic(self.N.Sys.Initial, self.N.Eve.Sto.InitialCov))
         data = []
         GIndex = 0
         if iscollect[0] and self.TOLequal(stop[0],0.0):
-            print 0.0
             data.append(self.collect(0.0,state,GIndex))
             GIndex = 1
         for k in range(1,len(stop)):
-            print 'stop[k]', stop[k]
-            print 'state0', state
-            state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
-            print 'state1', state
+            state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state)
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
-                print 'injection state', state
             if iscollect[k]:
                 data.append(self.collect(stop[k],state,GIndex))
                 GIndex += 1
-                print 'collection state', state
         return (collectionList,data)
