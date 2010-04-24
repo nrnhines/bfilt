@@ -349,7 +349,7 @@ class Gen(object):
             data.append(self.collect(0.0,state,GIndex))
             GIndex = 1
         for k in range(1,len(stop)):
-            state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state)
+            state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
             if dWindex[k]:
                 state = self.inject(stop[k],state,dWindex[k])
             if iscollect[k]:
