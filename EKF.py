@@ -116,10 +116,10 @@ def addInequalitiesViolated(m,bounds,D,d):
     return (D,d,allSatisfied)
 
 def project(m,P,D,d):
-    # print 'm', m
-    # print 'P', P
-    # print 'D', D
-    # print 'd', d
+    # print 'project: m', m
+    # print 'project: P', P
+    # print 'project: D', D
+    # print 'project: d', d
     mtilde = m - P*D.T*(D*P*D.T).I*(D*m - d)
     return mtilde
 
