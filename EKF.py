@@ -131,12 +131,13 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     P = Pb - K*S*K.T
     # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
-    (D,d) = equalityConstraints()
-    (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
-    allSatisfied = (D==None)
-    while not allSatisfied:
-        m = project(m,P,D,d)
-        (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
+    # THIS STUFF TEMPORARILY REMOVED TO KILL CONSTRAINTS
+    # (D,d) = equalityConstraints()
+    # (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
+    # allSatisfied = (D==None)
+    # while not allSatisfied:
+    #   m = project(m,P,D,d)
+    #   (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
