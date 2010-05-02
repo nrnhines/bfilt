@@ -5,6 +5,14 @@ import fitglobals
 import HHBounds
 import svd
 
+def constraintsOn():
+    global useConstraints
+    useConstraints = True
+
+def constraintsOff():
+    global useConstraints
+    useConstraints = False
+
 def initializeErrorBars(Obs,Sys):
     global saveErrorBars, Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
     saveErrorBars = True
@@ -131,13 +139,14 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     P = Pb - K*S*K.T
     # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
-    # THIS STUFF TEMPORARILY REMOVED TO KILL CONSTRAINTS
-    # (D,d) = equalityConstraints()
-    # (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
-    # allSatisfied = (D==None)
-    # while not allSatisfied:
-    #   m = project(m,P,D,d)
-    #   (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
+    global useConstraints
+    if useConstraints:
+        (D,d) = equalityConstraints()
+        (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
+        allSatisfied = (D==None)
+        while not allSatisfied:
+            m = project(m,P,D,d)
+            (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
