@@ -5,9 +5,24 @@ import fitglobals
 import HHBounds
 import svd
 
-def constraintsOn():
+def constraintsOn(sum):
     global useConstraints
+    if sum:
+        (Deq,eqd) = equalityConstraints()
+    else
+        Deq = None
+        eqd = None
+    Dmatrix = numpy.matrix([[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0])
+    d1matrix = numpy.matrix([[1.0],[1.0],[1.0]])
+    d0matrix = numpy.matrix([[0.0],[0.0],[0.0]])
+    Dgeq = Dmatrix.copy()
+    geqd = d0matrix.copy()
+    Dleq = Dmatrix.copy()
+    leqd = d1matrix.copy()
+    QP = QuadraticProgram()
+    QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
     useConstraints = True
+
 
 def constraintsOff():
     global useConstraints
@@ -141,12 +156,18 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     m = mb + K*e
     global useConstraints
     if useConstraints:
+        mold = m # REMOVE
+        PI = P.I
+        QP.setObjective(PI,-PI*m)
+        m = QP.solve()
+        # REMOVE TO END_IF
         (D,d) = equalityConstraints()
-        (D,d,temp) = addInequalitiesViolated(m,bounds,D,d)
+        (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
         allSatisfied = (D==None)
         while not allSatisfied:
-            m = project(m,P,D,d)
-            (D,d,allSatisfied) = addInequalitiesViolated(m, bounds, D, d)
+            mold = project(mold,P,D,d)
+            (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
+        print "Constrained Diff", (mold - m).T*(mold - m)
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
@@ -231,7 +252,3 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
         smll += mll
         k += 1
     return -smll/2.0
-
-
-
-
