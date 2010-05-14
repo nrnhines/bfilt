@@ -197,6 +197,9 @@ class NrnBFilt(object):
         f.write('here is some info from %s\n' % self.save_session)
 
     def restore_session(self, nameprefix):
-	f = open(nameprefix + '.lkl', 'r')
+        try:
+            f = open(nameprefix + '.lkl', 'r')
+        except:
+            return
 	for line in f:
             print 'restored: ', line
