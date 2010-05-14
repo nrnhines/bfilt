@@ -8,7 +8,7 @@ external classname, tstop, cvode
 objref fitnesslist, generator, yvarlist, yveclist, tvec, tobj, tobj1, sf, this
 objref vbox, g, hb1, pelist, po, ldeck, hbox
 objref dec, gdeck, fdeck, deck, symch_
-strdef title, tstr, tstr1, tag, cmd
+strdef title, tstr, tstr1, tag, cmd, likelihood_session_name
 
 proc save_context() { local i
 	$o1.pack(tag, title, yvarlist.count)
@@ -133,6 +133,7 @@ func gview() {local i, j, l,b,r,t
 
 proc init() {
 	use_likelihood = 0
+	likelihood_session_name = ""
 	plt_llike = 0
 	title = "Unnamed single run protocol"
 	context_ = 1
@@ -178,6 +179,9 @@ proc wfile() {local i
 	$o1.printf("\t%s: %s\n", tag, title)
 	generator.wfile($o1, $o2)
 	$o1.printf("\t\tUse Likelihood: %d\n", use_likelihood)
+	if (use_likelihood) {
+		po.save_session($o1.getname)
+	}
 	for i=0, fitnesslist.count-1 {
 		sprint(tstr, "%s", fitnesslist.object(i).tag)
 		$o1.printf("\t\t%s:\t%s\n", tstr, yvarlist.object(i).s)
@@ -199,6 +203,9 @@ proc rfile() {local i
 	i = sscanf(tstr, "\t\tUse Likelihood:%d", &use_likelihood)
 	if (i == 0) {
 		printf("Invalid format for Use Likelihood:\n")
+	}
+	if (use_likelihood) {
+		likelihood_session_name = $o1.getname
 	}
 	$o1.gets(tstr)
 	if (sf.substr(tstr, ":") > -1) {
@@ -253,6 +260,9 @@ proc select_likelihood() {local i  localobj ts
 		}
 		if (use_likelihood) {
 			po = po.nrnbfilt.NrnBFilt(this)
+			if (strcmp(likelihood_session_name, "") != 0) {
+				po.restore_session(likelihood_session_name)
+			}
 		}
 	}else{
 		use_likelihood = 0

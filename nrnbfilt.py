@@ -14,6 +14,7 @@ class WrappedVal:
 
 class NrnBFilt(object):
     def __init__(self, ho):
+        self.g = None
         self.rf = ho
         ol = []
         vl = self.rf.yvarlist
@@ -92,6 +93,12 @@ class NrnBFilt(object):
     def Ewidth(self, i):
         return h.Vector(EKF.Ewidth[int(i)])
     
+    def Scenter(self, i):
+        return h.Vector(EKF.Scenter[int(i)])
+    
+    def Swidth(self, i):
+        return h.Vector(EKF.Swidth[int(i)])
+    
     def getParmFitness(self):
         # the ParmFitness instance that owns me.
         # there are probably not many so we can work forward from ParmFitness
@@ -143,6 +150,7 @@ class NrnBFilt(object):
         h.xlabel('    Initial Uncertainty')
         h.xvalue('Covariance Growth Time', (self, 'covGrowthTime'), 1, self.Initial_changed)
         h.xvalue('Additional Variance', (self, 'varTerm'), 1, self.Initial_changed)
+        h.xbutton('Show state funnels', self.show_state_funnels)
         h.xpanel()
         self.box.intercept(0)
         self.box.map('Likelihood parameters')
@@ -153,6 +161,7 @@ class NrnBFilt(object):
         varTerm = self.varTerm
         c = self.Eve.Obs.C
         pn = self.processNoise
+        g = self.g
 
         self.__init__(self.rf)
 
@@ -167,3 +176,27 @@ class NrnBFilt(object):
             self.Eve.Sto.B[i,i] = pn[i].x
         self.Initial_changed()
         self.inj_invl_changed()       
+        self.g = g
+
+    def show_state_funnels(self):
+        t = self.Etime()
+        if self.g == None:
+            g = []
+            for i in range(len(EKF.Scenter)):
+                g.append(h.Graph())
+        else:
+            g = self.g
+        for i in range(len(EKF.Scenter)):
+            self.Scenter(i).line(g[i], t)
+            if self.g == None:
+                g[i].exec_menu('View = plot')
+        self.g = g
+
+    def save_session(self, nameprefix):
+	f = open(nameprefix + '.lkl', 'w')
+        f.write('here is some info from %s\n' % self.save_session)
+
+    def restore_session(self, nameprefix):
+	f = open(nameprefix + '.lkl', 'r')
+	for line in f:
+            print 'restored: ', line
