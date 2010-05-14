@@ -4,22 +4,24 @@ import numpy
 import fitglobals
 import HHBounds
 import svd
+import quadraticprogram
+reload(quadraticprogram)
 
-def constraintsOn(sum):
-    global useConstraints
-    if sum:
+def constraintsOn(eq):
+    global useConstraints, QP
+    if eq:
         (Deq,eqd) = equalityConstraints()
-    else
+    else:
         Deq = None
         eqd = None
-    Dmatrix = numpy.matrix([[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0])
+    Dmatrix = numpy.matrix([[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0]])
     d1matrix = numpy.matrix([[1.0],[1.0],[1.0]])
     d0matrix = numpy.matrix([[0.0],[0.0],[0.0]])
     Dgeq = Dmatrix.copy()
     geqd = d0matrix.copy()
     Dleq = Dmatrix.copy()
     leqd = d1matrix.copy()
-    QP = QuadraticProgram()
+    QP = quadraticprogram.QuadraticProgram()
     QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
     useConstraints = True
 
@@ -115,7 +117,7 @@ def updateInBounds(K,e,mb,bounds):
 
 def equalityConstraints():
     D = numpy.matrix([[0.0, 1.0, 1.0, 1.0]])
-    d = numpy.matrix([[1]])
+    d = numpy.matrix([[1.0]])
     return (D,d)
 
 def addInequalitiesViolated(m,bounds,D,d):
@@ -154,13 +156,14 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     P = Pb - K*S*K.T
     # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
-    global useConstraints
+    global useConstraints, QP
     if useConstraints:
-        mold = m # REMOVE
+        mold = m # REMOVE AFTER TESTING
+        print 'P', P
         PI = P.I
         QP.setObjective(PI,-PI*m)
         m = QP.solve()
-        # REMOVE TO END_IF
+        # REMOVE TO END_IF AFTER TESTING
         (D,d) = equalityConstraints()
         (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
         allSatisfied = (D==None)
