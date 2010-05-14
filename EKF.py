@@ -4,8 +4,10 @@ import numpy
 import fitglobals
 import HHBounds
 import svd
-import quadraticprogram
-reload(quadraticprogram)
+QPFLAG = False
+if QPFLAG:
+    import quadraticprogram
+    reload(quadraticprogram)
 
 def constraintsOn(eq):
     global useConstraints, QP
@@ -21,8 +23,9 @@ def constraintsOn(eq):
     geqd = d0matrix.copy()
     Dleq = Dmatrix.copy()
     leqd = d1matrix.copy()
-    QP = quadraticprogram.QuadraticProgram()
-    QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
+    if QPFLAG:
+        QP = quadraticprogram.QuadraticProgram()
+        QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
     useConstraints = True
 
 
@@ -154,15 +157,19 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    # m = mb + updateInBounds(K,e,mb,bounds)
+    print 'S', S
+    print 'K', K
+    print 'Pb', Pb
+   # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
     global useConstraints, QP
     if useConstraints:
         mold = m # REMOVE AFTER TESTING
-        print 'P', P
-        PI = P.I
-        QP.setObjective(PI,-PI*m)
-        m = QP.solve()
+        # print 'P', P
+        if QPFLAG:
+            PI = P.I
+            QP.setObjective(PI,-PI*m)
+            m = QP.solve()
         # REMOVE TO END_IF AFTER TESTING
         (D,d) = equalityConstraints()
         (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
@@ -170,7 +177,10 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
         while not allSatisfied:
             mold = project(mold,P,D,d)
             (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
-        print "Constrained Diff", (mold - m).T*(mold - m)
+        if QPFLAG:
+            print "Constrained Diff", (mold - m).T*(mold - m)
+        else:
+            m = mold
     saveData(Obs,time,m,P)  # Saves error bars
     if fitglobals.debug:
         print 'New Pb'
@@ -192,10 +202,12 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTime):
     for i in range(1,len(injectionTime)):
         (mb, A, tStart) = Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
         B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
+        print 'Bs', B
         As.append(A)  # A's are Jacobians of above flows
         Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
         mbs.append(mb)
     if  t1 > injectionTime[-1]:
+        print 'Here I am'
         (mb, A, tStart) = Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
         B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
         As.append(A)
@@ -213,6 +225,9 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTime):
         Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
         saveData(Eve.Obs,injectionTime[i+1],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
+    print 'Wm', Wm
+    print 'Am', Am
+    print 'P', P
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
 
