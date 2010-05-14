@@ -50,6 +50,7 @@ class EventTable:
     def __init__(self, sto, obs):
         self.Sto = sto
         self.Obs = obs
+        self.injectB4Collect = True
         self.tab()
 
     def newInjectionInterval(self,dt):
@@ -75,6 +76,11 @@ class EventTable:
             while len(Inj) > 0 and Inj[0] < timeNextOb + toler:
                 injectionsForThisData.append(Inj[0])
                 Inj.pop(0)
+            if self.injectB4Collect:
+                if injectionsForThisData[-1] + toler <  timeNextOb:
+                    injectionsForThisData.append(timeNextOb)
+                else:
+                    injectionsForThisData[-1] = timeNextOb
             if len(injectionsForThisData) == 1:
                 injectionsForThisData.append(timeNextOb)
             self.injectionTimes.append(injectionsForThisData)
