@@ -4,34 +4,43 @@ import numpy
 import fitglobals
 import HHBounds
 import svd
-QPFLAG = False
-if QPFLAG:
+if False:
     import quadraticprogram
-    reload(quadraticprogram)
 
-def constraintsOn(eq):
-    global useConstraints, QP
+def constraintsOn(eq=False,old=False,new=False):
+    global useConstraints, QP, oldConstraints, newConstraints
+    oldConstraints = old
+    newConstraints = new
     if eq:
         (Deq,eqd) = equalityConstraints()
+        sum1 = [[1,2,3]]
     else:
+        sum1 = None
         Deq = None
         eqd = None
     Dmatrix = numpy.matrix([[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0]])
     d1matrix = numpy.matrix([[1.0],[1.0],[1.0]])
     d0matrix = numpy.matrix([[0.0],[0.0],[0.0]])
+    leq1 = [1,2,3]
+    geq0 = [1,2,3]
     Dgeq = Dmatrix.copy()
     geqd = d0matrix.copy()
     Dleq = Dmatrix.copy()
     leqd = d1matrix.copy()
-    if QPFLAG:
+    if newConstraints:
+        import quadraticprogram
         QP = quadraticprogram.QuadraticProgram()
-        QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
+        # QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
+        dim = 4
+        QP.setNeuronConstraints(dim,geq0,leq1,sum1)
     useConstraints = True
 
 
 def constraintsOff():
-    global useConstraints
+    global useConstraints, oldConstraints, newConstraints
     useConstraints = False
+    oldConstraints = False
+    newConstraints = False
 
 def initializeErrorBars(Obs,Sys):
     global saveErrorBars, Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
@@ -157,27 +166,26 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    print 'S', S
-    print 'K', K
-    print 'Pb', Pb
-   # m = mb + updateInBounds(K,e,mb,bounds)
+    # print 'S', S
+    # print 'K', K
+    # print 'Pb', Pb
+    # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
-    global useConstraints, QP
+    global useConstraints, QP, newConstraints, oldConstraints
     if useConstraints:
-        mold = m # REMOVE AFTER TESTING
-        # print 'P', P
-        if QPFLAG:
+        mold = m
+        if newConstraints:
             PI = P.I
             QP.setObjective(PI,-PI*m)
             m = QP.solve()
-        # REMOVE TO END_IF AFTER TESTING
-        (D,d) = equalityConstraints()
-        (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
-        allSatisfied = (D==None)
-        while not allSatisfied:
-            mold = project(mold,P,D,d)
-            (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
-        if QPFLAG:
+        if oldConstraints:
+            (D,d) = equalityConstraints()
+            (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
+            allSatisfied = (D==None)
+            while not allSatisfied:
+                mold = project(mold,P,D,d)
+                (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
+        if newConstraints and oldConstraints:
             print "Constrained Diff", (mold - m).T*(mold - m)
         else:
             m = mold
@@ -202,12 +210,12 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTime):
     for i in range(1,len(injectionTime)):
         (mb, A, tStart) = Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
         B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
-        print 'Bs', B
+        # print 'Bs', B
         As.append(A)  # A's are Jacobians of above flows
         Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
         mbs.append(mb)
     if  t1 > injectionTime[-1]:
-        print 'Here I am'
+        print 'WARNING: No Injection at this Collection'
         (mb, A, tStart) = Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
         B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
         As.append(A)
@@ -225,9 +233,9 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTime):
         Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
         saveData(Eve.Obs,injectionTime[i+1],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
     Am = Am*As[0]
-    print 'Wm', Wm
-    print 'Am', Am
-    print 'P', P
+    # print 'Wm', Wm
+    # print 'Am', Am
+    # print 'P', P
     Pb = Wm*Wm.T + Am*P*Am.T
     return (mb, Pb, t1)
 
