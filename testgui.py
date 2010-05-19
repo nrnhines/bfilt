@@ -34,6 +34,8 @@ class TestGUI(object):
         self.C1s1 = False
         self.C2s1 = False
         self.ineq = True
+        self.cvxopt_sel = True
+        self.custom_sel = True
         self.build()
         self.map()
 
@@ -89,6 +91,9 @@ class TestGUI(object):
         h.xbutton("Add S2", self.button)
         h.xbutton("Remove Empty", self.button)
         h.xbutton("Close", self.button)
+        h.xlabel('QP Solver:')
+        h.xstatebutton('cvxopt',(self,'cvxopt_sel'),self.button)
+        h.xstatebutton('custom',(self,'custom_sel'),self.button)
         h.xpanel()
         self.box.intercept(0)
 
