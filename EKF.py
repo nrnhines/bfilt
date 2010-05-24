@@ -4,43 +4,12 @@ import numpy
 import fitglobals
 import HHBounds
 import svd
-if False:
-    import quadraticprogram
+import quadraticprogram
 
-def constraintsOn(eq=False,old=False,new=False):
-    global useConstraints, QP, oldConstraints, newConstraints
-    oldConstraints = old
-    newConstraints = new
-    if eq:
-        (Deq,eqd) = equalityConstraints()
-        sum1 = [[1,2,3]]
-    else:
-        sum1 = None
-        Deq = None
-        eqd = None
-    Dmatrix = numpy.matrix([[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0]])
-    d1matrix = numpy.matrix([[1.0],[1.0],[1.0]])
-    d0matrix = numpy.matrix([[0.0],[0.0],[0.0]])
-    leq1 = [1,2,3]
-    geq0 = [1,2,3]
-    Dgeq = Dmatrix.copy()
-    geqd = d0matrix.copy()
-    Dleq = Dmatrix.copy()
-    leqd = d1matrix.copy()
-    if newConstraints:
-        import quadraticprogram
-        QP = quadraticprogram.QuadraticProgram()
-        # QP.setConstraints(Deq,eqd,Dleq,leqd,Dgeq,geqd)
-        dim = 4
-        QP.setNeuronConstraints(dim,geq0,leq1,sum1)
-    useConstraints = True
-
-
-def constraintsOff():
-    global useConstraints, oldConstraints, newConstraints
-    useConstraints = False
-    oldConstraints = False
-    newConstraints = False
+def constraintsOn(geq0,leq1,sumto1):
+    global QP
+    QP = quadraticprogram.QuadraticProgram()
+    QP.setGUIConstraints(geq0,leq1,sumto1)
 
 def initializeErrorBars(Obs,Sys):
     global saveErrorBars, Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
@@ -146,17 +115,11 @@ def addInequalitiesViolated(m,bounds,D,d):
                 d = dnew
                 first = False
             else:
-                # print 'd', d
-                # print 'dnew', dnew
                 D = numpy.bmat('D; Dnew')
                 d = numpy.bmat('d; dnew')
     return (D,d,allSatisfied)
 
 def project(m,P,D,d):
-    # print 'project: m', m
-    # print 'project: P', P
-    # print 'project: D', D
-    # print 'project: d', d
     mtilde = m - P*D.T*(D*P*D.T).I*(D*m - d)
     return mtilde
 
@@ -166,35 +129,33 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
-    # print 'S', S
-    # print 'K', K
-    # print 'Pb', Pb
-    # m = mb + updateInBounds(K,e,mb,bounds)
     m = mb + K*e
-    global useConstraints, QP, newConstraints, oldConstraints
-    if useConstraints:
-        mold = m
-        if newConstraints:
-            PI = P.I
-            QP.setObjective(PI,-PI*m)
-            m = QP.solve()
-        if oldConstraints:
-            (D,d) = equalityConstraints()
-            (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
-            allSatisfied = (D==None)
-            while not allSatisfied:
-                mold = project(mold,P,D,d)
-                (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
-        if newConstraints and oldConstraints:
-            print "Constrained Diff", (mold - m).T*(mold - m)
-        else:
-            m = mold
+    if QP.anyConstraints:
+        PI = P.I
+        QP.setObjective(PI,-PI*m)
+        m = QP.solve()
     saveData(Obs,time,m,P)  # Saves error bars
-    if fitglobals.debug:
-        print 'New Pb'
-        print 'Pb values', svd.svd(Pb.tolist())[1]
-        print 'P values', svd.svd(P.tolist())[1]
     return (m,P,e,S)
+
+    # OLD CONSTRAINTS CODE (goes before saveData above)
+    #~ global useConstraints, QP, newConstraints, oldConstraints
+    #~ if useConstraints:
+        #~ mold = m
+        #~ if newConstraints:
+            #~ PI = P.I
+            #~ QP.setObjective(PI,-PI*m)
+            #~ m = QP.solve()
+        #~ if oldConstraints:
+            #~ (D,d) = equalityConstraints()
+            #~ (D,d,temp) = addInequalitiesViolated(mold,bounds,D,d)
+            #~ allSatisfied = (D==None)
+            #~ while not allSatisfied:
+                #~ mold = project(mold,P,D,d)
+                #~ (D,d,allSatisfied) = addInequalitiesViolated(mold, bounds, D, d)
+        #~ if newConstraints and oldConstraints:
+            #~ print "Constrained Diff", (mold - m).T*(mold - m)
+        #~ else:
+            #~ m = mold
 
 def predict(Eve,Sys,m,P,t0,t1,injectionTime):
     tol = 1e-7
