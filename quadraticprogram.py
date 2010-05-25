@@ -110,7 +110,10 @@ class QuadraticProgram(object):
             self.b = cvxopt.matrix(eqd)
             # print 'A', self.A
             # print 'b', self.b
-        if not self.leq:
+        if not self.leq and not self.leq:
+            G = None
+            h = None
+        elif not self.leq:
             G = -Dgeq
             h = -geqd
         elif not self.geq:
@@ -119,8 +122,9 @@ class QuadraticProgram(object):
         else:
             G = numpy.concatenate((Dleq,-Dgeq))
             h = numpy.concatenate((leqd,-geqd))
-        self.G = cvxopt.matrix(G)
-        self.h = cvxopt.matrix(h)
+        if not G == None:
+            self.G = cvxopt.matrix(G)
+            self.h = cvxopt.matrix(h)
 
     def setObjective(self,P,q):
         self.P = cvxopt.matrix(P)

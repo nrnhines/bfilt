@@ -7,7 +7,7 @@ import sto
 import detsys
 import obs
 import eve
-import EKF
+import pickle
 
 class xstruct(object):
     def __init__(self):
@@ -64,7 +64,6 @@ class NrnBFilt(object):
         self.sumto1 = []
         self.cvxopt_sel = True
         self.custom_sel = True
-        xstruct.x = False
         self.nsums = 2
         for j in range(self.nsums):
             self.sumto1.append([])
@@ -256,12 +255,38 @@ class NrnBFilt(object):
 
     def save_session(self, nameprefix):
         f = open(nameprefix + '.lkl', 'w')
-        f.write('here is some info from %s\n' % self.save_session)
+        # f.write('here is some info from %s\n' % self.save_session)
+        pickle.dump(self.geq0,f)
+        pickle.dump(self.leq1,f)
+        pickle.dump(self.sumto1,f)
+        pickle.dump(self.cvxopt_sel,f)
+        pickle.dump(self.custom_sel,f)
+        pickle.dump(self.nsums,f)
+        c = self.Eve.Obs.C
+        for o in c:
+            pickle.dump(o.sigma,f)
+        pickle.dump(self.inj_invl,f)
+        pickle.dump(self.processNoise,f)
+        pickle.dump(self.covGrowthTime,f)
+        pickle.dump(self.varTerm,f)
 
     def restore_session(self, nameprefix):
         try:
             f = open(nameprefix + '.lkl', 'r')
         except:
             return
-        for line in f:
-            print 'restored: ', line
+        # for line in f:
+        #    print 'restored: ', line
+        self.geq0 = pickle.load(f)
+        self.leq1 = pickle.load(f)
+        self.sumto1 = pickle.load(f)
+        self.cvxopt_sel = pickle.load(f)
+        self.custom_sel = pickle.load(f)
+        self.nsums = pickle.load(f)
+        c = self.Eve.Obs.C
+        for o in c:
+            o.sigma = pickle.load(f)
+        self.inj_invl = pickle.load(f)
+        self.processNoise = pickle.load(f)
+        self.covGrowthTime = pickle.load(f)
+        self.varTerm = pickle.load(f)
