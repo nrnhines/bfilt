@@ -72,6 +72,7 @@ class NrnBFilt(object):
             self.leq1.append(xstruct())
             for j in range(self.nsums):
                 self.sumto1[j].append(xstruct())
+        EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
 
     def __data(self,fl,Eve):
         counter = [0]*(len(fl))
@@ -190,6 +191,19 @@ class NrnBFilt(object):
 
     def constraintsButton(self):
             EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
+
+    def inc_nsums(self):
+        self.nsums += 1
+        s = h.Vector()
+        h.cvode.states(s)
+        nstates = len(s)
+        new = []
+        for i in range(nstates):
+            new.append(xstruct())
+        self.sumto1.append(new)
+        print 'nsums', self.nsums
+        print 'sumto1',self.sumto1
+
 
     def paramPanel(self):
         self.box = h.VBox()
