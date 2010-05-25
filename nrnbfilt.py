@@ -7,6 +7,11 @@ import sto
 import detsys
 import obs
 import eve
+import EKF
+
+class xstruct(object):
+    def __init__(self):
+        self.x = False
 
 class WrappedVal:
     def __init__(self, val):
@@ -50,7 +55,25 @@ class NrnBFilt(object):
         self.Data = self.__data(fl,self.Eve)
         self.pf = self.getParmFitness()
         self.dlikedt = h.Vector()
-    
+        #CONSTRAINTS GUI INIT
+        s = h.Vector()
+        h.cvode.states(s)
+        nstates = len(s)
+        self.geq0 = []
+        self.leq1 = []
+        self.sumto1 = []
+        self.cvxopt_sel = True
+        self.custom_sel = True
+        xstruct.x = False
+        self.nsums = 2
+        for j in range(self.nsums):
+            self.sumto1.append([])
+        for i in range(nstates):
+            self.geq0.append(xstruct())
+            self.leq1.append(xstruct())
+            for j in range(self.nsums):
+                self.sumto1[j].append(xstruct())
+
     def __data(self,fl,Eve):
         counter = [0]*(len(fl))
         Data = []
@@ -69,13 +92,13 @@ class NrnBFilt(object):
             assert(counter[i] == len(fl.o(i).xdat_))
         print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
         return Data
-    
+
     def likelihood(self):
         self.ifchdat()
         x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         x = float(x)
         return -x
-    
+
     def ifchdat(self):
         fl = self.rf.fitnesslist
         n = 0
@@ -86,19 +109,19 @@ class NrnBFilt(object):
 
     def Etime(self):
         return h.Vector(EKF.Etime)
-    
+
     def Ecenter(self, i):
         return h.Vector(EKF.Ecenter[int(i)])
-    
+
     def Ewidth(self, i):
         return h.Vector(EKF.Ewidth[int(i)])
-    
+
     def Scenter(self, i):
         return h.Vector(EKF.Scenter[int(i)])
-    
+
     def Swidth(self, i):
         return h.Vector(EKF.Swidth[int(i)])
-    
+
     def getParmFitness(self):
         # the ParmFitness instance that owns me.
         # there are probably not many so we can work forward from ParmFitness
@@ -107,29 +130,68 @@ class NrnBFilt(object):
             for gi in pf.generatorlist:
                 if gi.gen.hocobjptr() == self.rf.hocobjptr():
                     return pf
-    
+
     def getParm(self):
         #return Hoc Vector of current objective function parameters
         v = h.Vector()
         self.pf.doarg_get(v)
         return v
-    
+
     def setParm(self, hvec):
         #assign current objective funtion parameters
         self.pf.parm(hvec)
-    
+
     def fillPB(self, i):
         self.Eve.Sto.B[i,i] = self.processNoise[i].x
         self.Initial_changed()
         print i, self.Eve.Sto.B
-    
+
     def inj_invl_changed(self):
         self.Eve.newInjectionInterval(self.inj_invl)
         self.Data = self.__data(self.rf.fitnesslist,self.Eve)
-    
+
     def Initial_changed(self):
         self.Eve.Sto.updateInitial(self.covGrowthTime,self.varTerm)
-    
+
+    def constraintsPanel(self):
+        self.box = h.HBox()
+        self.box.intercept(1)
+        self.box.ref(self)
+        s = h.Vector()
+        h.cvode.states(s)
+        nstates = len(s)
+        sref = h.ref('')
+        h.xpanel("")
+        h.xlabel('0<=')
+        for i in range(nstates):
+            h.xcheckbox('',(self.geq0[i],'x'), self.constraintsButton)
+        h.xpanel()
+        h.xpanel("")
+        h.xlabel('>=1')
+        for i in range(nstates):
+            h.cvode.statename(i,sref,1)
+            h.xcheckbox(sref[0],(self.leq1[i],'x'),self.constraintsButton)
+        h.xpanel()
+        for j in range(self.nsums):
+            h.xpanel("")
+            h.xlabel("S%d"%j)
+            for i in range(nstates):
+                h.xcheckbox('',(self.sumto1[j][i],'x'),self.constraintsButton)
+            h.xpanel()
+        h.xpanel("")
+        h.xbutton("Add Sum-to-1", self.constraintsButton)
+        h.xbutton("Remove Empty", self.constraintsButton)
+        h.xbutton("Close", self.constraintsButton)
+        h.xlabel('QP Solver:')
+        h.xstatebutton('cvxopt',(self,'cvxopt_sel'),self.constraintsButton)
+        h.xstatebutton('custom',(self,'custom_sel'),self.constraintsButton)
+        h.xpanel()
+        self.box.intercept(0)
+        self.box.map("Constraints")
+
+    def constraintsButton(self):
+            EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
+
     def paramPanel(self):
         self.box = h.VBox()
         self.box.intercept(1)
@@ -175,7 +237,7 @@ class NrnBFilt(object):
             self.processNoise[i].x = pn[i].x
             self.Eve.Sto.B[i,i] = pn[i].x
         self.Initial_changed()
-        self.inj_invl_changed()       
+        self.inj_invl_changed()
         self.g = g
 
     def show_state_funnels(self):
@@ -193,7 +255,7 @@ class NrnBFilt(object):
         self.g = g
 
     def save_session(self, nameprefix):
-	f = open(nameprefix + '.lkl', 'w')
+        f = open(nameprefix + '.lkl', 'w')
         f.write('here is some info from %s\n' % self.save_session)
 
     def restore_session(self, nameprefix):
@@ -201,5 +263,5 @@ class NrnBFilt(object):
             f = open(nameprefix + '.lkl', 'r')
         except:
             return
-	for line in f:
+        for line in f:
             print 'restored: ', line

@@ -221,7 +221,7 @@ printf("Invalid format for Fitness line\n%s", tstr)
 		}
 		yvarlist.append(new Pointer(tstr1))
 		yveclist.append(new Vector(1000))
-		
+
 		sscanf(tstr, "%[^[]", tstr1)
 		sprint(tstr1, "tobj = new %s()", tstr1)
 		execute(tstr1, this)
@@ -448,6 +448,7 @@ proc map() {local i
 		xpvalue("-log(likelihood)", &errval, 0, "efun() plot_likelihood_result()")
 		xmenu("extra")
 			xbutton("Noise", "po.paramPanel()")
+			xbutton("Constraints", "po.constraintsPanel()")
 			xcheckbox("Plot llikelihood", &plt_llike)
 		xmenu()
 	xpanel()

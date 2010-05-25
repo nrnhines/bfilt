@@ -108,8 +108,8 @@ class QuadraticProgram(object):
         if self.eq:
             self.A = cvxopt.matrix(Deq)
             self.b = cvxopt.matrix(eqd)
-            print 'A', self.A
-            print 'b', self.b
+            # print 'A', self.A
+            # print 'b', self.b
         if not self.leq:
             G = -Dgeq
             h = -geqd
