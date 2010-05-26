@@ -2,7 +2,6 @@ import random
 import math
 import copy
 import numpy
-import scipy
 import scipy.linalg as linalg
 import eve
 import sto
