@@ -93,6 +93,9 @@ class NrnBFilt(object):
         print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
         return Data
 
+    def overwrite(self,Data):
+        self.Data = Data
+
     def likelihood(self):
         self.ifchdat()
         x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)

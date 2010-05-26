@@ -338,7 +338,16 @@ class Gen(object):
         state = state + R
         return state
 
+    def datasim(self):
+        # ONEOBS ONLY
+        (times,data) = self.sim()
+        Data = []
+        for d in data:
+            Data.append(numpy.matrix(d))
+        return Data
+
     def sim(self):
+        # ONEOBS ONLY
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
         self.W.refine(injectionList)
         self.G.refine(collectionList)
