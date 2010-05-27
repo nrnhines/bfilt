@@ -130,6 +130,13 @@ class QuadraticProgram(object):
         self.P = cvxopt.matrix(P)
         self.q = cvxopt.matrix(q)
 
+    def project(self,m,PI=None):
+        if PI == None:
+            dim = numpy.matrix(self.G).shape[1]
+            PI = numpy.matlib.eye(dim)
+        self.setObjective(PI, -PI*m)
+        return self.solve()
+
     def solve(self):
         if self.eq:
             out = solvers.qp(self.P,self.q,self.G,self.h,self.A,self.b)

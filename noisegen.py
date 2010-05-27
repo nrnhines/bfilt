@@ -6,6 +6,7 @@ import scipy.linalg as linalg
 import eve
 import sto
 import detsys
+import EKF
 from neuron import h
 
 class Wiener(object):
@@ -252,6 +253,11 @@ class Initial(object):
         gm = self.gmatrix()
         return m + B*gm
 
+    def con_ic(self, m, cov):
+        uncon = self.ic(m,cov)
+        # return EKF.QP.project(uncon,cov.I)
+        return EKF.QP.project(uncon)
+
 class Gen(object):
     def __init__(self, N):
         self.N = N
@@ -337,6 +343,10 @@ class Gen(object):
         state = state + R
         return state
 
+    def con_inject(self,time,state,k,PI=None):
+        new = self.inject(time,state,k)
+        return EKF.QP.project(new,PI)
+
     def datasim(self):
         # ONEOBS ONLY
         (times,data) = self.sim()
@@ -347,10 +357,11 @@ class Gen(object):
 
     def sim(self):
         # ONEOBS ONLY
+        self.N.constraintsButton()
         (stop,dWindex,iscollect,injectionList,collectionList) = self.eventData()
         self.W.refine(injectionList)
         self.G.refine(collectionList)
-        state = numpy.matrix(self.IC.ic(self.N.Sys.Initial, self.N.Eve.Sto.InitialCov))
+        state = numpy.matrix(self.IC.con_ic(self.N.Sys.Initial, self.N.Eve.Sto.InitialCov))
         data = []
         GIndex = 0
         if iscollect[0] and self.TOLequal(stop[0],0.0):
@@ -359,7 +370,7 @@ class Gen(object):
         for k in range(1,len(stop)):
             state = numpy.matrix(self.N.Sys.flow([stop[k-1],stop[k]],state))
             if dWindex[k]:
-                state = self.inject(stop[k],state,dWindex[k])
+                state = self.con_inject(stop[k],state,dWindex[k])
             if iscollect[k]:
                 data.append(self.collect(stop[k],state,GIndex))
                 GIndex += 1
