@@ -22,3 +22,6 @@ def expm(m):
         for j in range(int(hm.nrow())):
             mo[i,j] = hm.getval(i, j)
     return mo
+
+def cholesky(m):
+    return numpy.linalg.cholesky(m)

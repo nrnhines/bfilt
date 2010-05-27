@@ -2,7 +2,7 @@ import random
 import math
 import copy
 import numpy
-import scipy.linalg as linalg
+from myscipy import linalg
 import eve
 import sto
 import detsys
