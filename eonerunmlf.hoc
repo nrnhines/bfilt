@@ -100,6 +100,13 @@ func likelihood() {local l  localobj f
 	return l
 }
 
+func like() {local l
+	// overwrite first $1 parameters with $&2
+	po.setParm($&2)
+	l = po.likelihood()
+	return l
+}
+
 proc plot_likelihood_result() {local i  localobj m, w, x, f
 	x = po.Etime()
 	for i=0, fitnesslist.count - 1 {
