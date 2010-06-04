@@ -45,8 +45,8 @@ class NeuronObservable(ObserveStateK):
         #measurement goes here
         x = self.hpt.val
 
-        print 'ss[3]', ss[3]
-        print 'x', x
+        # print 'ss[3]', ss[3]
+        # print 'x', x
 
         h.cvode.yscatter(ss) #restore
         return x
