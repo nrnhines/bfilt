@@ -2,7 +2,7 @@ parmfitness_generator_append("FitnessGenerator1")
 
 begintemplate FitnessGenerator1
 public efun, fitnesslist, generator, yvarlist, yveclist, tvec, title
-public rfile, wfile, map, pelist, chtitle, gview, clone, add
+public rfile, wfile, map, pelist, chtitle, gview, clone, add, like
 public save_context, restore_context
 external classname, tstop, cvode
 objref fitnesslist, generator, yvarlist, yveclist, tvec, tobj, tobj1, sf, this
