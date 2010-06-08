@@ -100,9 +100,13 @@ func likelihood() {local l  localobj f
 	return l
 }
 
-func like() {local l
+func like() {local l, i  localobj vv
 	// overwrite first $1 parameters with $&2
-	po.setParm($&2)
+	vv = new Vector($1)
+	for i = 0, $1-1 {
+		vv.x[i] = $&2[i]
+	}
+	po.setParm(vv)
 	l = po.likelihood()
 	return l
 }

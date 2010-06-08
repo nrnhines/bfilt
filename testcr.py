@@ -7,18 +7,21 @@ import scipy.stats as stats
 
 class TestCR(object):
     def __init__(self,n,ses,seed):
-        assert(n == 0)
         self.alpha = 0.05
         self.n = n
+        self.true = self.N.getParm()
         h.load_file(ses)
         self.ses = ses
         self.N = h.List("PythonObject").o(0)
-        G = noisegen.Gen(self.N)
-        G.reseed(seed)
-        self.seed = seed
-        self.Data = G.datasim()
+        if n == 0:
+          G = noisegen.Gen(self.N)
+          G.reseed(seed)
+          self.seed = seed
+          self.Data = G.datasim()
+        else:
+          vec = ch3ssdata(n, seed, datavec, true)
+          self.Data = numpy.matrix(vec)
         self.N.overwrite(self.Data)
-        self.true = self.N.getParm()
         self.tl = self.N.likelihood()
         h.MulRunFitter[0].efun()
         self.mle = self.N.getParm()

@@ -1,0 +1,38 @@
+{load_file("ch3ppchannel.ses")}
+begintemplate ch3datagen
+public soma, ch, stim
+create soma
+objref ch, stim
+proc init() {
+	soma {
+		ch = new ch3pp(.5)
+		ch.Nsingle = $1
+		stim = new SEClamp(.5)
+		stim.dur1 = 1e9
+		stim.amp1 = 20
+		stim.rs = .1
+	}
+}
+endtemplate ch3datagen
+
+obfunc ch3ssdata() { localobj m, tvec, ov, cb
+	cb = ChannelBuild[0]
+	m = new ch3datagen($1)
+	ov = new Vector()
+	cb.ks.rseed($2*100000)
+	cb.aliases.tauC2O.A = exp($o4.x[0])
+	cb.aliases.tauCC2.A = exp($o4.x[1])
+	m.soma ov.record(&m.ch.O, $o3)
+	run()
+	return ov.mul(1/$1)
+}
+
+proc test() {localobj vv, tvec, pvec
+	pvec = new Vector(0)
+	pvec.append($3, $4)
+	tvec = new Vector()
+	tvec.indgen(0,tstop,.1)
+	vv = ch3ssdata($1, $2, tvec, pvec)
+	vv.printf()
+}
+
