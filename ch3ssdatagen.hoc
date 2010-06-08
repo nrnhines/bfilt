@@ -1,10 +1,10 @@
 {load_file("ch3ppchannel.ses")}
 begintemplate ch3datagen
-public soma, ch, stim
-create soma
+public soma1, ch, stim
+create soma1
 objref ch, stim
 proc init() {
-	soma {
+	soma1 {
 		ch = new ch3pp(.5)
 		ch.Nsingle = $1
 		stim = new SEClamp(.5)
@@ -15,15 +15,21 @@ proc init() {
 }
 endtemplate ch3datagen
 
-obfunc ch3ssdata() { localobj m, tvec, ov, cb
-	cb = ChannelBuild[0]
+obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil
+	cb = ChannelBuild[1]
 	m = new ch3datagen($1)
 	ov = new Vector()
-	cb.ks.rseed($2*100000)
 	cb.aliases.tauC2O.A = exp($o4.x[0])
 	cb.aliases.tauCC2.A = exp($o4.x[1])
-	m.soma ov.record(&m.ch.O, $o3)
+	m.soma1 ov.record(&m.ch.O, $o3)
+        sav = cvode.active()
+        cvode.active(0)
+        finitialize(v_init)
+	cb.ks.rseed($2*100000)
 	run()
+        m = nil
+        cvode.active(sav)
+        finitialize()
 	return ov.mul(1/$1)
 }
 
