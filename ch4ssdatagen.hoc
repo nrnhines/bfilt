@@ -1,0 +1,54 @@
+{load_file("ch4ppchannel.ses")}
+objref tobj
+tobj = new List("ChannelBuild")
+ch4pp_cbindex_ = tobj.count-1
+objref tobj
+
+begintemplate ch4datagen
+public soma1, ch, stim
+create soma1
+objref ch, stim
+external ch4pp_cbindex_
+
+proc init() {
+	soma1 {
+		ch = new ch4pp(.5)
+		ch.Nsingle = $1
+		stim = new SEClamp(.5)
+		stim.dur1 = 1e9
+		stim.amp1 = 20
+		stim.rs = .1
+	}
+}
+endtemplate ch4datagen
+
+obfunc ch4ssdata() { local sav localobj m, tvec, ov, cb, nil
+	cb = ChannelBuild[ch4pp_cbindex_]
+	m = new ch4datagen($1)
+	ov = new Vector()
+	cb.aliases.tauC2C1.A = exp($o4.x[0])
+	cb.aliases.tauC3C2.A = exp($o4.x[1])
+	m.soma1 ov.record(&m.ch.O, $o3)
+        sav = cvode.active()
+        cvode.active(0)
+	dt = 0.025
+        finitialize(v_init)
+	cb.ks.rseed($2*100000)
+	run()
+        m = nil
+        cvode.active(sav)
+        finitialize()
+	return ov.mul(1/$1)
+}
+
+proc test() {localobj vv, tvec, pvec
+	pvec = new Vector(0)
+	pvec.append($3, $4)
+	tvec = new Vector()
+	tvec.indgen(0,tstop,.1)
+	vv = ch4ssdata($1, $2, tvec, pvec)
+	vv.printf()
+}
+
+//test(1000, 1, 4, 2)
+

@@ -7,22 +7,22 @@ import scipy.stats as stats
 import numpy
 
 class TestCR(object):
-    def __init__(self,n,ses,seed):
+    def __init__(self,n,seed,modelses,datagenhoc):
         self.alpha = 0.05
         self.n = n
-        h.load_file(ses)
+        h.load_file(modelses)
         self.N = h.List("PythonObject").o(0)
         self.true = self.N.getParm()
-        self.ses = ses
+        self.modelses = modelses
         if n == 0:
           G = noisegen.Gen(self.N)
           G.reseed(seed)
           self.seed = seed
           self.Data = G.datasim()
         else:
-          h.load_file("ch3ssdatagen.hoc")
+          h.load_file(datagenhoc)
           tvec = h.Vector(self.N.Eve.collectionTimes)
-          vec = h.ch3ssdata(n, seed, tvec, self.true)
+          vec = h.ch4ssdata(n, seed, tvec, self.true)
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
@@ -42,10 +42,10 @@ class TestCR(object):
         self.covers = (self.pValue >= self.alpha)
         self.N.setParm(self.true)
 
-def run(n=100):
+def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
     TCRs = []
-    for i in range(n):
-        TCRi = TestCR(0,"ch3.ses",i)
+    for i in range(nruns):
+        TCRi = TestCR(nchannels,i+1,modelses,datagenhoc)
         TCRs.append(TCRi)
         if TCRi.covers:
             print i, 'IN:', TCRi.pValue

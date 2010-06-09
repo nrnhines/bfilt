@@ -1,0 +1,9 @@
+ParmFitness: Unnamed multiple run protocol
+	FitnessGenerator1: Unnamed single run protocol
+		Use Likelihood: 1
+		YFitness:	ch4pp[0].g
+
+	Parameters:
+		"ChannelBuild[0].aliases.tauC2C1.A", 2, -1e+06, 1e+06, 1, 0
+		"ChannelBuild[0].aliases.tauC3C2.A", 2, -1e+06, 1e+06, 1, 0
+End ParmFitness
