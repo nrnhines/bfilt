@@ -33,7 +33,7 @@ class TestCR(object):
         self.N.overwrite(self.Data)
         self.tl = self.N.likelihood()
         print self.tl
-        return
+        h.attr_praxis(seed)
         h.MulRunFitter[0].efun()
         self.mle = self.N.getParm()
         self.ml = self.N.likelihood()
