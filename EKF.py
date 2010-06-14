@@ -157,48 +157,172 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
         #~ else:
             #~ m = mold
 
-def predict(Eve,Sys,m,P,t0,t1,injectionTime):
+def oneStepDFlowTable(tStart, tFinal, injectionTimes, mb):
     tol = 1e-7
-    assert(injectionTime[0] <= t0 + tol)
-    assert(injectionTime[1] + tol > t0)
-    assert(injectionTime[-1] <= t1 + tol)
-    mb = m
-    tStart = t0
-    identityMatrixSizeOfState = numpy.eye(len(m))
-    As = []
-    Bs = []
-    mbs = []
-    for i in range(1,len(injectionTime)):
-        (mb, A, tStart) = Sys.flowJac(tStart, [injectionTime[i-1],injectionTime[i]],mb)
-        B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
-        # print 'Bs', B
-        As.append(A)  # A's are Jacobians of above flows
-        Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
-        mbs.append(mb)
-    if  t1 > injectionTime[-1]:
-        print 'WARNING: No Injection at this Collection'
-        (mb, A, tStart) = Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
-        B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
-        As.append(A)
+    assert(injectionTimes[0] <= tStart + tol) # injectionTime[0] is previous injection (possibly before tStart) (<= easier to satisfy with tol)
+    assert(tStart + tol < injectionTimes[1])   # injectionTime[1] must be after tStart (first endpoint of step) (< harder to satisfy with tol)
+    assert(injectionTimes[-1] <= tFinal + tol) # last injection time must be at or before tFinal (<= easier to satisfy with tol)
+    oneStepDsF = []  # List of flow Jacobians to be returned by this function
+    mbs = []  # List of state vectors of flow (two end points to an interval so one more than in oneStepDsF) to be returned by this function
+    times = []  # List of corresponding (to state) times to be returned by this function
+    for i in range(1,len(injectionTimes)):
+        mbs.append(mb)  # Before ith flow
+        times.append(tStart) # Before ith flow
+        (mb,A,tStart) = Sys.flowJac(tStart,[tStart,injectionTimes[i]],mb)  # overwrites mb and tStart, used next
+        oneStepDsF.append(A) # Jacobian of ith flow (from point i to point i+1)
+    mbs.append(mb)  # After flow to last injection time
+    times.append(tStart) # After flow to last injection time
+    if tFinal > (tStart + tol):  # final point if beyond last injection
+        (mb,A,tFinal) = Sys.flowJac(tStart,[tStart,tFinal],mb)  # overwrites tFinal with same value, mb with different value
+        mbs.append(mb) # After flow to final
+        times.append(tFinal) # After flow to final
+        oneStepDsF.append(A) # Jacobian of final flow
+    return (mbs,times,oneStepDsF)
+
+def multiStepDFlowTable(oneStepDsF):
+    # Returns a table whose (i,j) element is the Jacobian of flow from i point i to point j as determined by oneStepDsF
+    npoints = len(oneStepDsF) + 1
+    nstates = oneStepDsF[0].shape[0]
+    identityMatrixSizeOfState = numpy.eye(nstates)
+    DsF = [] # Initialize table to be returned
+    # Now fill (n) by (n) table with None.  Later DsF[i][j] will be Jacobian of flow wrt state from point i to point j
+    for i in range(npoints):
+        DsFi = [] # initialize ith row
+        for j in range(npoints):
+            DsFi.append(None)  # (i,j) element = None
+        DsF.append(DsFi)  # add ith row
+    # Now replace the None's with the elements that are needed
+    # Leave as None DsF[i][j] with j<i (instead of what makes sense: DsF[j][i].I) because these values are not used
+    for i in range(npoints):
+        DsF[i][i] = identityMatrixSizeOfState  # Jacobians of trivial flows (time doesn't change) are identity matrix
+    for i in range(npoints-1):
+        DsF[i][i+1] = oneStepDsF[i]  # Fill in one-step Jacobians calculated earlier
+    # Now compute the rest by composition
+    n = npoints-1  # Only need computation for n=npoints-1 if you don't plot funnels, otherwise will repeat for other n
+    for i in range(n-2,-1,-1):  # i.e. npoints-3,...,3,2,1,0, DsF[npoints-3][npoints-1] is first one of DsF[i][n] not defined
+        DsF[i][n] = DsF[i+1][n]*DsF[i][i+1]
+    # If plotting funnels repeat for the rest of the n's
+    if True:  # Change this later so that its True only when plotting funnels
+        for n in range(npoints-2,-1,-1): # i.e. npoints-2,npoints-1,...,3,2,1,0
+            for i in range(n-2,-1,-1):
+                DsF[i][n] = DsF[i+1][n]*DsF[i][i+1]
+    return DsF
+
+def lastTrivialStepAddedDFlowTable(Bs, DsF):
+    # There may or may not have been an extra flow with no injection at the end
+    # If there isn't, add a trivial flow to the end of DsF
+    DsF2 = copy.deepcopy(DsF)
+    nflows = len(DsF2)  # DsF2 is a list of lists (of matricies)
+    assert(nflows = len(DsF2[0])  # DsF2[i][j] should be square
+    if nflows == len(Bs):
+        for i in range(nflows):
+            DsF2[i].append(DsF[i][-1])    # DsF2[i][n+1] = DsF[i][n]
+            DsF2lastrow.append(None)  # DsF2[n+1][i] = None
+        DsF2lastrow.append(DsF[0][0]) # DsF2[n+1][n+1] = identity matrix size of state
+        DsF2.append(DsF2lastrow)
     else:
-        As.append(identityMatrixSizeOfState)
-    Am = identityMatrixSizeOfState
-    for i in range(len(Bs)):
-        Am = Am*As[-(i+1)]  # Composition of Jacobians is product
-        New = Am*Bs[-(i+1)]
-        if i == 0:
-            Wm = New
-        else:
-            Wm = numpy.bmat('New Wm')
-        Am_temp = Am*As[0]
-        Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
-        saveData(Eve.Obs,injectionTime[i+1],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
-    Am = Am*As[0]
-    # print 'Wm', Wm
-    # print 'Am', Am
-    # print 'P', P
-    Pb = Wm*Wm.T + Am*P*Am.T
-    return (mb, Pb, t1)
+        print 'Warning: No Injection at this Collection -- Code Untested'
+    return DsF2
+
+def injectionEffectsTable(injectionTimes):
+    Bs = []
+    for i in range(len(injectionTimes)-1):
+        Bs.append(Eve.Sto.noiseJac([injectionTimes[i],injectionTimes[i+1]]))
+    return Bs
+
+def DFlowWrtNoiseTable(Bs,DsF2):
+    # DnF[i][j]: deriv wrt noise when injecting after ith injection interval then traversing the flow from the i+1 through jth flow point
+    # i+1st flow point = ith injection point because it is the right endpoint of the ith injection interval, see picture:
+    # Previous Inject ---<=--- Previous Collect ---FLOW0--->InjectionIntervalRightEndPoint0 ----FLOW1----> Inject1 ----FLOW2---> etc
+    # There is always a last flow beyond the last injection, even if it is the trivial identity flow
+    ncols = len(Bs)
+    nrows = len(DsF2)-1
+    assert(nrows == ncols)
+    rowDnF = []  # append ncols None's to make a row of DnF
+    for j in range(ncols):
+        rowDnF.append(None)
+    DnF = [] # append nrows rows of Nones to make DnF
+    for i in range(nrows):
+        DnF.append(rowDnF)
+    for i in range(nrows):  # overwrite None's where possible
+        for j in range(ncols):
+            if DsF2[i+1][j] != None:
+                DnF[i][j] = DsF2[i+1][j]*Bs[i]
+    return DnF
+
+def DFlowFromBeginWrtStateMatrixList(DsF2):
+    # Ams[i] is Flow Jacobian when flowing from tStart to ith flow point
+    Ams = []
+    for i in range(0,len(DsF2)):
+        Ams.append(DsF2[0][i])
+    return Ams
+
+def DFlowFromBeginWrtNoiseMatrixList(DnF):
+    # Wms[i] is a matrix with several columns.
+    # The jth column of Wms[i] is the derivative with respect to the jth injection interval after flowing from the j+1st to the ith flow point
+    Wms = [None]  # For i=0, Wms[i] = None, because no injections before 0th flow point (right endpoint of first injection interval is flow point 1).
+    for i in range(i,len(DnF)):
+        for j in range(0,i):
+            if j == 0:
+                Wm = DnF[0][i]
+            else:
+                Wms = numpy.bmat('Wm DnF[j][i]')
+    return Wms
+
+def covarianceTable(Ams,Wms,P):
+    Pbs = [P]  # initial covariance is P
+    for i in range (1,len(Ams)): # starts at one because skipping initial point already handled
+        Pbs.append(Wms[i]*Wm[i].T + Ams[i]*P*Ams[i].T)
+    return Pbs
+
+def predict(Eve,Sys,m,P,t0,t1,injectionTimes):
+    (mbs,times,oneStepJacs) = oneStepDFlowTable(t0,t1,injectionTimes,m)  # State times and Jacobians for one step intervals
+    DsF = multiStepDFlowTable(oneStepDsF)  # Table whose i,j element is Jacobian of flow from point i to point j
+    Bs = injectionEffectsTable(injectionTimes)
+    DsF2 = lastTrivialStepAddedDFlowTable(Bs, DsF)
+    DnF = DFlowWrtNoiseTable(Bs,DsF2)
+    Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
+    Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
+    Pbs = covarianceTable(Ams,Wms,P)
+    for i in range(1,len(Pbs))  # starts at one because we have already handled initial point
+        saveData(Eve.Obs,times[i],mbs[i],Pb[i])
+    return (mbs[-1],Pbs[-1],t1)
+
+    #~ identityMatrixSizeOfState = numpy.eye(len(m))
+    #~ As = []
+    #~ Bs = []
+    #~ mbs = []
+    #~ for i in range(1,len(injectionTime)):
+        #~ (mb, A, tStart) = Sys.flowJac(tStart, injectionTime[i],mb)
+        #~ B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
+        #~ # print 'Bs', B
+        #~ As.append(A)  # A's are Jacobians of above flows
+        #~ Bs.append(B)  # Typically all B's same matrix scaled by sqrt(dt)
+        #~ mbs.append(mb)
+    #~ if  t1 > injectionTime[-1]:
+        #~ print 'WARNING: No Injection at this Collection'
+        #~ (mb, A, tStart) = Sys.flowJac(tStart,[injectionTime[-1],t1],mb)
+        #~ B = Eve.Sto.noiseJac([injectionTime[i-1],injectionTime[i]])
+        #~ As.append(A)
+    #~ else:
+        #~ As.append(identityMatrixSizeOfState)
+    #~ Am = identityMatrixSizeOfState
+    #~ for i in range(len(Bs)):
+        #~ Am = Am*As[-(i+1)]  # Composition of Jacobians is product
+        #~ New = Am*Bs[-(i+1)]
+        #~ if i == 0:
+            #~ Wm = New
+        #~ else:
+            #~ Wm = numpy.bmat('New Wm')
+        #~ Am_temp = Am*As[0]
+        #~ Pb_temp = Wm*Wm.T + Am_temp*P*Am_temp.T
+        #~ saveData(Eve.Obs,injectionTime[i+1],mbs[i],Pb_temp)  # Saves error bars ONLY ObsNum = 0
+    #~ Am = Am*As[0]
+    #~ # print 'Wm', Wm
+    #~ # print 'Am', Am
+    #~ # print 'P', P
+    #~ Pb = Wm*Wm.T + Am*P*Am.T
+    #~ return (mb, Pb, t1)
 
 def minusTwiceLogGaussianPDF(v,S):
     f0 = len(v)*math.log(2*math.pi)
