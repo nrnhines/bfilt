@@ -99,13 +99,16 @@ class NrnBFilt(object):
 
     def likelihood(self):
         self.ifchdat()
-	try:
-            x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
-            x = float(x)
-            return -x
-	except:
-	    self.likefailed = True
-            return float("inf")
+        x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+        x = float(x)
+        return -x
+        # try:
+            # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+            # x = float(x)
+            # return -x
+        # except:
+            # self.likefailed = True
+            # return float("inf")
 
     def ifchdat(self):
         fl = self.rf.fitnesslist
