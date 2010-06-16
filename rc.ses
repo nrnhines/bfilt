@@ -1,0 +1,81 @@
+{load_file("nrngui.hoc")}
+objectvar save_window_, rvp_
+objectvar scene_vector_[3]
+objectvar ocbox_, ocbox_list_, scene_, scene_list_
+{ocbox_list_ = new List()  scene_list_ = new List()}
+{pwman_place(0,0,0)}
+
+//Begin SingleCompartment
+{
+load_file("single.hoc")
+}
+ocbox_ = new SingleCompartment(0)
+ocbox_.inserter = new Inserter(0)
+{object_push(ocbox_.inserter)}
+{
+mt.select("pas") i = mt.selected()
+ms[i] = new MechanismStandard("pas")
+ms[i].set("g_pas", 0.001, 0)
+ms[i].set("e_pas", -70, 0)
+mstate[i]= 1
+maction(i)
+}
+{object_pop() doNotify()}
+{object_push(ocbox_)}
+{inserter.v1.map()}
+{endbox()}
+{object_pop() doNotify()}
+{
+ocbox_ = ocbox_.vbox
+ocbox_.map("SingleCompartment", 119, 176, 90.24, 96)
+}
+objref ocbox_
+//End SingleCompartment
+
+
+//Begin MulRunFitter[0]
+{
+load_file("mulfit.hoc", "MulRunFitter")
+}
+{
+ocbox_ = new MulRunFitter(1)
+}
+{object_push(ocbox_)}
+{
+version(5)
+ranfac = 2
+fspec = new File("rc.ses.ft1")
+fdat = new File("rc.ses.fd1")
+read_data()
+build()
+}
+{p.gengui(0, 386, 272, 444.48, 341.76)}
+{object_pop()}
+{
+ocbox_.map("MulRunFitter[0]", 326, 204, 353.28, 199.68)
+}
+objref ocbox_
+//End MulRunFitter[0]
+
+{
+ocbox_ = new VBox()
+ocbox_list_.prepend(ocbox_)
+ocbox_.intercept(1)
+}
+{
+xpanel("", 0)
+xlabel("Likelihood numerical parameters")
+xlabel("    Measurement noise")
+xlabel("    Process noise")
+xlabel("    Initial Uncertainty")
+xbutton("Show state funnels","PythonObject")
+xpanel()
+}
+{
+ocbox_ = ocbox_list_.object(0)
+ocbox_.intercept(0)
+ocbox_.map("Likelihood parameters", 49, 168, 299.52, 283.2)
+}
+objref ocbox_
+objectvar scene_vector_[1]
+{doNotify()}
