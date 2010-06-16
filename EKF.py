@@ -298,7 +298,7 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTimes):
     Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
     Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
     Pbs = covarianceTable(Ams,Wms,P)
-    for i in range(1,len(Pbs)):  # starts at one because we have already handled initial point
+    for i in range(len(Pbs)):  # starts at one because we have already handled initial point
         saveData(Eve.Obs,times[i],mbs[i],Pbs[i])
     return (mbs[-1],Pbs[-1],t1)
 
