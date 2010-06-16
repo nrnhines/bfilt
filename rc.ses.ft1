@@ -1,0 +1,8 @@
+ParmFitness: Unnamed multiple run protocol
+	FitnessGenerator1: Unnamed single run protocol
+		Use Likelihood: 1
+		YFitness:	soma.v( 0.5 )
+
+	Parameters:
+		"soma.g_pas( 0.5 )", 0.001, -1e+06, 1e+06, 1, 0
+End ParmFitness
