@@ -5,6 +5,9 @@ from neuron import h
 import noisegen
 import scipy.stats as stats
 import numpy
+import numdifftools as nd
+import math
+import svd
 
 class TestCR(object):
     def __init__(self,n,seed,modelses,datagenhoc):
@@ -40,15 +43,48 @@ class TestCR(object):
         self.CS = 2.0*(self.tl - self.ml)
         self.pValue = stats.chisqprob(self.CS,self.true.size())
         self.covers = (self.pValue >= self.alpha)
+        self.H = numpy.matrix(self.Hessian())
+        svdList = svd.svd(numpy.array(self.H))[1]
+        self.precision = 0
+        for sl in svdList:
+            self.precision += math.log(sl)
         self.N.setParm(self.true)
+        self.likefailed = self.N.likefailed
+        self.N.likefailed = False
+
+    def evalFun(self, p):
+        saveParm = self.N.getParm()
+        newParm = self.N.getParm()
+        for i in range(len(p)):
+            newParm.x[i] = p[i]
+        self.N.setParm(newParm)
+        L = self.N.likelihood()
+        self.N.setParm(saveParm)
+        return L
+
+    def Hessian(self):
+        # Read current values of parameters (hopefully MLEs)
+        parm = self.N.getParm()
+        parmList = []
+        for i in range(int(parm.size())):
+            parmList.append(parm[i])
+        # Create (likelihood) inline function
+        LamFun = lambda p: self.evalFun(p)
+        # Create Hessian (of likelihood) inline function
+        HessFun = nd.Hessian(LamFun)
+        # Evaluate Hessian and return
+        return numpy.matrix(HessFun(parmList))
 
 def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
     TCRs = []
+    ncovers = 0
     for i in range(nruns):
         TCRi = TestCR(nchannels,i+1,modelses,datagenhoc)
         TCRs.append(TCRi)
         if TCRi.covers:
             print i, 'IN:', TCRi.pValue
+            ncovers += 1
         else:
             print i, 'OUT:', TCRi.pValue
+    print ncovers, 'covers out of', nruns
     return TCRs

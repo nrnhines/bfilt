@@ -55,7 +55,7 @@ class NrnBFilt(object):
         self.Data = self.__data(fl,self.Eve)
         self.pf = self.getParmFitness()
         self.dlikedt = h.Vector()
-	self.likefailed = False
+        self.likefailed = False
         #CONSTRAINTS GUI INIT
         s = h.Vector()
         h.cvode.states(s)
@@ -99,16 +99,16 @@ class NrnBFilt(object):
 
     def likelihood(self):
         self.ifchdat()
-        x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
-        x = float(x)
-        return -x
-        # try:
-            # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
-            # x = float(x)
-            # return -x
-        # except:
-            # self.likefailed = True
-            # return float("inf")
+        # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+        # x = float(x)
+        # return -x
+        try:
+            x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+            x = float(x)
+            return -x
+        except:
+            self.likefailed = True
+            return float("1e1")
 
     def ifchdat(self):
         fl = self.rf.fitnesslist
@@ -146,12 +146,12 @@ class NrnBFilt(object):
         #return Hoc Vector of current objective function parameters
         v = h.Vector()
         self.pf.doarg_get(v)
-        print 'getParm', v[0]
+        # print 'getParm', v[0]
         return v
 
     def setParm(self, hvec):
         #assign current objective funtion parameters
-        print 'setParm', hvec[0]
+        # print 'setParm', hvec[0]
         self.pf.parm(hvec)
 
     def fillPB(self, i):

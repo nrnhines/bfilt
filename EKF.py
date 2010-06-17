@@ -161,7 +161,7 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
 def oneStepDFlowTable(tStart, tFinal, injectionTimes, mb, Sys):
     tol = 1e-7
     assert(injectionTimes[0] <= tStart + tol) # injectionTime[0] is previous injection (possibly before tStart) (<= easier to satisfy with tol)
-    assert(tStart + tol < injectionTimes[1])   # injectionTime[1] must be after tStart (first endpoint of step) (< harder to satisfy with tol)
+    assert((injectionTimes[1] < tol) or (tStart + tol < injectionTimes[1]))   # injectionTime[1] must be after tStart (first endpoint of step) (< harder to satisfy with tol)
     assert(injectionTimes[-1] <= tFinal + tol) # last injection time must be at or before tFinal (<= easier to satisfy with tol)
     oneStepDsF = []  # List of flow Jacobians to be returned by this function
     mbs = [mb]  # List of state vectors of flow (two end points to an interval so one more than in oneStepDsF) to be returned by this function
