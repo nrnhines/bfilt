@@ -7,6 +7,7 @@ import scipy.stats as stats
 import numpy
 import numdifftools as nd
 import math
+import pickle
 import svd
 
 class TestCR(object):
@@ -17,6 +18,7 @@ class TestCR(object):
         self.N = h.List("PythonObject").o(0)
         self.true = self.N.getParm()
         self.modelses = modelses
+        self.seed = seed
         if n == 0:
           G = noisegen.Gen(self.N)
           G.reseed(seed)
@@ -75,6 +77,23 @@ class TestCR(object):
         # Evaluate Hessian and return
         return numpy.matrix(HessFun(parmList))
 
+class WOHoc(object):
+    def __init__(self, WH):
+        self.alpha = WH.alpha
+        self.n = WH.n
+        self.true = numpy.matrix(WH.true)
+        self.modelses = WH.modelses
+        self.seed = WH.seed
+        self.tl =WH.tl
+        self.mle = numpy.matrix(WH.mle)
+        self.ml = WH.ml
+        self.CS = WH.CS
+        self.pValue = WH.pValue
+        self.covers = WH.covers
+        self.H = WH.H
+        self.precision =WH.precision
+        self.likefailed = WH.likefailed
+
 def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
@@ -88,3 +107,11 @@ def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
             print i, 'OUT:', TCRi.pValue
     print ncovers, 'covers out of', nruns
     return TCRs
+
+def pickelWOH(TCRs,filename):
+    T = []
+    for i in range(len(TCRs)):
+        T.append(WOHoc(TCRs[i]))
+    f = open(filename,"w")
+    pickle.dump(T,f)
+    f.close()
