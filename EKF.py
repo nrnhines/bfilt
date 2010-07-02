@@ -303,11 +303,11 @@ def covarianceTable(Ams,Wms,P):
 
 def PbTable(P,As,Bs):
     # assert(len(Bs)+1 == len(As))
-    print 'Bs', Bs
-    print 'As', As
+    # print 'Bs', Bs
+    # print 'As', As
     Pb = [P]
     for i in range(len(As)):
-        if i == len(Bs):
+        if i == len(Bs):  #i is too large for Bs, which would happen if last flow has no injection
             Pb.append(As[i]*Pb[i]*As[i].T)
         else:
             Pb.append(As[i]*Pb[i]*As[i].T + Bs[i]*Bs[i].T)
@@ -317,8 +317,10 @@ def predict(Eve,Sys,m,P,t0,t1,injectionTimes):
     (mbs,times,oneStepDsF) = oneStepDFlowTable(t0,t1,injectionTimes,m,Sys)  # State times and Jacobians for one step intervals
     Bs = injectionEffectsList(injectionTimes, Eve)
     Pbr = PbTable(P,oneStepDsF,Bs)
+    assert(len(Pbr) == len(mbs))
+    assert(len(Pbr) == len(times))
     for i in range(len(Pbr)):  # starts at one because we have already handled initial point
-        saveData(Eve.Obs,times2[i],mbs2[i],Pbr[i])
+        saveData(Eve.Obs,times[i],mbs[i],Pbr[i])
     return (mbs[-1],Pbr[-1],t1)
 
         #~ if i > 0:
