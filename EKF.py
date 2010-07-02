@@ -166,8 +166,8 @@ def oneStepDFlowTable(tStart, tFinal, injectionTimes, mb, Sys):
     oneStepDsF = []  # List of flow Jacobians to be returned by this function
     mbs = []  # List of state vectors of flow (two end points to an interval so one more than in oneStepDsF) to be returned by this function
     times = []  # List of corresponding (to state) times to be returned by this function
-    print 'tStart', tStart
-    print 'injectionTimes', injectionTimes
+    # print 'tStart', tStart
+    # print 'injectionTimes', injectionTimes
     for i in range(1,len(injectionTimes)):
         mbs.append(mb)  # Before ith flow
         times.append(tStart) # Before ith flow
@@ -314,52 +314,60 @@ def PbTable(P,As,Bs):
     return Pb
 
 def predict(Eve,Sys,m,P,t0,t1,injectionTimes):
-    print 'AAA'
     (mbs,times,oneStepDsF) = oneStepDFlowTable(t0,t1,injectionTimes,m,Sys)  # State times and Jacobians for one step intervals
-    print 'BBB'
     Bs = injectionEffectsList(injectionTimes, Eve)
-    print 'CCC'
     Pbr = PbTable(P,oneStepDsF,Bs)
-    print 'DDD'
-    DsF = multiStepDFlowTable(oneStepDsF)  # Table whose i,j element is Jacobian of flow from point i to point j
-    print 'len(mbs)', len(mbs)
-    print 'mbs', mbs
-    print 'times',times
-    print 'oneStepDsF', oneStepDsF
-    print 'len(DsF)', len(DsF)
-    print 'len(DsF[0]', len(DsF[0])
-    print 'DsF', DsF
-    print 'injectionTimes', injectionTimes
-    for i in range(1,len(injectionTimes)):
-        print 'delta',injectionTimes[i]-injectionTimes[i-1]
-    print 'Bs',Bs
-    print 'one'
-    (DsF2,times2,mbs2) = lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1, times, mbs)
-    print 'DsF2',DsF2
-    print 'two'
-    DnF = DFlowWrtNoiseTable(Bs,DsF2)
-    print 'DnF', DnF
-    print 'three'
-    Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
-    print 'Ams', Ams
-    print 'four'
-    Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
-    print 'Wms', Wms
-    print 'five'
-    Pbs = covarianceTable(Ams,Wms,P)
-    print 'six'
-    print 'len(Pbs)', len(Pbs)
-    print  'Pbs', Pbs
-    tol = 1e-6
     for i in range(len(Pbr)):  # starts at one because we have already handled initial point
         saveData(Eve.Obs,times2[i],mbs2[i],Pbr[i])
-        if i > 0:
-            assert(Pbs[i][0,0] + tol > Pbs[i-1][0,0])
-    print 'seven'
-    print 'Pbs[-1]', Pbs[-1]
-    print 'Pbr[-1]', Pbr[-1]
-    # assert(len(Pbs)==3)
     return (mbs[-1],Pbr[-1],t1)
+
+        #~ if i > 0:
+            #~ assert(Pbs[i][0,0] + tol > Pbs[i-1][0,0])
+    #~ print 'seven'
+    #~ print 'Pbs[-1]', Pbs[-1]
+    #~ print 'Pbr[-1]', Pbr[-1]
+    #~ # assert(len(Pbs)==3)
+    #~ return (mbs[-1],Pbr[-1],t1)
+    #~ print 'DDD'
+    #~ DsF = multiStepDFlowTable(oneStepDsF)  # Table whose i,j element is Jacobian of flow from point i to point j
+    #~ print 'len(mbs)', len(mbs)
+    #~ print 'mbs', mbs
+    #~ print 'times',times
+    #~ print 'oneStepDsF', oneStepDsF
+    #~ print 'len(DsF)', len(DsF)
+    #~ print 'len(DsF[0]', len(DsF[0])
+    #~ print 'DsF', DsF
+    #~ print 'injectionTimes', injectionTimes
+    #~ for i in range(1,len(injectionTimes)):
+        #~ print 'delta',injectionTimes[i]-injectionTimes[i-1]
+    #~ print 'Bs',Bs
+    #~ print 'one'
+    #~ (DsF2,times2,mbs2) = lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1, times, mbs)
+    #~ print 'DsF2',DsF2
+    #~ print 'two'
+    #~ DnF = DFlowWrtNoiseTable(Bs,DsF2)
+    #~ print 'DnF', DnF
+    #~ print 'three'
+    #~ Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
+    #~ print 'Ams', Ams
+    #~ print 'four'
+    #~ Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
+    #~ print 'Wms', Wms
+    #~ print 'five'
+    #~ Pbs = covarianceTable(Ams,Wms,P)
+    #~ print 'six'
+    #~ print 'len(Pbs)', len(Pbs)
+    #~ print  'Pbs', Pbs
+    #~ tol = 1e-6
+    #~ for i in range(len(Pbr)):  # starts at one because we have already handled initial point
+        #~ saveData(Eve.Obs,times2[i],mbs2[i],Pbr[i])
+        #~ if i > 0:
+            #~ assert(Pbs[i][0,0] + tol > Pbs[i-1][0,0])
+    #~ print 'seven'
+    #~ print 'Pbs[-1]', Pbs[-1]
+    #~ print 'Pbr[-1]', Pbr[-1]
+    #~ # assert(len(Pbs)==3)
+    #~ return (mbs[-1],Pbs[-1],t1)
 
     #~ identityMatrixSizeOfState = numpy.eye(len(m))
     #~ As = []
