@@ -47,9 +47,10 @@ class TestCR(object):
         self.covers = (self.pValue >= self.alpha)
         self.H = numpy.matrix(self.Hessian())
         svdList = svd.svd(numpy.array(self.H))[1]
-        self.precision = 0
+        self.precision = 0.0
         for sl in svdList:
-            self.precision += math.log(sl)
+            sl_positive = max(sl,1e-14)
+            self.precision += math.log(sl_positive)
         self.N.setParm(self.true)
         self.likefailed = self.N.likefailed
         self.N.likefailed = False
@@ -115,3 +116,13 @@ def pickelWOH(TCRs,filename):
     f = open(filename,"w")
     pickle.dump(T,f)
     f.close()
+
+def load(filename):
+    f = open(filename,'r')
+    T = pickle.load(f)
+    f.close()
+    return T
+
+def batch():
+    T = run(1000,0,'rc64.ses')
+    pickelWOH(T,'T64RCK.pkl')
