@@ -164,8 +164,10 @@ def oneStepDFlowTable(tStart, tFinal, injectionTimes, mb, Sys):
     assert((injectionTimes[1] < tol) or (tStart + tol < injectionTimes[1]))   # injectionTime[1] must be after tStart (first endpoint of step) (< harder to satisfy with tol)
     assert(injectionTimes[-1] <= tFinal + tol) # last injection time must be at or before tFinal (<= easier to satisfy with tol)
     oneStepDsF = []  # List of flow Jacobians to be returned by this function
-    mbs = [mb]  # List of state vectors of flow (two end points to an interval so one more than in oneStepDsF) to be returned by this function
-    times = [tStart]  # List of corresponding (to state) times to be returned by this function
+    mbs = []  # List of state vectors of flow (two end points to an interval so one more than in oneStepDsF) to be returned by this function
+    times = []  # List of corresponding (to state) times to be returned by this function
+    # print 'tStart', tStart
+    # print 'injectionTimes', injectionTimes
     for i in range(1,len(injectionTimes)):
         mbs.append(mb)  # Before ith flow
         times.append(tStart) # Before ith flow
@@ -215,11 +217,14 @@ def injectionEffectsList(injectionTimes,Eve):
         Bs.append(Eve.Sto.noiseJac([injectionTimes[i],injectionTimes[i+1]]))
     return Bs
 
-def lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1):
+def lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1, times, mbs):
     # There may or may not have been an extra flow with no injection at the end
     # If there isn't, add a trivial flow to the end of DsF
     tol = 1e-7
     DsF2 = copy.deepcopy(DsF)
+    times2 = copy.deepcopy(times)
+    mbs2 = copy.deepcopy(mbs)
+    #Bs2 = copy.deepcopy(Bs)
     nflows = len(DsF)  # DsF2 is a list of lists (of matricies)
     assert(nflows == len(DsF[0]))  # DsF2[i][j] should be square
     if (injectionTimes[-1] + tol < t1): # tol makes it harder to satisfy
@@ -231,7 +236,10 @@ def lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1):
             DsF2LastRow.append(None)  # DsF2[n+1][i] = None
         DsF2LastRow.append(DsF[0][0]) # DsF2[n+1][n+1] = identity matrix size of state
         DsF2.append(DsF2LastRow)
-    return DsF2
+        times2.append(times[-1])
+        mbs2.append(mbs[-1])
+        #Bs2.append(0.0*Bs[-1])
+    return (DsF2,times2,mbs2)
 
 def DFlowWrtNoiseTable(Bs,DsF2):
     # DnF[i][j]: deriv wrt noise when injecting after ith injection interval then traversing the flow from the i+1 through jth flow point
@@ -246,11 +254,14 @@ def DFlowWrtNoiseTable(Bs,DsF2):
         rowDnF.append(None)
     DnF = [] # append nrows rows of Nones to make DnF
     for i in range(nrows):
-        DnF.append(rowDnF)
+        DnF.append(copy.deepcopy(rowDnF))
+    print 'DnF Before', DnF
     for i in range(nrows):  # overwrite None's where possible
         for j in range(ncols):
             if DsF2[i+1][j] != None:
                 DnF[i][j] = DsF2[i+1][j]*Bs[i]
+                print i,j,'DnF[i][j] = DsF2[i+1][j]*Bs[i]', DnF[i][j],DsF2[i+1][j],Bs[i]
+                print 'DnF inside loop', DnF
     return DnF
 
 def DFlowFromBeginWrtStateMatrixList(DsF2):
@@ -261,26 +272,27 @@ def DFlowFromBeginWrtStateMatrixList(DsF2):
     return Ams
 
 def DFlowFromBeginWrtNoiseMatrixList(DnF):
+    # Recall: DnF[i][j]: deriv wrt noise when injecting after ith injection interval then traversing the flow from the i+1 through jth flow point
     # Wms[i] is a matrix with several columns.
     # The jth column of Wms[i] is the derivative with respect to the jth injection interval after flowing from the j+1st to the ith flow point
     # For i=0, Wms[i] = None, because no injections before 0th flow point (right endpoint of first injection interval is flow point 1).
     Wms = [None]
     for i in range(1,len(DnF[0])):
-        Wm = []
         WmEmpty = True
         for j in range(len(DnF)):
             if WmEmpty:
                 if DnF[0][i] != None:
                     Wm = DnF[0][i]
+                    print 'i, Wm', i, Wm
                     WmEmpty = False
             else:
                 if DnF[j][i] != None:
                     temp = DnF[j][i]
                     Wm = numpy.bmat('Wm temp')
-        if WmEmpty:
-            Wms.append(None)
-        else:
-            Wms.append(Wm)
+                    print 'temp', temp
+                    print 'i,j,Wm', i, j, Wm
+        assert(not WmEmpty)
+        Wms.append(Wm)
     return Wms
 
 def covarianceTable(Ams,Wms,P):
@@ -289,18 +301,75 @@ def covarianceTable(Ams,Wms,P):
         Pbs.append(Wms[i]*Wms[i].T + Ams[i]*P*Ams[i].T)
     return Pbs
 
+def PbTable(P,As,Bs):
+    # assert(len(Bs)+1 == len(As))
+    # print 'Bs', Bs
+    # print 'As', As
+    Pb = [P]
+    for i in range(len(As)):
+        if i == len(Bs):  #i is too large for Bs, which would happen if last flow has no injection
+            Pb.append(As[i]*Pb[i]*As[i].T)
+        else:
+            Pb.append(As[i]*Pb[i]*As[i].T + Bs[i]*Bs[i].T)
+    return Pb
+
 def predict(Eve,Sys,m,P,t0,t1,injectionTimes):
     (mbs,times,oneStepDsF) = oneStepDFlowTable(t0,t1,injectionTimes,m,Sys)  # State times and Jacobians for one step intervals
-    DsF = multiStepDFlowTable(oneStepDsF)  # Table whose i,j element is Jacobian of flow from point i to point j
     Bs = injectionEffectsList(injectionTimes, Eve)
-    DsF2 = lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1)
-    DnF = DFlowWrtNoiseTable(Bs,DsF2)
-    Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
-    Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
-    Pbs = covarianceTable(Ams,Wms,P)
-    for i in range(len(Pbs)):  # starts at one because we have already handled initial point
-        saveData(Eve.Obs,times[i],mbs[i],Pbs[i])
-    return (mbs[-1],Pbs[-1],t1)
+    Pbr = PbTable(P,oneStepDsF,Bs)
+    assert(len(Pbr) == len(mbs))
+    assert(len(Pbr) == len(times))
+    for i in range(len(Pbr)):  # starts at one because we have already handled initial point
+        saveData(Eve.Obs,times[i],mbs[i],Pbr[i])
+    return (mbs[-1],Pbr[-1],t1)
+
+        #~ if i > 0:
+            #~ assert(Pbs[i][0,0] + tol > Pbs[i-1][0,0])
+    #~ print 'seven'
+    #~ print 'Pbs[-1]', Pbs[-1]
+    #~ print 'Pbr[-1]', Pbr[-1]
+    #~ # assert(len(Pbs)==3)
+    #~ return (mbs[-1],Pbr[-1],t1)
+    #~ print 'DDD'
+    #~ DsF = multiStepDFlowTable(oneStepDsF)  # Table whose i,j element is Jacobian of flow from point i to point j
+    #~ print 'len(mbs)', len(mbs)
+    #~ print 'mbs', mbs
+    #~ print 'times',times
+    #~ print 'oneStepDsF', oneStepDsF
+    #~ print 'len(DsF)', len(DsF)
+    #~ print 'len(DsF[0]', len(DsF[0])
+    #~ print 'DsF', DsF
+    #~ print 'injectionTimes', injectionTimes
+    #~ for i in range(1,len(injectionTimes)):
+        #~ print 'delta',injectionTimes[i]-injectionTimes[i-1]
+    #~ print 'Bs',Bs
+    #~ print 'one'
+    #~ (DsF2,times2,mbs2) = lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1, times, mbs)
+    #~ print 'DsF2',DsF2
+    #~ print 'two'
+    #~ DnF = DFlowWrtNoiseTable(Bs,DsF2)
+    #~ print 'DnF', DnF
+    #~ print 'three'
+    #~ Ams = DFlowFromBeginWrtStateMatrixList(DsF2)
+    #~ print 'Ams', Ams
+    #~ print 'four'
+    #~ Wms = DFlowFromBeginWrtNoiseMatrixList(DnF)
+    #~ print 'Wms', Wms
+    #~ print 'five'
+    #~ Pbs = covarianceTable(Ams,Wms,P)
+    #~ print 'six'
+    #~ print 'len(Pbs)', len(Pbs)
+    #~ print  'Pbs', Pbs
+    #~ tol = 1e-6
+    #~ for i in range(len(Pbr)):  # starts at one because we have already handled initial point
+        #~ saveData(Eve.Obs,times2[i],mbs2[i],Pbr[i])
+        #~ if i > 0:
+            #~ assert(Pbs[i][0,0] + tol > Pbs[i-1][0,0])
+    #~ print 'seven'
+    #~ print 'Pbs[-1]', Pbs[-1]
+    #~ print 'Pbr[-1]', Pbr[-1]
+    #~ # assert(len(Pbs)==3)
+    #~ return (mbs[-1],Pbs[-1],t1)
 
     #~ identityMatrixSizeOfState = numpy.eye(len(m))
     #~ As = []
@@ -353,6 +422,7 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     initializeErrorBars(Eve.Obs, Sys)
     collectionTimes = Eve.collectionTimes
     injectionTimes = Eve.injectionTimes
+    print 'InjectionTable', injectionTimes
     bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = Eve.ObsNum
     (m0, P0) = initialStateCov(Eve.Sto,Sys)
