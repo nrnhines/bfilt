@@ -19,6 +19,7 @@ class WrappedVal:
 
 class NrnBFilt(object):
     def __init__(self, ho):
+        self.catchoff = False
         self.g = None
         self.rf = ho
         ol = []
@@ -41,10 +42,12 @@ class NrnBFilt(object):
         assert(len(vl) > 0)
         self.covGrowthTime = 100
         self.varTerm = 1
-        Sto = sto.StochasticModel(len(s),tlast,self.Sdiag)
         self.processNoise = []
+        self.Sdiag = []
         for i in range(len(s)):
             self.processNoise.append(WrappedVal(Sto.B[i, i]))
+            self.Sdiag.append(1)
+        Sto = sto.StochasticModel(len(s),tlast,self.Sdiag)
         Obs = obs.ObservationModel(ol)
         self.Eve = eve.EventTable(Sto,Obs)
         self.Sys = detsys.NeuronModel()
@@ -97,18 +100,26 @@ class NrnBFilt(object):
     def overwrite(self,Data):
         self.Data = Data
 
+    def togglecatch(self):
+        self.catchoff = not self.catchoff
+
     def likelihood(self):
         self.ifchdat()
         # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         # x = float(x)
         # return -x
-        try:
+        if self.catchoff:
             x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
             return -x
-        except:
-            self.likefailed = True
-            return float("1e1")
+        else:
+            try:
+                x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                x = float(x)
+                return -x
+            except:
+                self.likefailed = True
+                return float("1e12")
 
     def ifchdat(self):
         fl = self.rf.fitnesslist

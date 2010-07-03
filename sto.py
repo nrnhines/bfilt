@@ -15,13 +15,13 @@ class StochasticModel(object):
         times = numpy.arange(0.0,tlast,1.0)
         self.Injection = eve.EventTimed(times)
         self.InitialCov = numpy.eye(dim)
-        for i in range(dim)
+        for i in range(dim):
             self.InitialCov[i,i] = Sdiag[i]**2.0
 
     def updateInitial(self, Sdiag):
         dim = self.B.shape[0]
         self.InitialCov = numpy.eye(dim)
-        for i in range(dim)
+        for i in range(dim):
             self.InitialCov[i,i] = Sdiag[i]**2.0
 
     def updateInjectionInterval(self,dt):
