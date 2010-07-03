@@ -8,21 +8,17 @@ import fitglobals
 import eve
 
 class StochasticModel(object):
-    def __init__(self, dim, tlast, covGrowthTime, varTerm):
+    def __init__(self, dim, tlast):
         self.B = numpy.matrix(numpy.zeros((dim,dim)))
         self.B[0,0] = 1
         self.tlast = tlast
         times = numpy.arange(0.0,tlast,1.0)
         self.Injection = eve.EventTimed(times)
-        self.InitialCov = numpy.eye(dim)
-        for i in range(dim):
-            self.InitialCov[i,i] = Sdiag[i]**2.0
+        self.InitialCovSqrt = numpy.eye(dim)
+        self.InitialCov = self.InitialCovSqrt*self.InitialCovSqrt.T
 
-    def updateInitial(self, Sdiag):
-        dim = self.B.shape[0]
-        self.InitialCov = numpy.eye(dim)
-        for i in range(dim):
-            self.InitialCov[i,i] = Sdiag[i]**2.0
+    def updateInitial(self):
+        self.InitialCov = self.InitialCovSqrt*self.InitialCovSqrt.T
 
     def updateInjectionInterval(self,dt):
         self.Injection.erange(0.0,self.tlast,dt)

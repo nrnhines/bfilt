@@ -19,7 +19,7 @@ class WrappedVal:
 
 class NrnBFilt(object):
     def __init__(self, ho):
-        self.catchoff = False
+        self.trapOn = True
         self.g = None
         self.rf = ho
         ol = []
@@ -44,10 +44,11 @@ class NrnBFilt(object):
         self.varTerm = 1
         self.processNoise = []
         self.Sdiag = []
+        Sto = sto.StochasticModel(len(s),tlast)
+        for i in range(len(s)):
+            self.Sdiag.append(WrappedVal(Sto.InitialCovSqrt[i,i]))
         for i in range(len(s)):
             self.processNoise.append(WrappedVal(Sto.B[i, i]))
-            self.Sdiag.append(1)
-        Sto = sto.StochasticModel(len(s),tlast,self.Sdiag)
         Obs = obs.ObservationModel(ol)
         self.Eve = eve.EventTable(Sto,Obs)
         self.Sys = detsys.NeuronModel()
@@ -101,14 +102,14 @@ class NrnBFilt(object):
         self.Data = Data
 
     def togglecatch(self):
-        self.catchoff = not self.catchoff
+        self.trapOn = not self.trapOn
 
     def likelihood(self):
         self.ifchdat()
         # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         # x = float(x)
         # return -x
-        if self.catchoff:
+        if not self.trapOn:
             x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
             return -x
@@ -165,6 +166,11 @@ class NrnBFilt(object):
         # print 'setParm', hvec[0]
         self.pf.parm(hvec)
 
+    def fillS(self, i):
+        self.Eve.Sto.InitialCovSqrt[i,i] = self.Sdiag[i].x
+        self.Initial_changed()
+        print i, self.Eve.Sto.InitialCov
+
     def fillPB(self, i):
         self.Eve.Sto.B[i,i] = self.processNoise[i].x
         self.Initial_changed()
@@ -175,7 +181,7 @@ class NrnBFilt(object):
         self.Data = self.__data(self.rf.fitnesslist,self.Eve)
 
     def Initial_changed(self):
-        self.Eve.Sto.updateInitial(self.Sdiag)
+        self.Eve.Sto.updateInitial()
 
     def constraintsPanel(self):
         self.box = h.HBox()
@@ -248,8 +254,9 @@ class NrnBFilt(object):
             h.xvalue('Diffusion Coeff[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
         h.xlabel('    Initial Uncertainty')
         for i in range(len(s)):
+            print i
             h.cvode.statename(i, sref, 1)
-            h.xvalue('Initial StD[%d,%d]: '%(i,i) + sref[0], (self.Sdiag[i],'x'), 1, self.Initial_changed)
+            h.xvalue('Initial StD[%d,%d]: '%(i,i) + sref[0], (self.Sdiag[i],'x'), 1, (self.fillS,i))
         h.xbutton('Show state funnels', self.show_state_funnels)
         h.xpanel()
         self.box.intercept(0)
