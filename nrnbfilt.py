@@ -252,7 +252,7 @@ class NrnBFilt(object):
         for i in range(len(s)):
             print i
             h.cvode.statename(i, sref, 1)
-            h.xvalue('Initial StD[%d,%d]: '%(i,i) + sref[0], (self.Sdiag[i],'x'), 1, (self.fillS,i))
+            h.xvalue('Initial Stand Dev[%d]: '%i + sref[0], (self.Sdiag[i],'x'), 1, (self.fillS,i))
         h.xbutton('Show state funnels', self.show_state_funnels)
         h.xpanel()
         self.box.intercept(0)
