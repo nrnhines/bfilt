@@ -41,7 +41,7 @@ class NrnBFilt(object):
         assert(len(vl) > 0)
         self.covGrowthTime = 100
         self.varTerm = 1
-        Sto = sto.StochasticModel(len(s),tlast,self.covGrowthTime,self.varTerm)
+        Sto = sto.StochasticModel(len(s),tlast,self.Sdiag)
         self.processNoise = []
         for i in range(len(s)):
             self.processNoise.append(WrappedVal(Sto.B[i, i]))
@@ -164,7 +164,7 @@ class NrnBFilt(object):
         self.Data = self.__data(self.rf.fitnesslist,self.Eve)
 
     def Initial_changed(self):
-        self.Eve.Sto.updateInitial(self.covGrowthTime,self.varTerm)
+        self.Eve.Sto.updateInitial(self.Sdiag)
 
     def constraintsPanel(self):
         self.box = h.HBox()
@@ -234,10 +234,11 @@ class NrnBFilt(object):
         sref = h.ref('')
         for i in range(len(s)):
             h.cvode.statename(i, sref, 1)
-            h.xvalue('P.B[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
+            h.xvalue('Diffusion Coeff[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
         h.xlabel('    Initial Uncertainty')
-        h.xvalue('Covariance Growth Time', (self, 'covGrowthTime'), 1, self.Initial_changed)
-        h.xvalue('Additional Variance', (self, 'varTerm'), 1, self.Initial_changed)
+        for i in range(len(s)):
+            h.cvode.statename(i, sref, 1)
+            h.xvalue('Initial StD[%d,%d]: '%(i,i) + sref[0], (self.Sdiag[i],'x'), 1, self.Initial_changed)
         h.xbutton('Show state funnels', self.show_state_funnels)
         h.xpanel()
         self.box.intercept(0)
