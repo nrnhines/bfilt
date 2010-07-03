@@ -311,6 +311,7 @@ class NrnBFilt(object):
         pickle.dump(self.processNoise,f)
         pickle.dump(self.covGrowthTime,f)
         pickle.dump(self.varTerm,f)
+        pickle.dump(self.Sdiag,f)
 
     def restore_session(self, nameprefix):
         try:
@@ -332,3 +333,8 @@ class NrnBFilt(object):
         self.processNoise = pickle.load(f)
         self.covGrowthTime = pickle.load(f)
         self.varTerm = pickle.load(f)
+        try:
+            self.Sdiag = pickle.load(f)
+        except:
+            print 'Initial Standard Deviations not yet saved'
+
