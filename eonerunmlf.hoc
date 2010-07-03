@@ -92,7 +92,7 @@ func efun() {local i, e, use_t, tssav, mintstop
 }
 
 func likelihood() {local l  localobj f
-	l = po.likelihood()
+	l = po.likelihood(trap_errors)
 	if (plt_llike) {
 		f = fitnesslist.o(dshow)
 		po.dlikedt.line(f.g, f.xdat_)
@@ -146,6 +146,7 @@ proc init() {
 	use_likelihood = 0
 	likelihood_session_name = ""
 	plt_llike = 0
+        trap_errors = 1
 	title = "Unnamed single run protocol"
 	context_ = 1
 	sprint(tag, "%s", this)
@@ -461,6 +462,7 @@ proc map() {local i
 			xbutton("Noise", "po.paramPanel()")
 			xbutton("Constraints", "po.constraintsPanel()")
 			xcheckbox("Plot llikelihood", &plt_llike)
+			xcheckbox("Trap Errors", &trap_errors)
 		xmenu()
 	xpanel()
 	ldeck.intercept(0)

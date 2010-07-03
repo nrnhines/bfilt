@@ -19,7 +19,6 @@ class WrappedVal:
 
 class NrnBFilt(object):
     def __init__(self, ho):
-        self.trapOn = True
         self.g = None
         self.rf = ho
         ol = []
@@ -101,15 +100,12 @@ class NrnBFilt(object):
     def overwrite(self,Data):
         self.Data = Data
 
-    def togglecatch(self):
-        self.trapOn = not self.trapOn
-
-    def likelihood(self):
+    def likelihood(self, trap_errors):
         self.ifchdat()
         # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         # x = float(x)
         # return -x
-        if not self.trapOn:
+        if not trap_errors:
             x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
             return -x
