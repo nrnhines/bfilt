@@ -142,10 +142,12 @@ class NrnBFilt(object):
         return h.Vector(EKF.Swidth[int(i)])
 
     def SUpper(self,i):
-        return h.Vector(EKF.Scenter[int(i)] + EKF.Swidth[int(i)])
+        v = h.Vector(EKF.Scenter[int(i)])
+        return v.add(h.Vector(EKF.Swidth[int(i)]))
 
     def SLower(self,i):
-        return h.Vector(EKF.Scenter[int(i)] - EKF.Swidth[int(i)])
+        v = h.Vector(EKF.Scenter[int(i)])
+        return v.sub(h.Vector(EKF.Swidth[int(i)]))
 
     def getParmFitness(self):
         # the ParmFitness instance that owns me.
