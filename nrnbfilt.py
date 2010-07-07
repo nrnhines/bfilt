@@ -141,6 +141,12 @@ class NrnBFilt(object):
     def Swidth(self, i):
         return h.Vector(EKF.Swidth[int(i)])
 
+    def SUpper(self,i):
+        return h.Vector(EKF.Scenter[int(i)] + EKF.Swidth[int(i)])
+
+    def SLower(self,i):
+        return h.Vector(EKF.Scenter[int(i)] - EKF.Swidth[int(i)])
+
     def getParmFitness(self):
         # the ParmFitness instance that owns me.
         # there are probably not many so we can work forward from ParmFitness
@@ -290,7 +296,9 @@ class NrnBFilt(object):
         else:
             g = self.g
         for i in range(len(EKF.Scenter)):
-            self.Scenter(i).line(g[i], t)
+            #self.Scenter(i).line(g[i], t)
+            self.SUpper(i).line(g[i], t)
+            self.SLower(i).line(g[i], t)
             if self.g == None:
                 g[i].exec_menu('View = plot')
         self.g = g

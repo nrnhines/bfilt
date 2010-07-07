@@ -10,7 +10,7 @@ import eve
 class StochasticModel(object):
     def __init__(self, dim, tlast):
         self.B = numpy.matrix(numpy.zeros((dim,dim)))
-	self.scale = 1.0
+        self.scale = 1.0
         self.B[0,0] = 1
         self.tlast = tlast
         times = numpy.arange(0.0,tlast,1.0)
