@@ -95,11 +95,17 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
+def onerun(seed, nchannels, modelses, datagen):
+    return TestCR(nchannels,seed,modelses,datagenhoc)
+
 def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
+    global pc
     TCRs = []
     ncovers = 0
     for i in range(nruns):
-        TCRi = TestCR(nchannels,i+1,modelses,datagenhoc)
+        pc.submit(onerun, nchannels, i+1, modelses, datagenhoc)
+    while (pc.working()):
+        TCRi = pc.pyret()
         TCRs.append(TCRi)
         if TCRi.covers:
             print i, 'IN:', TCRi.pValue
@@ -123,6 +129,13 @@ def load(filename):
     f.close()
     return T
 
-def batch():
-    T = run(1000,0,'rc64.ses')
+def batch(nrun=1000):
+    T = run(nrun,0,'rc64.ses')
     pickelWOH(T,'T64RCK.pkl')
+
+pc = ParallelContext()
+pc.runworker()
+batch(4)
+pc.done()
+h.quit()
+
