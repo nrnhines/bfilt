@@ -96,7 +96,7 @@ class WOHoc(object):
         self.likefailed = WH.likefailed
 
 def onerun(seed, nchannels, modelses, datagen):
-    return TestCR(nchannels,seed,modelses,datagenhoc)
+    return TestCR(nchannels,seed,modelses,datagen)
 
 def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
     global pc
@@ -130,10 +130,10 @@ def load(filename):
     return T
 
 def batch(nrun=1000):
-    T = run(nrun,0,'rc64.ses')
+    T = run(nrun,100,'ch3.ses')
     pickelWOH(T,'T64RCK.pkl')
 
-pc = ParallelContext()
+pc = h.ParallelContext()
 pc.runworker()
 batch(4)
 pc.done()
