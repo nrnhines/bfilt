@@ -426,8 +426,7 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     initializeErrorBars(Eve.Obs, Sys)
     collectionTimes = Eve.collectionTimes
     injectionTimes = Eve.injectionTimes
-    # print 'InjectionTable', injectionTimes
-    # NOT USING bounds ANY MORE: TAKE THIS OUT AND UPDATE CALL AND FUNCTION
+    print 'InjectionTable', injectionTimes
     bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = Eve.ObsNum
     (m0, P0) = initialStateCov(Eve.Sto,Sys)
