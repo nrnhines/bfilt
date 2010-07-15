@@ -107,7 +107,7 @@ func like() {local l, i  localobj vv
 		vv.x[i] = $&2[i]
 	}
 	po.setParm(vv)
-	l = po.likelihood()
+	l = po.likelihood(trap_errors)
 	return l
 }
 

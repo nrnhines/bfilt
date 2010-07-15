@@ -6,6 +6,10 @@ import HHBounds
 import svd
 import quadraticprogram
 import copy
+from neuron import h
+
+#likesParm = []
+#likesLike = []
 
 def constraintsOn(geq0,leq1,sumto1):
     global QP
@@ -447,4 +451,10 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
             DLikeDt_hvec.append(mll*0.5)
         smll += mll
         k += 1
+    #global likesParm, likesLike
+    #if h.List("PythonObject").o(0).getParm().size() == 1.0:
+    #   likesParm.append(h.List("PythonObject").o(0).getParm()[0])
+    #   likesLike.append(-smll/2.0)
+    #else:
+    #   print 'INEKF SIZE:', h.List("PythonObject").o(0).getParm().size()
     return -smll/2.0
