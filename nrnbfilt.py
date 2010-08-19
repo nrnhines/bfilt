@@ -18,6 +18,14 @@ class WrappedVal:
         self.x = val
 
 class NrnBFilt(object):
+    def dumpData(self):
+        f = open('dataTrace.txt','w')
+        Tlist = list(h.YFitness[0].xdat)
+        Ylist = list(h.YFitness[0].ydat)
+        for i in range(len(Tlist)):
+            f.write('{0:f} {1:f}\n'.format(Tlist[i],Ylist[i]))
+        f.close()
+
     def __init__(self, ho):
         self.g = None
         self.rf = ho
@@ -50,6 +58,9 @@ class NrnBFilt(object):
             self.processNoise.append(WrappedVal(Sto.B[i, i]))
         Obs = obs.ObservationModel(ol)
         self.Eve = eve.EventTable(Sto,Obs)
+        self.hhB = self.Eve.Sto.hhB
+        self.nNa = self.Eve.Sto.nNa
+        self.nK = self.Eve.Sto.nK
         self.Sys = detsys.NeuronModel()
         self.inj_invl = 1.0
         self.Eve.newInjectionInterval(self.inj_invl)
@@ -176,8 +187,12 @@ class NrnBFilt(object):
         print i, self.Eve.Sto.InitialCov
 
     def fillPB(self, i):
-        self.Eve.Sto.B[i,i] = self.processNoise[i].x
-        self.Initial_changed()
+        if i == -1:
+            for j in range(self.Eve.Sto.B.shape[0]):
+                self.Eve.Sto.B[j,j] = self.processNoise[j].x
+        else:
+            self.Eve.Sto.B[i,i] = self.processNoise[i].x
+            self.Initial_changed()
         print i, self.Eve.Sto.B
 
     def inj_invl_changed(self):
@@ -226,6 +241,16 @@ class NrnBFilt(object):
     def constraintsButton(self):
             EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
 
+    def hhBButton(self):
+        self.Eve.Sto.hhB = self.hhB
+        self.Eve.Sto.nNa = self.nNa
+        self.Eve.Sto.nK = self.nK
+        if self.Eve.Sto.hhB:
+            print 'Fox & Lu ON: nNa', self.Eve.Sto.nNa, 'nK', self.Eve.Sto.nK
+        else:
+            print 'Fox & Lu OFF'
+        self.fillPB(-1)
+
     def inc_nsums(self):
         self.nsums += 1
         s = h.Vector()
@@ -256,6 +281,9 @@ class NrnBFilt(object):
         for i in range(len(s)):
             h.cvode.statename(i, sref, 1)
             h.xvalue('Diffusion Coeff[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
+        h.xcheckbox('Fox & Lu Diffusion (for Hodgkin-Huxley)?',(self,'hhB'), self.hhBButton)
+        h.xvalue('  Fox & Lu: Number Na Channels', (self,'nNa'), 1, self.hhBButton)
+        h.xvalue('  Fox & Lu: Number K Channels', (self,'nK'), 1, self.hhBButton)
         h.xlabel('    Initial Uncertainty')
         for i in range(len(s)):
             print i
@@ -322,6 +350,7 @@ class NrnBFilt(object):
         pickle.dump(self.covGrowthTime,f)
         pickle.dump(self.varTerm,f)
         pickle.dump(self.Sdiag,f)
+        pickle.dump(self.Eve.Sto.hhB,f)
 
     def restore_session(self, nameprefix):
         try:
@@ -347,4 +376,8 @@ class NrnBFilt(object):
             self.Sdiag = pickle.load(f)
         except:
             print 'Initial Standard Deviations not yet saved'
+        try:
+            self.Eve.Sto.hhB = pickle.load(f)
+        except:
+            print 'HH Button Flag not yet saved'
 

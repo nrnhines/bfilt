@@ -62,6 +62,13 @@ def saveData(Obs,time,m,P):
         Ps.append(P)
         ms.append(m)
 
+def dumpFunnels():
+    global Etime, Ecenter, Ewidth
+    f = open('funnels.txt','w')
+    for i in range(len(Etime)):
+        f.write('{0:f} {1:f} {2:f}\n'.format(Etime[i],Ecenter[0][i],Ewidth[0][i]))
+    f.close()
+
 def updateInBounds(K,e,mb,bounds):
     # Boundaries are B*x >= b where B=bounds[i][0], B is a row-matrix, b=bounds[i][1], x=State
     # The default update (m0 = mb + K*e) is adjusted to m0 = mb + alpha*K*e
