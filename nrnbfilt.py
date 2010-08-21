@@ -182,9 +182,11 @@ class NrnBFilt(object):
         self.pf.parm(hvec)
 
     def fillS(self, i):
+        print 'Sdiag', self.Sdiag[i].x
         self.Eve.Sto.InitialCovSqrt[i,i] = self.Sdiag[i].x
+        print 'Cov Sqrt', self.Eve.Sto.InitialCovSqrt
         self.Initial_changed()
-        print i, self.Eve.Sto.InitialCov
+        print 'initial cov', i, self.Eve.Sto.InitialCov
 
     def fillPB(self, i):
         if i == -1:
@@ -192,7 +194,6 @@ class NrnBFilt(object):
                 self.Eve.Sto.B[j,j] = self.processNoise[j].x
         else:
             self.Eve.Sto.B[i,i] = self.processNoise[i].x
-            self.Initial_changed()
         print i, self.Eve.Sto.B
 
     def inj_invl_changed(self):
@@ -298,8 +299,12 @@ class NrnBFilt(object):
         inj_invl = self.inj_invl
         covGrowthTime = self.covGrowthTime
         varTerm = self.varTerm
+        hhB = self.hhB
+        nNa = self.nNa
+        nK = self.nK
         c = self.Eve.Obs.C
         pn = self.processNoise
+        sd = self.Sdiag
         g = self.g
 
         self.__init__(self.rf)
@@ -307,12 +312,21 @@ class NrnBFilt(object):
         self.inj_invl = inj_invl
         self.covGrowthTime = covGrowthTime
         self.varTerm = varTerm
+        self.hhB = hhB
+        self.nNa = nNa
+        self.nK = nK
+        self.Eve.Sto.hhB = hhB
+        self.Eve.Sto.nNa = nNa
+        self.Eve.Sto.nK = nK
         cnew = self.Eve.Obs.C
         for i in range(len(c)):
             cnew[i].sigma = c[i].sigma
         for i in range(len(pn)):
             self.processNoise[i].x = pn[i].x
             self.Eve.Sto.B[i,i] = pn[i].x
+        for i in range(len(sd)):
+            self.Sdiag[i].x = sd[i].x
+            self.Eve.Sto.InitialCovSqrt[i,i] = sd[i].x
         self.Initial_changed()
         self.inj_invl_changed()
         self.g = g
