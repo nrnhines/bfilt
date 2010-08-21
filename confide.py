@@ -263,12 +263,21 @@ class Confide(object):
         pyplot.hold(False)
         pyplot.plot(self.plotx,self.ploty,'r*')
         pyplot.hold(True)
-        pyplot.plot([self.MLE[self.param0]],[self.MLE[self.param1]],'go')
+        MLE0 = self.MLE[self.param0]
+        MLE1 = self.MLE[self.param1]
+        # pyplot.plot([self.MLE[self.param0]],[self.MLE[self.param1]],'go')
         if not true == None:
-            pyplot.plot([true[self.param0]],[true[self.param1]],'b+')
-        (x0, y0, x1, y1) = self.CIpoints(self.param0,self.param1)
+            pyplot.plot([true[self.param0]],[true[self.param1]],'b+',markersize=20)
+        # (x0, y0, x1, y1) = self.CIpoints(self.param0,self.param1)
         # print 'x0', x0, 'y0', y0, 'x1', x1, 'y1', y1
-        pyplot.plot(x0,y0,'go')
-        pyplot.plot(x1,y1,'go')
+        # pyplot.plot(x0,y0,'go')
+        # pyplot.plot(x1,y1,'go')
+        L = self.CIs()
+        delta0 = MLE0 - L[self.param0][0]
+        delta1 = MLE1 - L[self.param1][0]
+        pyplot.errorbar(MLE0,MLE1,delta1,delta0,'g')
+        pyplot.title('Estimating Reaction Time Constants (3-State Channel)')
+        pyplot.xlabel('Tau: Closed_1 To Open (msec)')
+        pyplot.ylabel('Tau: Closed_2 To Closed_1 (msec)')
         pyplot.ion()
         pyplot.show()

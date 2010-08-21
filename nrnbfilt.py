@@ -111,7 +111,7 @@ class NrnBFilt(object):
     def overwrite(self,Data):
         self.Data = Data
 
-    def likelihood(self, trap_errors):
+    def likelihood(self, trap_errors=False):
         self.ifchdat()
         # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         # x = float(x)

@@ -10,12 +10,19 @@ import math
 import pickle
 import svd
 
+def first(modelses):
+    h.load_file(modelses)
+    Z = h.MulRunFitter[0].p.pf.parmlist
+    #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
+
 class TestCR(object):
     def __init__(self,n,seed,modelses,datagenhoc):
         self.alpha = 0.05
-        self.n = n
+        self.n = n  # number of channels
         h.load_file(modelses)
         self.N = h.List("PythonObject").o(0)
+        h('objref nb')
+        h.nb = h.List("PythonObject").o(0)
         self.true = self.N.getParm()
         self.modelses = modelses
         self.seed = seed
@@ -27,7 +34,7 @@ class TestCR(object):
         else:
           h.load_file(datagenhoc)
           tvec = h.Vector(self.N.Eve.collectionTimes)
-          vec = h.ch4ssdata(n, seed, tvec, self.true)
+          vec = h.ch3ssdata(n, seed, tvec, self.true)
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
@@ -36,13 +43,26 @@ class TestCR(object):
         h.cvode.states(ss)
         ss.printf()
         self.N.overwrite(self.Data)
-        self.tl = self.N.likelihood()
-        print self.tl
+        # self.tl = self.N.likelihood()
+        # print self.tl
+        self.Z = h.MulRunFitter[0].p.pf.parmlist
+        print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
+        self.Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
+        self.Z.o(0).doarg = 0
+        self.Z.o(1).doarg = 0
+        h.attr_praxis(seed)
+        print 'SIZE =', self.N.getParm().size()
+        h.MulRunFitter[0].efun()
+        # return
+        self.otle = self.N.getParm()
+        self.otml = self.N.likelihood()  #optimized true maximum likelihood
+        self.Z.o(0).doarg = 1
+        self.Z.o(1).doarg = 1
         h.attr_praxis(seed)
         h.MulRunFitter[0].efun()
         self.mle = self.N.getParm()
         self.ml = self.N.likelihood()
-        self.CS = 2.0*(self.tl - self.ml)
+        self.CS = 2.0*(self.otml - self.ml)
         self.pValue = stats.chisqprob(self.CS,self.true.size())
         self.covers = (self.pValue >= self.alpha)
         self.H = numpy.matrix(self.Hessian())
@@ -85,7 +105,7 @@ class WOHoc(object):
         self.true = numpy.matrix(WH.true)
         self.modelses = WH.modelses
         self.seed = WH.seed
-        self.tl =WH.tl
+        self.otml = WH.otml
         self.mle = numpy.matrix(WH.mle)
         self.ml = WH.ml
         self.CS = WH.CS
@@ -95,18 +115,13 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
-def onerun(seed, nchannels, modelses, datagen):
-    return TestCR(nchannels,seed,modelses,datagen)
-
-def run(nruns=1,nchannels=100,modelses="ch4.ses",datagenhoc="ch4ssdatagen.hoc"):
-    global pc
+def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
     for i in range(nruns):
-        pc.submit(onerun, nchannels, i+1, modelses, datagenhoc)
-    while (pc.working()):
-        TCRi = pc.pyret()
+        TCRi = TestCR(nchannels,i+1,modelses,datagenhoc)
         TCRs.append(TCRi)
+        # return TCRs
         if TCRi.covers:
             print i, 'IN:', TCRi.pValue
             ncovers += 1
@@ -129,13 +144,7 @@ def load(filename):
     f.close()
     return T
 
-def batch(nrun=1000):
-    T = run(nrun,100,'ch3.ses')
-    pickelWOH(T,'T64RCK.pkl')
-
-pc = h.ParallelContext()
-pc.runworker()
-batch(4)
-pc.done()
-h.quit()
-
+def batch():
+    first('ch3.ses')
+    T = run(3,10000,'ch3.ses')
+    pickelWOH(T,'TCRtry.pkl')
