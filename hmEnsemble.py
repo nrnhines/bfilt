@@ -32,9 +32,9 @@ def multiCheck(n,p):
 
 def multiTerm(n,p):
     multiCheck(n,p)
-    term = math.log(sum(n))
+    term = math.log(math.factorial(sum(n)))
     for i in range(len(n)):
-        term -= math.log(n[i])
+        term -= math.log(math.factorial(n[i]))
     for i in range(len(p)):
         term += n[i]*math.log(p[i])
     return math.exp(term)
@@ -53,5 +53,8 @@ def twoWayTable(nchannels, nstates):
     return (Enum,Index)
 
 def distribEnsemble(nchannels, nstates, prob):
-    eStates = enumEnsemble(nchannels, nstates)
+    (eEnum, eIndex) = twoWayTable(nchannels, nstates)
     eProb = emptyEnsemble(nchannels, nstates)
+    for i in range(len(eEnum)):
+        assignEnsemble(eProb, eEnum[i][:-1], multiTerm(eEnum[i],prob))
+    return (eEnum, eIndex, eProb)
