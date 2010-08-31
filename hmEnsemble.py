@@ -1,5 +1,6 @@
 import copy
 import math
+import numpy
 
 def enumEnsemble(nchannels, nstates):
     if nstates > 1:
@@ -58,3 +59,19 @@ def distribEnsemble(nchannels, nstates, prob):
     for i in range(len(eEnum)):
         assignEnsemble(eProb, eEnum[i][:-1], multiTerm(eEnum[i],prob))
     return (eEnum, eIndex, eProb)
+
+def assignRate(Rates,n,m,newRate):
+
+
+def ratesEnsemble(eEnum,eIndex,rates,nchannels):
+    for n in eEnum:
+        for i in range(len(n)):
+            if n[i] > 0:
+                for j in range(len(n)):
+                    if j != i
+                        m = copy.deepcopy(n)
+                        m[i] -= 1
+                        m[j] += 1
+                        newRate = rates[i,j]*n[i]
+                        assignRate(eRates,n,m,newRate)
+    #REMEMBER: COME BACK AND DO i==j
