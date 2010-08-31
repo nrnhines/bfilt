@@ -115,6 +115,10 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
+def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
+    r = TestCR(nchannels,seed,modelses,datagenhoc)
+    return (r.otle, r.otml, r.mle, r.ml, r.H)
+
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
