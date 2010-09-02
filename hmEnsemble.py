@@ -45,15 +45,6 @@ def multiTerm(n,p):
         term += n[i]*math.log(p[i])
     return math.exp(term)
 
-def recursiveLookup(Ensem,n):
-    if len(n) > 1:
-        return recursiveLookup(Ensem[n[0]],n[1:])
-    else:
-        return Ensem[n[0]]
-
-def lookup(Ensem, n):
-    return recursiveLookup(Ensem, n[:-1])  # last element in sequence is redundant and must be removed
-
 def twoWayTable(nchannels, nstates):
     Enum = enumEnsemble(nchannels, nstates)  # Enumeration
     # Enum[i] is a list of channels in each state, e.g. [3,5,4]
@@ -72,25 +63,8 @@ def distribEnsemble(nchannels, nstates, prob):
         assignEnsemble(eProb, eEnum[i], multiTerm(eEnum[i],prob))
     return (eEnum, eIndex, eProb)
 
-def assignRate(Rates,n,m,newRate):
-    print 'hello'
-
-def ratesEnsemble(eEnum,eIndex,rates,nchannels):
-    eRates = numpy.matlib.zeros([nchannels, nchannels])
-    for n in eEnum:
-        for i in range(len(n)):
-            if n[i] > 0:
-                for j in range(len(n)):
-                    if not j == i:
-                        m = copy.deepcopy(n)
-                        m[i] -= 1
-                        m[j] += 1
-                        newRate = rates[i,j]*n[i]
-                        assignRate(eRates,n,m,newRate)
-    #REMEMBER: COME BACK AND DO i==j
-
 class Ensemble(object):
-    def __init__(self,nchannels,pconfig,output_config):
+    def __init__(self,nchannels,pconfig,output_config,smallQ):
         self.nchannels = nchannels
         self.pconfig = pconfig
         self.output_config = output_config
@@ -100,16 +74,38 @@ class Ensemble(object):
         self.index = self.reverseEnumerate(self.nchannels, self.nconfig)
         self.pstates = self.makeProb(self.enum, self.pconfig)
         self.output = self.makeOutput(self.enum,self.output_config)
-        # self.Q
+        self.Q = self.makeQ(self.enum,self.index,self.smallQ,self.nchannels)
 
-    def makeOutput(self,enum,out):
-        output = []
+    def recursiveLookup(self,Ensem,n):
+        if len(n) > 1:
+            return self.recursiveLookup(Ensem[n[0]],n[1:])
+        else:
+            return Ensem[n[0]]
+
+    def lookup(self,Ensem,n):
+        return self.recursiveLookup(Ensem, n[:-1])  # last element in sequence is redundant and must be removed
+
+    def makeQ(self,enum,index,smallQ,nchannels):
+        Q = numpy.matlib.zeros([nchannels, nchannels])
         for e in enum:
-            o = 0.0
-            for j in range(len(out)):
-                o += out[j]*e[j]
-            output.append(o)
-        return output
+            eIndex = self.lookup(index,e)
+            for i in range(len(e)):
+                if e[i] > 0:
+                    for j in range(len(e)):
+                        if not j == i:
+                            f = copy.deepcopy(e)
+                            f[i] -= 1   # New has one less in ith config
+                            f[j] += 1  # New has one more in jth config, Note: j instead of i
+                            fIndex= self.lookup(index,f)
+                            newRate = rates[i,j]*e[i]
+                            Q[eIndex,fIndex] = newRate
+        # NOW DO i==j
+        for i in range(len(enum)):
+            sum = 0.0
+            for j in range(len(enum)):
+                sum += Q[i,j]
+            Q[i,i] = -sum
+        return Q
 
     def enumerate(self, nchannels, nconfig):  #Enumerate the possible states of an emsemble
         if nconfig > 1:
@@ -183,4 +179,13 @@ class Ensemble(object):
         assert(min(p) >= 0.0)
         assert(min(n) >= 0)
         assert(math.fabs(sum(p) - 1.0) < tol)
+
+    def makeOutput(self,enum,out):
+        output = []
+        for e in enum:
+            o = 0.0
+            for j in range(len(out)):
+                o += out[j]*e[j]
+            output.append(o)
+        return output
 
