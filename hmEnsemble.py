@@ -68,13 +68,14 @@ class Ensemble(object):
         self.nchannels = nchannels
         self.pconfig = pconfig
         self.output_config = output_config
+        self.smallQ = smallQ
         self.nconfig = len(self.pconfig)
         self.enum = self.enumerate(self.nchannels, self.nconfig)
         self.nstates = len(self.enum)
         self.index = self.reverseEnumerate(self.nchannels, self.nconfig)
         self.pstates = self.makeProb(self.enum, self.pconfig)
         self.output = self.makeOutput(self.enum,self.output_config)
-        self.Q = self.makeQ(self.enum,self.index,self.smallQ,self.nchannels)
+        self.Q = self.makeQ(self.enum,self.index,self.smallQ)
 
     def recursiveLookup(self,Ensem,n):
         if len(n) > 1:
@@ -85,8 +86,8 @@ class Ensemble(object):
     def lookup(self,Ensem,n):
         return self.recursiveLookup(Ensem, n[:-1])  # last element in sequence is redundant and must be removed
 
-    def makeQ(self,enum,index,smallQ,nchannels):
-        Q = numpy.matlib.zeros([nchannels, nchannels])
+    def makeQ(self,enum,index,smallQ):
+        Q = numpy.matlib.zeros([len(enum), len(enum)])
         for e in enum:
             eIndex = self.lookup(index,e)
             for i in range(len(e)):
@@ -97,7 +98,7 @@ class Ensemble(object):
                             f[i] -= 1   # New has one less in ith config
                             f[j] += 1  # New has one more in jth config, Note: j instead of i
                             fIndex= self.lookup(index,f)
-                            newRate = rates[i,j]*e[i]
+                            newRate = smallQ[i,j]*e[i]
                             Q[eIndex,fIndex] = newRate
         # NOW DO i==j
         for i in range(len(enum)):
