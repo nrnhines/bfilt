@@ -5,17 +5,19 @@ import math
 import scipy
 import scipy.linalg
 
+def ch3Q(self, alpha, beta, gamma, delta):
+    Q = numpy.matrix([[-alpha, alpha, 0], [beta, -(beta + gamma), gamma], [0, delta, -delta]])
+    return Q
+
 class HMM(object):
-    def __init__(self, param):
+    def __init__(self, init, output, Q):
         dt = 1.0
         self.dt = dt
         skip = 20
         self.skip = skip
-        init = [1.0,0.0,0.0]
-        output = [1.0,0.0,0.0]
         sigma = 0.01
         self.nstates = len(init)
-        self.Q = self.makeQ(param[0], param[1], param[2], param[3])
+        self.Q = Q
         self.trans = scipy.linalg.expm(dt*self.Q)
         self.transfit = scipy.linalg.expm(dt*skip*self.Q)
         self.init = numpy.matrix(init)
@@ -40,10 +42,6 @@ class HMM(object):
                 rowsum += self.trans[i,j]
             assert math.fabs(rowsum - 1.0) < tol
         print "Checks out..."
-
-    def makeQ(self, alpha, beta, gamma, delta):
-        Q = numpy.matrix([[-alpha, alpha, 0], [beta, -(beta + gamma), gamma], [0, delta, -delta]])
-        return Q
 
     def select(self,mat,row):
         p = self.R.random()
