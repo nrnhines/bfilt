@@ -3,66 +3,6 @@ import math
 import numpy
 import numpy.matlib
 
-def enumEnsemble(nchannels, nstates):  #Enumerate the possible states of an emsemble
-    if nstates > 1:
-        enum = []
-        for n0 in range(nchannels+1):
-            enum0 = enumEnsemble(nchannels-n0,nstates-1) #recursive defn
-            for e0 in enum0:
-                e0.append(n0)
-                enum.append(e0)
-        return enum
-    else:
-        return [[nchannels]]
-
-def emptyEnsemble(nchannels, nstates):   #Return an empty ensemble data structure
-    if nstates > 1:
-        emp = []
-        for n0 in range(nchannels+1):
-            emp0 = emptyEnsemble(nchannels-n0,nstates-1) # recursive defn
-            emp.append(emp0)
-        return emp
-    else:
-        return None
-
-def multiCheck(n,p):
-    # See comments for multiTerm(n,p) below.
-    tol = 1e-7
-    assert(len(n) == len(p))
-    assert(min(p) >= 0)
-    assert(min(n) >= 0)
-    assert(math.fabs(sum(p) - 1.0) < tol)
-
-def multiTerm(n,p):
-    # Used to derive ensemble probabilities from single probabilties
-    # n is the list of numbers of channels in each state
-    # p is a list of initial probabilities for each single channel state
-    multiCheck(n,p)
-    term = math.log(math.factorial(sum(n)))
-    for i in range(len(n)):
-        term -= math.log(math.factorial(n[i]))
-    for i in range(len(p)):
-        term += n[i]*math.log(p[i])
-    return math.exp(term)
-
-def twoWayTable(nchannels, nstates):
-    Enum = enumEnsemble(nchannels, nstates)  # Enumeration
-    # Enum[i] is a list of channels in each state, e.g. [3,5,4]
-    Index = emptyEnsemble(nchannels, nstates) # For reverse enumeration
-    # e.g. Index[a,b,c] has number in enumeration corresponding to sequence [a,b,c]
-    for i in range(len(Enum)):
-        assignEnsemble(Index, Enum[i], i)
-    return (Enum,Index)
-
-def distribEnsemble(nchannels, nstates, prob):
-    # From prob, the probability of a single channel being in each state
-    # Derive eProb the ensemble probability
-    (eEnum, eIndex) = twoWayTable(nchannels, nstates)
-    eProb = emptyEnsemble(nchannels, nstates)
-    for i in range(len(eEnum)):
-        assignEnsemble(eProb, eEnum[i], multiTerm(eEnum[i],prob))
-    return (eEnum, eIndex, eProb)
-
 class Ensemble(object):
     def __init__(self,nchannels,pconfig,output_config,smallQ):
         self.nchannels = nchannels
