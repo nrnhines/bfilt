@@ -5,25 +5,26 @@ import math
 from myscipy import linalg
 from neuron import h
 import fitglobals
+import cvodewrap
 
 class NeuronModel(object):
     def __init__(self):
-        h.cvode.atol(1e-6)
+        cvodewrap.atol(1e-6)
         h.cvode_active(1)
         h.stdinit()
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         self.Initial = numpy.matrix(s).T
     
     def dim(self):
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         return len(s)
     
     def vfield(self, time, state, discrete=None):
         s = h.Vector(state)
         d = h.Vector()
-        h.cvode.f(time, s, d)
+        cvodewrap.f(time, s, d)
         return numpy.matrix(d)
     
     def moveto(self, t0):
@@ -34,21 +35,21 @@ class NeuronModel(object):
         elif t0 == 0:
             stdinit()
         elif h.t < t0:
-            h.cvode.solve(t0)
+            cvodewrap.solve(t0)
         elif h.t > t0:
             h.stdinit()
-            h.cvode.solve(t0)
+            cvodewrap.solve(t0)
     
     def flow(self, Times, state0, discrete=None):
         if discrete:
             discrete.restore()
         self.moveto(Times[0])
-        h.cvode.yscatter(h.Vector(state0))
-        h.cvode.re_init()
+        cvodewrap.yscatter(h.Vector(state0))
+        cvodewrap.re_init()
         assert(h.t == Times[0])
-        h.cvode.solve(Times[-1])
+        cvodewrap.solve(Times[-1])
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         return numpy.matrix(s).T
     
     # jacobian of the flow with respect to state variables

@@ -5,6 +5,7 @@ import wiener
 import flow
 
 from neuron import h
+import cvodewrap
 
 initial_Wdt = 0.001
 initial_Ndt = 0.01
@@ -48,10 +49,10 @@ class simData(wiener.Wiener):
                 if tNoise > tMax:
                     tNoise = tMax
                 h.continuerun(tNoise)
-                h.cvode.states(x)
+                cvodewrap.states(x)
                 x.x[0] += self.sp*(self.evalW(tNoise) - self.evalW(tNoise-self.Ndt))
-                h.cvode.yscatter(x)
-                h.cvode.re_init()
+                cvodewrap.yscatter(x)
+                cvodewrap.re_init()
             Data.append([noiseTimes, x.x[0] + self.sm*self.evalM(tData)])
         return Data 
 

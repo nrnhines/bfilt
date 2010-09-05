@@ -3,6 +3,7 @@ import math
 from myscypi import linalg
 import numpy
 from neuron import h
+import cvodewrap
 
 R = numpy.matrix(1)
 
@@ -59,8 +60,8 @@ def ekf(data, aparam):
         # print 'P0' 
         # print linalg.eig(P0) 
         m0 = mb + K*v
-        # h.cvode.yscatter(h.Vector(m0))
-        # h.cvode.re_init()
+        # cvodewrap.yscatter(h.Vector(m0))
+        # cvodewrap.re_init()
         
         # Marginal Measurement Likelihood
         mll = math.log(linalg.det(S)) + v.T*S.I*v

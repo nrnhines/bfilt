@@ -6,6 +6,7 @@ from myscipy import linalg
 from neuron import h
 import fitglobals
 import eve
+import cvodewrap
 
 # Parent class to subclasses
 class ObserveStateK(object):
@@ -38,17 +39,17 @@ class NeuronObservable(ObserveStateK):
 
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
         ss = h.Vector() #save
-        h.cvode.states(ss)
+        cvodewrap.states(ss)
 
         ds = h.Vector()
-        h.cvode.f(time, h.Vector(state), ds)
+        cvodewrap.f(time, h.Vector(state), ds)
         #measurement goes here
         x = self.hpt.val
 
         # print 'ss[3]', ss[3]
         # print 'x', x
 
-        h.cvode.yscatter(ss) #restore
+        cvodewrap.yscatter(ss) #restore
         return x
 
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state

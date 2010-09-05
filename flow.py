@@ -1,4 +1,5 @@
 from neuron import h
+import cvodewrap
 
 class Flow(object):
     def __init__(self):
@@ -8,11 +9,11 @@ class Flow(object):
     
     def flow(self, x0, t1, x1):
         self.ss.restore(1)
-        h.cvode.yscatter(x0)
-        h.cvode.re_init()
+        cvodewrap.yscatter(x0)
+        cvodewrap.re_init()
         h.initPlot()
-        h.continuerun(t1) # or h.cvode.solve(t1)
-        h.cvode.states(x1)
+        h.continuerun(t1) # or cvodewrap.solve(t1)
+        cvodewrap.states(x1)
         return x1
 
 if __name__ == '__main__':
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     flow = Flow()
     x = h.Vector()
     x1 = h.Vector()
-    h.cvode.states(x)
+    cvodewrap.states(x)
     for i in range(5):
         print i, x
         x.x[0] += 5

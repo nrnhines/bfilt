@@ -3,6 +3,7 @@ import fitglobals
 h.load_file('mulfit.hoc')
 h.load_file('eonerunmlf.hoc')
 import nrnbfilt
+import cvodewrap
 
 def test():
     global s, h

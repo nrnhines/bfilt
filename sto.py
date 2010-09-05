@@ -7,7 +7,8 @@ from neuron import h
 import fitglobals
 import eve
 import copy
-
+import cvodewrap
+	
 class StochasticModel(object):
     def __init__(self, dim, tlast):
         self.hhB = False
@@ -33,7 +34,7 @@ class StochasticModel(object):
         inject0 = injectionTimes[0]
         tFinal = injectionTimes[-1]
         if self.hhB:
-            h.cvode.states(self.states)
+            cvodewrap.states(self.states)
             h.rates_hh(self.states[0])
             alpha_m = h.mtau_hh * h.minf_hh
             beta_m = h.mtau_hh * (1.0 - h.minf_hh)
@@ -65,3 +66,4 @@ class StochasticModel(object):
             return self.scale*self.B*math.sqrt(tFinal - inject0)
         else:
             return self.scale*self.B*math.sqrt(tFinal - inject0)
+

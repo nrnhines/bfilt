@@ -1,5 +1,5 @@
 import neuron
-import neuron.gui
+#import neuron.gui
 import init
 from neuron import h
 import noisegen
@@ -9,6 +9,7 @@ import numdifftools as nd
 import math
 import pickle
 import svd
+import cvodewrap
 
 def first(modelses):
     h.load_file(modelses)
@@ -23,6 +24,7 @@ class TestCR(object):
         self.N = h.List("PythonObject").o(0)
         h('objref nb')
         h.nb = h.List("PythonObject").o(0)
+        cvodewrap.fs.panel()
         self.true = self.N.getParm()
         self.modelses = modelses
         self.seed = seed
@@ -34,26 +36,28 @@ class TestCR(object):
         else:
           h.load_file(datagenhoc)
           tvec = h.Vector(self.N.Eve.collectionTimes)
-          vec = h.ch3ssdata(n, seed, tvec, self.true)
+          vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
         h.topology()
         ss = h.Vector()
-        h.cvode.states(ss)
+        cvodewrap.states(ss)
         ss.printf()
         self.N.overwrite(self.Data)
         # self.tl = self.N.likelihood()
         # print self.tl
         self.Z = h.MulRunFitter[0].p.pf.parmlist
         print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
-        self.Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
+        foo = h.RunFitParm("nb.Eve.Sto.scale")
+        foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
+        self.Z.append(foo)
         self.Z.o(0).doarg = 0
         self.Z.o(1).doarg = 0
         h.attr_praxis(seed)
         print 'SIZE =', self.N.getParm().size()
+        return
         h.MulRunFitter[0].efun()
-        # return
         self.otle = self.N.getParm()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         self.Z.o(0).doarg = 1
@@ -117,7 +121,8 @@ class WOHoc(object):
 
 def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
     r = TestCR(nchannels,seed,modelses,datagenhoc)
-    return (r.otle, r.otml, r.mle, r.ml, r.H)
+    #return (r.otle, r.otml, r.mle, r.ml, r.H)
+    return r
 
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []

@@ -5,6 +5,7 @@ import math
 from myscipy import linalg
 from neuron import h
 import fitglobals
+import cvodewrap
 
 toler = 1e-8
 
@@ -113,14 +114,14 @@ class NeuronObservable(ObserveState0):
     
     def mean(self, time, state):  # the observable (under zero noise, ie mean)
         ss = h.Vector() #save
-        h.cvode.states(ss)
+        cvodewrap.states(ss)
         
         ds = h.Vector()
-        h.cvode.f(time, h.Vector(state), ds)
+        cvodewrap.f(time, h.Vector(state), ds)
         #measurement goes here
         x = self.hpt.val
         
-        h.cvode.yscatter(ss) #restore
+        cvodewrap.yscatter(ss) #restore
         return x
     
     def Dstate(self,time,state):  # Derivative of Observable w.r.t. final state
@@ -220,7 +221,7 @@ class NeuronModel(object):
         self.D = d
         self.V = noise.GaussVector(p, i0, d)
         self.Injection = EventTimed(times)
-        h.cvode.atol(1e-6)
+        cvodewrap.atol(1e-6)
         h.cvode_active(1)
         h.stdinit()
     
@@ -237,13 +238,13 @@ class NeuronModel(object):
     
     def dim(self):
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         return len(s)
     
     def vfield(self, time, state, discrete=None):
         s = h.Vector(state)
         d = h.Vector()
-        h.cvode.f(time, s, d)
+        cvodewrap.f(time, s, d)
         return numpy.matrix(d)
     
     def moveto(self, t0):
@@ -254,21 +255,21 @@ class NeuronModel(object):
         elif t0 == 0:
             stdinit()
         elif h.t < t0:
-            h.cvode.solve(t0)
+            cvodewrap.solve(t0)
         elif h.t > t0:
             h.stdinit()
-            h.cvode.solve(t0)
+            cvodewrap.solve(t0)
     
     def flow(self, Times, state0, discrete=None):
         if discrete:
             discrete.restore()
         self.moveto(Times[0])
-        h.cvode.yscatter(h.Vector(state0))
-        h.cvode.re_init()
+        cvodewrap.yscatter(h.Vector(state0))
+        cvodewrap.re_init()
         assert(h.t == Times[0])
-        h.cvode.solve(Times[-1])
+        cvodewrap.solve(Times[-1])
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         return numpy.matrix(s).T
     
     def stochflow(self, Times, state0, discrete=None):
@@ -282,11 +283,11 @@ class NeuronModel(object):
         for t in Times[1:]:
             if debug:
                 print 'x (in stochflow):', x
-            h.cvode.yscatter(h.Vector(x)) #MH had x.T
-            h.cvode.re_init()
-            h.cvode.solve(t)
+            cvodewrap.yscatter(h.Vector(x)) #MH had x.T
+            cvodewrap.re_init()
+            cvodewrap.solve(t)
             s = h.Vector()
-            h.cvode.states(s)
+            cvodewrap.states(s)
             x =  numpy.matrix(s).T
             W = self.eval(t)
             if debug:
@@ -308,11 +309,11 @@ class NeuronModel(object):
             print 'x after assert', x
         for i in range(1, len(Times)):
             t = Times[i]
-            h.cvode.yscatter(h.Vector(x))
-            h.cvode.re_init()
-            h.cvode.solve(t)
+            cvodewrap.yscatter(h.Vector(x))
+            cvodewrap.re_init()
+            cvodewrap.solve(t)
             s = h.Vector()
-            h.cvode.states(s)
+            cvodewrap.states(s)
             x =  numpy.matrix(s).T
         if debug:
             print 'x to perturb', x
@@ -462,7 +463,7 @@ class Model:
             # FOR NEURON MODELS!!!
             h.stdinit()
             s = h.Vector()
-            h.cvode.states(s)
+            cvodewrap.states(s)
             initial = numpy.matrix(s).T
         
         self.inj_invl = injection_interval

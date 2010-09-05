@@ -8,6 +8,7 @@ import detsys
 import obs
 import eve
 import pickle
+import cvodewrap
 
 class xstruct(object):
     def __init__(self):
@@ -27,6 +28,8 @@ class NrnBFilt(object):
         f.close()
 
     def __init__(self, ho):
+        self.xlvec = h.Vector()
+        self.ylvec = h.Vector()
         self.g = None
         self.rf = ho
         ol = []
@@ -43,8 +46,8 @@ class NrnBFilt(object):
             if (tlast < tl[-1]):
                 tlast = tl[-1]
         s = h.Vector()
-        h.cvode.active(1)
-        h.cvode.states(s)
+        cvodewrap.active(1)
+        cvodewrap.states(s)
         assert(len(s) > 0)
         assert(len(vl) > 0)
         self.covGrowthTime = 100
@@ -72,7 +75,7 @@ class NrnBFilt(object):
         self.likefailed = False
         #CONSTRAINTS GUI INIT
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         nstates = len(s)
         self.geq0 = []
         self.leq1 = []
@@ -119,11 +122,15 @@ class NrnBFilt(object):
         if not trap_errors:
             x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
+            self.xlvec.append(self.getParm().x[0])
+            self.ylvec.append(x)
             return -x
         else:
             try:
                 x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
                 x = float(x)
+                self.xlvec.append(self.getParm().x[0])
+                self.ylvec.append(x)
                 return -x
             except:
                 self.likefailed = True
@@ -208,7 +215,7 @@ class NrnBFilt(object):
         self.box.intercept(1)
         self.box.ref(self)
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         nstates = len(s)
         sref = h.ref('')
         h.xpanel("")
@@ -219,7 +226,7 @@ class NrnBFilt(object):
         h.xpanel("")
         h.xlabel('>=1')
         for i in range(nstates):
-            h.cvode.statename(i,sref,1)
+            cvodewrap.statename(i,sref,1)
             h.xcheckbox(sref[0],(self.leq1[i],'x'),self.constraintsButton)
         h.xpanel()
         for j in range(self.nsums):
@@ -255,7 +262,7 @@ class NrnBFilt(object):
     def inc_nsums(self):
         self.nsums += 1
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         nstates = len(s)
         new = []
         for i in range(nstates):
@@ -277,10 +284,10 @@ class NrnBFilt(object):
         h.xlabel('    Process noise')
         h.xvalue('Injection interval', (self, 'inj_invl'), 1, self.inj_invl_changed)
         s = h.Vector()
-        h.cvode.states(s)
+        cvodewrap.states(s)
         sref = h.ref('')
         for i in range(len(s)):
-            h.cvode.statename(i, sref, 1)
+            cvodewrap.statename(i, sref, 1)
             h.xvalue('Diffusion Coeff[%d,%d]: '%(i,i) + sref[0], (self.processNoise[i], 'x'), 1, (self.fillPB, i))
         h.xcheckbox('Fox & Lu Diffusion (for Hodgkin-Huxley)?',(self,'hhB'), self.hhBButton)
         h.xvalue('  Fox & Lu: Number Na Channels', (self,'nNa'), 1, self.hhBButton)
@@ -288,7 +295,7 @@ class NrnBFilt(object):
         h.xlabel('    Initial Uncertainty')
         for i in range(len(s)):
             print i
-            h.cvode.statename(i, sref, 1)
+            cvodewrap.statename(i, sref, 1)
             h.xvalue('Initial Stand Dev[%d]: '%i + sref[0], (self.Sdiag[i],'x'), 1, (self.fillS,i))
         h.xbutton('Show state funnels', self.show_state_funnels)
         h.xpanel()

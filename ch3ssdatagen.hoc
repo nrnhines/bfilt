@@ -22,13 +22,21 @@ proc init() {
 }
 endtemplate ch3datagen
 
-obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil
+obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil, ff, xmd, ymd
+	ff = $o5 // fitnes function
+	xmd = new Vector()
+	ymd = new Vector()
+	xmd.indgen(0,tstop,0.1)
+
 	cb = ChannelBuild[ch3pp_cbindex_]
 	m = new ch3datagen($1)
 	ov = new Vector()
 	cb.aliases.tauC2O.A = exp($o4.x[0])
 	cb.aliases.tauCC2.A = exp($o4.x[1])
-	m.soma1 ov.record(&m.ch.O, $o3)
+	m.soma1 {
+		ov.record(&m.ch.O, $o3)
+		ymd.record(&m.ch.O, xmd)
+	}
         sav = cvode.active()
         cvode.active(0)
 	dt = 0.025
@@ -38,6 +46,11 @@ obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil
         m = nil
         cvode.active(sav)
         finitialize()
+	sav = ff.n_chdat
+	ymd.mul(1/$1)
+	ff.set_data(xmd,ymd)
+	execute("setxy()", ff)
+//	ff.n_chdat = sav
 	return ov.mul(1/$1)
 }
 
