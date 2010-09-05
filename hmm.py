@@ -5,22 +5,22 @@ import math
 import scipy
 import scipy.linalg
 
-def ch3Q(self, alpha, beta, gamma, delta):
+def ch3Q(alpha, beta, gamma, delta):
     Q = numpy.matrix([[-alpha, alpha, 0], [beta, -(beta + gamma), gamma], [0, delta, -delta]])
     return Q
 
 class HMM(object):
-    def __init__(self, init, output, Q):
+    def __init__(self, pstates, output, Q):
         dt = 1.0
         self.dt = dt
         skip = 20
         self.skip = skip
         sigma = 0.01
-        self.nstates = len(init)
+        self.nstates = len(pstates)
         self.Q = Q
         self.trans = scipy.linalg.expm(dt*self.Q)
         self.transfit = scipy.linalg.expm(dt*skip*self.Q)
-        self.init = numpy.matrix(init)
+        self.init = numpy.matrix(pstates)
         self.output = output
         self.sigma = sigma
         self.simStates = None
@@ -35,7 +35,7 @@ class HMM(object):
         assert self.init.shape[1] == self.trans.shape[1]
         assert self.init.shape[0] == 1
         assert len(output) == self.init.shape[1]
-        assert math.fabs(sum(init) - 1.0) < tol
+        assert math.fabs(sum(pstates) - 1.0) < tol
         for i in range(self.nstates):
             rowsum = 0
             for j in range(self.nstates):
