@@ -4,10 +4,59 @@ import random
 import math
 import scipy
 import scipy.linalg
+import numpy.linalg
 
-def ch3Q(alpha, beta, gamma, delta):
-    Q = numpy.matrix([[-alpha, alpha, 0], [beta, -(beta + gamma), gamma], [0, delta, -delta]])
+def ch3Q(alpha01, beta01, alpha12, beta12):
+    Q = numpy.matrix([[-alpha01, alpha01, 0], [beta01, -(beta01 + alpha12), alpha12], [0, beta12, -beta12]])
     return Q
+
+def ch3Qv(V, tau01, tau12):
+    inf01 = 1./(1. + math.exp(1.*(-20. - V)))
+    inf12 = 1./(1. + math.exp(1.*(-25. - V)))
+    alpha01 = tau01*inf01
+    beta01 = tau01-alpha01
+    alpha12 = tau12*inf12
+    beta12 = tau12-alpha12
+    Q = ch3Q(alpha01, beta01, alpha12, beta12)
+    return Q
+
+def ch3hmm(V0, V1, tau01, tau12):
+    Q0 = ch3Qv(V0, tau01, tau12)
+    pstates = equilibrium(Q0)
+    output = [0.0, 0.0, 1.0]
+    Q = ch3Qv(V1, tau01, tau12)
+    H = HMM(pstates,output,Q)
+    return H
+
+def equilibrium(Q):
+    (V,D) = numpy.linalg.eig(Q.T)
+    # Find index of eigenvalue 0
+    m = 1.0
+    for i in range(V.shape[0]):
+        if math.fabs(V[i]) < m:
+            mi = i
+            m = math.fabs(V[i])
+    eigvect = D[:,mi]
+    # Find index of eigenvector component with largest magnitude (to determine sign)
+    m = 1e-7
+    for i in range(V.shape[0]):
+        if math.fabs(eigvect[i,0]) > m:
+            mi = i
+            m = math.fabs(eigvect[i,0])
+    # Reverse sign if necessary.  (if so all components should be negative)
+    if eigvect[mi,0] < 0:
+        eigvect = -eigvect
+    pstates = []
+    for i in range(V.shape[0]):
+        pstates.append(eigvect[i,0])
+    tol = 1e-6
+    # print 'pstates', pstates
+    for i in range(len(pstates)):
+        assert(pstates[i] >= 0.0)
+        assert(pstates[i] <= 1.0)
+    assert(sum(pstates)<1.0+tol)
+    assert(sum(pstates)>1.0-tol)
+    return pstates
 
 class HMM(object):
     def __init__(self, pstates, output, Q):
