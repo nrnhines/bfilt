@@ -69,6 +69,7 @@ class HMM(object):
         self.Q = Q
         self.trans = scipy.linalg.expm(dt*self.Q)
         self.transfit = scipy.linalg.expm(dt*skip*self.Q)
+        self.pstates = pstates
         self.init = numpy.matrix(pstates)
         self.output = output
         self.sigma = sigma
