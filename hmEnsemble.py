@@ -98,14 +98,20 @@ class Ensemble(object):
     def assign(self, Ensem, n, i):
         self.recursiveAssign(Ensem, n[:-1], i)  # last element in sequence is redundant and must be removed
 
+    def logfactorial(self,n):
+        sum = 0.0
+        for i in range(n):
+            sum += math.log(i+1)
+        return sum
+
     def multiTerm(self,n,p):
         # Used to derive ensemble probabilities from single probabilties
         # n is the list of numbers of channels in each state
         # p is a list of initial probabilities for each single channel state
         self.multiCheck(n,p)
-        term = math.log(math.factorial(sum(n)))
+        term = self.logfactorial(sum(n))
         for i in range(len(n)):
-            term -= math.log(math.factorial(n[i]))
+            term -= self.logfactorial(n[i])
         for i in range(len(p)):
             if p[i] > 0.0:
                 term += n[i]*math.log(p[i])

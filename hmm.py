@@ -60,19 +60,16 @@ def equilibrium(Q):
 
 class HMM(object):
     def __init__(self, pstates, output, Q):
-        dt = 1.0
-        self.dt = dt
-        skip = 20
-        self.skip = skip
-        sigma = 0.01
+        self.simmed = False
+        self.liked = False
         self.nstates = len(pstates)
         self.Q = Q
-        self.trans = scipy.linalg.expm(dt*self.Q)
-        self.transfit = scipy.linalg.expm(dt*skip*self.Q)
         self.pstates = pstates
         self.init = numpy.matrix(pstates)
         self.output = output
-        self.sigma = sigma
+        self.dt = None
+        self.skip = None
+        self.sigma = None
         self.simStates = None
         self.simOut = None
         self.nsamples = None
@@ -81,17 +78,11 @@ class HMM(object):
         self.width = None
         self.R = random.Random()
         tol = 1e-7
-        assert self.init.shape[1] == self.trans.shape[0]
-        assert self.init.shape[1] == self.trans.shape[1]
+        assert self.init.shape[1] == self.Q.shape[0]
+        assert self.init.shape[1] == self.Q.shape[1]
         assert self.init.shape[0] == 1
         assert len(output) == self.init.shape[1]
         assert math.fabs(sum(pstates) - 1.0) < tol
-        for i in range(self.nstates):
-            rowsum = 0
-            for j in range(self.nstates):
-                rowsum += self.trans[i,j]
-            assert math.fabs(rowsum - 1.0) < tol
-        print "Checks out..."
 
     def select(self,mat,row):
         p = self.R.random()
@@ -102,12 +93,25 @@ class HMM(object):
                 return i
         assert False
 
-    def sim(self, seed, nsamples):
+    def sim(self, seed, dt, tstop, sigma):
+        self.seed = seed
+        self.dt = dt
+        self.tstop = tstop
+        self.sigma = sigma
+        self.trans = scipy.linalg.expm(dt*self.Q)
+        tol = 1e-7
+        for i in range(self.nstates):
+            rowsum = 0
+            for j in range(self.nstates):
+                rowsum += self.trans[i,j]
+            assert math.fabs(rowsum - 1.0) < tol
+        assert(tstop>0.0)
+        print "Checks out..."
         self.R.seed(seed)
-        self.nsamples = nsamples
+        self.nsamples = int(math.ceil(tstop/dt))
         self.simStates = []
         self.simStates.append(self.select(self.init,0))
-        for i in range(nsamples-1):
+        for i in range(self.nsamples-1):
             self.simStates.append(self.select(self.trans,self.simStates[-1]))
         # print 'States as a function of discrete time:', self.simStates
         self.simOut = []
@@ -118,6 +122,7 @@ class HMM(object):
         for o in self.simOut:
             self.Data.append(o + self.R.normalvariate(0,self.sigma))
         # print 'Data:', self.Data
+        self.simmed = True
 
     def normpdf(self,x,m,sigma):
         return (1/(math.sqrt(2*math.pi)*sigma))*math.exp(-(x-m)*(x-m)/(2*sigma*sigma))
@@ -139,51 +144,52 @@ class HMM(object):
         if t>0.0:  # self.time initialized as [0.0]
             self.time.append(t)
 
-    def predict(self,start):
-        inter = start
+    def predict(self,inter):
+        # print 'time', self.time[-1], 'pmf', inter
         self.saveErrorBars(inter,self.time[-1])
         for i in range(self.skip):
             inter = inter*self.trans
             self.saveErrorBars(inter,self.time[-1]+self.dt)
         return inter
 
-    def collect(self,data):
-        col = []
+    def update(self,datapoint,prior):
+        weight = []
         for o in self.output:
-            col.append(self.normpdf(data - o,0,self.sigma))
-        return col
-
-    def weigh(self,weight,pmf):
+            weight.append(self.normpdf(datapoint - o,0,self.sigma))
         new = []
         for i in range(len(weight)):
-            new.append(weight[i]*pmf[0,i])
-        return new
+            new.append(weight[i]*prior[0,i])
+        marg = sum(new)
+        posterior = numpy.matrix(new)/marg
+        # print 'datapoint', datapoint
+        # print 'weight', weight
+        # print 'prior', prior
+        # print 'posterior', posterior
+        return (posterior, marg)
 
-    def marginal(self,new):
-        return(sum(new))
-
-    def update(self,new,marg):
-        return numpy.matrix(new)/marg
-
-    def likelihood(self):
+    def likelihood(self, skip):
+        self.skip = skip
+        self.transfit = scipy.linalg.expm(self.dt*self.skip*self.Q)
         self.initializeErrorBars()
         pmf = self.init
         sll = 0
-        for i in range(0,len(self.Data),self.skip):
-            d = self.Data[i]
+        for i in range(self.skip,len(self.Data),self.skip):
+            # print i, i*self.dt #, self.Data[i]
             pre = self.predict(pmf)
-            col = self.collect(d)
-            new = self.weigh(col, pre)
-            lk = self.marginal(new)
-            pmf = self.update(new,lk)
+            (pmf, lk) = self.update(self.Data[i], pre)
             sll += math.log(lk)
+        self.liked = True
         return sll
 
     def plot(self):
+        if not self.simmed:
+            return
         x = numpy.arange(0,self.dt*self.nsamples,self.dt)
         y = numpy.array(self.Data)
         pylab.hold(False)
         pylab.plot(x,y)
+        if not self.liked:
+            return
         xf = self.time
         yfh = []
         yfl = []
