@@ -85,7 +85,7 @@ class EventTable:
                 injectionsForThisData.append(timeNextOb)
             self.injectionTimes.append(injectionsForThisData)
             injectionsForThisData = [injectionsForThisData[-1]]  # start next list with last item of previous
-        print 'ITs', self.injectionTimes
+        if fitglobals.verbose: print 'ITs', self.injectionTimes
 
         #Create ObsNum list
         self.ObsNum = []

@@ -10,6 +10,7 @@ import math
 import pickle
 import svd
 import cvodewrap
+from fitglobals import verbose
 
 def first(modelses):
     h.load_file(modelses)
@@ -17,7 +18,7 @@ def first(modelses):
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
 class TestCR(object):
-    def __init__(self,n,seed,modelses,datagenhoc):
+    def __init__(self,n,seed,modelses,datagenhoc,run=3):
         self.alpha = 0.05
         self.n = n  # number of channels
         h.load_file(modelses)
@@ -40,26 +41,29 @@ class TestCR(object):
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
-        h.topology()
+        if verbose: h.topology()
         ss = h.Vector()
         cvodewrap.states(ss)
-        ss.printf()
+        if verbose: ss.printf()
         self.N.overwrite(self.Data)
         # self.tl = self.N.likelihood()
         # print self.tl
         self.Z = h.MulRunFitter[0].p.pf.parmlist
-        print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
+        if verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
         self.Z.append(foo)
         self.Z.o(0).doarg = 0
         self.Z.o(1).doarg = 0
         h.attr_praxis(seed)
-        print 'SIZE =', self.N.getParm().size()
-        return
+        #print 'SIZE =', self.N.getParm().size()
+        if run == 0:
+          return
         h.MulRunFitter[0].efun()
         self.otle = self.N.getParm()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
+        if run == 1:
+          return
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
         h.attr_praxis(seed)
@@ -69,6 +73,8 @@ class TestCR(object):
         self.CS = 2.0*(self.otml - self.ml)
         self.pValue = stats.chisqprob(self.CS,self.true.size())
         self.covers = (self.pValue >= self.alpha)
+        if run == 2:
+          return
         self.H = numpy.matrix(self.Hessian())
         svdList = svd.svd(numpy.array(self.H))[1]
         self.precision = 0.0
@@ -119,10 +125,14 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
+def start(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
+    return TestCR(nchannels,seed,modelses,datagenhoc,run=0)
+
 def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
-    r = TestCR(nchannels,seed,modelses,datagenhoc)
-    #return (r.otle, r.otml, r.mle, r.ml, r.H)
-    return r
+    #cvodewrap.fs.use_fixed_step = 1.0
+    r = TestCR(nchannels,seed,modelses,datagenhoc, run=3)
+    #return value suitable for bulletin board
+    return (numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, r.H)
 
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []

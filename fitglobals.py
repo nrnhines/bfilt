@@ -6,3 +6,5 @@ def debugon():
 def debugoff():
     global debug
     debug = False
+
+verbose = 1

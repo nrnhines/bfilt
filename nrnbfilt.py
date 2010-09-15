@@ -9,6 +9,7 @@ import obs
 import eve
 import pickle
 import cvodewrap
+import fitglobals
 
 class xstruct(object):
     def __init__(self):
@@ -28,6 +29,10 @@ class NrnBFilt(object):
         f.close()
 
     def __init__(self, ho):
+        pc = h.ParallelContext()
+        nhost = int(pc.nhost_bbs())
+	if nhost > 1:
+          fitglobals.verbose = 0
         self.xlvec = h.Vector()
         self.ylvec = h.Vector()
         self.g = None
@@ -108,7 +113,7 @@ class NrnBFilt(object):
             Data.append(numpy.matrix(DataEV).T)
         for i in range(len(fl)):
             assert(counter[i] == len(fl.o(i).xdat_))
-        print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
+        if fitglobals.verbose: print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
         return Data
 
     def overwrite(self,Data):
@@ -122,15 +127,15 @@ class NrnBFilt(object):
         if not trap_errors:
             x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
-            self.xlvec.append(self.getParm().x[0])
-            self.ylvec.append(x)
+            #self.xlvec.append(self.getParm().x[0])
+            #self.ylvec.append(x)
             return -x
         else:
             try:
                 x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
                 x = float(x)
-                self.xlvec.append(self.getParm().x[0])
-                self.ylvec.append(x)
+                #self.xlvec.append(self.getParm().x[0])
+                #self.ylvec.append(x)
                 return -x
             except:
                 self.likefailed = True
