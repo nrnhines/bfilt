@@ -10,7 +10,7 @@ import math
 import pickle
 import svd
 import cvodewrap
-from fitglobals import verbose
+import fitglobals
 
 def first(modelses):
     h.load_file(modelses)
@@ -41,15 +41,15 @@ class TestCR(object):
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
-        if verbose: h.topology()
+        if fitglobals.verbose: h.topology()
         ss = h.Vector()
         cvodewrap.states(ss)
-        if verbose: ss.printf()
+        if fitglobals.verbose: ss.printf()
         self.N.overwrite(self.Data)
         # self.tl = self.N.likelihood()
         # print self.tl
         self.Z = h.MulRunFitter[0].p.pf.parmlist
-        if verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
+        if fitglobals.verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
         self.Z.append(foo)
@@ -60,7 +60,7 @@ class TestCR(object):
         if run == 0:
           return
         h.MulRunFitter[0].efun()
-        self.otle = self.N.getParm()
+        self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if run == 1:
           return
@@ -68,7 +68,7 @@ class TestCR(object):
         self.Z.o(1).doarg = 1
         h.attr_praxis(seed)
         h.MulRunFitter[0].efun()
-        self.mle = self.N.getParm()
+        self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
         self.CS = 2.0*(self.otml - self.ml)
         self.pValue = stats.chisqprob(self.CS,self.true.size())
@@ -130,9 +130,15 @@ def start(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc
 
 def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
     #cvodewrap.fs.use_fixed_step = 1.0
+    tt = h.startsw()
+    pc = h.ParallelContext()
+    id = int(pc.id())
+    print "%d start seed=%d nchannels=%d"%(id, seed, nchannels)
     r = TestCR(nchannels,seed,modelses,datagenhoc, run=3)
+    tt = h.startsw() - tt
+    print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
     #return value suitable for bulletin board
-    return (numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, r.H)
+    return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, r.H)
 
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
@@ -148,6 +154,22 @@ def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
             print i, 'OUT:', TCRi.pValue
     print ncovers, 'covers out of', nruns
     return TCRs
+
+def parrun(nruns=0,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
+    pc = h.ParallelContext()
+    pc.runworker()
+    if nruns == 0:
+        nruns = int(pc.nhost())
+    for i in range(nruns):
+	pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
+    f = open("results.dat", "w")
+    pickle.dump(nruns, f); f.flush()
+    while (pc.working() != 0.0):
+        r = pc.pyret()
+	pickle.dump(r, f); f.flush()
+    f.close()	
+    pc.done()
+    h.quit()
 
 def pickelWOH(TCRs,filename):
     T = []
@@ -167,3 +189,4 @@ def batch():
     first('ch3.ses')
     T = run(3,10000,'ch3.ses')
     pickelWOH(T,'TCRtry.pkl')
+

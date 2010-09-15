@@ -106,7 +106,7 @@ endtemplate GenInfo
 begintemplate ParmFitness
 public parmlist, efun, doarg_get, generatorlist, title, errval, pc
 public rfile, wfile, usegen, parmlist_use, putall, argget, randomize
-public use_parallel, save_context, declare
+public use_parallel, save_context, declare, verbose
 external classname
 objref parmlist, generatorlist, tobj, sf, this, usegen, parmlist_use
 objref ran, pc, parmvec
@@ -120,7 +120,7 @@ func efun() {local e, i
 		tobj = parmlist_use.object(i)
 		tobj.setln($&2[i])
 		if (tobj.invalid) {
-printf("invalid %s low=%g val=%g high=%g\n", tobj.name, tobj.low, tobj.val,tobj.high)
+if (verbose) printf("invalid %s low=%g val=%g high=%g\n", tobj.name, tobj.low, tobj.val,tobj.high)
 			return 1e9
 		}
 		tobj.play_one()
@@ -141,7 +141,7 @@ func parm() {local i
 		tobj = parmlist_use.object(i)
 		tobj.setln($o1.x[i])
 		if (tobj.invalid) {
-printf("invalid %s low=%g val=%g high=%g\n", tobj.name, tobj.low, tobj.val,tobj.high)
+if (verbose) printf("invalid %s low=%g val=%g high=%g\n", tobj.name, tobj.low, tobj.val,tobj.high)
 			return 0
 		}
 		tobj.play_one()
@@ -251,6 +251,7 @@ proc use_parallel() {
  }
 
 proc init() {
+	verbose = 1
 	context_ = 1
 	use_parallel_ = 0
 	if (numarg() > 0) {

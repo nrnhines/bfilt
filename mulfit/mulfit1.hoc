@@ -9,6 +9,7 @@ strdef tstr, title, basename_
 objref p, vbox, this, fspec, fdat, opt, optbox, nil, tobj, sf
 
 proc init() {
+	verbose = 1
 	running = 0
 	sf = new StringFunctions()
 	ranfac = 2
@@ -18,6 +19,7 @@ proc init() {
 	version_ = 5
 	title = "Unnamed multiple run protocol"
 	p = new ParmFitnessGui(new ParmFitness(title),this)
+	p.pf.verbose = 1
 	opt = new MulfitPraxWrap(p.pf)
 	if (numarg() == 0) {
 		build()

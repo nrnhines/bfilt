@@ -76,6 +76,7 @@ class NrnBFilt(object):
         # self.M = models.Model(Sys, Obs, P)
         self.Data = self.__data(fl,self.Eve)
         self.pf = self.getParmFitness()
+	self.pf.verbose = fitglobals.verbose
         self.dlikedt = h.Vector()
         self.likefailed = False
         #CONSTRAINTS GUI INIT
@@ -186,6 +187,16 @@ class NrnBFilt(object):
         v = h.Vector()
         self.pf.doarg_get(v)
         # print 'getParm', v[0]
+        return v
+
+    def getParmVal(self):
+        #return Hoc Vector of current objective function parameters
+	# differs from getParm in that it is the values, not the log values.
+	# differs from pf.argget, in that only the 'use' values are returned
+	v = h.Vector()
+        for o in self.pf.parmlist:
+            if o.doarg > 0:
+                v.append(o.val)
         return v
 
     def setParm(self, hvec):

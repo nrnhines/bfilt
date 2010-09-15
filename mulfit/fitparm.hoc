@@ -43,7 +43,7 @@ proc after_quad() {
 	savepath.printf("%d %d %d %-12.8g ", nquad, nefun, time, e)
 		saveval()
 	}
-	printf("nquad=%d nefun=%d time=%d e=%-12.8g\n", nquad, nefun, time, e)
+	if (pf.verbose) printf("nquad=%d nefun=%d time=%d e=%-12.8g\n", nquad, nefun, time, e)
 	nquad += 1
 }
 
