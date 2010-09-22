@@ -43,6 +43,9 @@ obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil, ff, xmd, ymd
         finitialize(v_init)
 	cb.ks.rseed($2*100000)
 	run()
+	// for some reason the BG/P clears ymd and ov when m is destroyed
+	ymd = ymd.c()
+	ov = ov.c()
         m = nil
         cvode.active(sav)
         finitialize()
