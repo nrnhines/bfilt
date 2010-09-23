@@ -128,17 +128,28 @@ class WOHoc(object):
 def start(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
     return TestCR(nchannels,seed,modelses,datagenhoc,run=0)
 
+def prin():
+    v = h.Vector()
+    x = h.pval_praxis(0, v)
+    n = len(v)
+    pval = [x]
+    paxis = [numpy.array(v)]
+    for i in range(1, n):
+        pval.append(h.pval_praxis(i, v))
+        paxis.append(numpy.array(v))
+    return (pval, paxis)
+      
 def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
-    #cvodewrap.fs.use_fixed_step = 1.0
+    cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
     pc = h.ParallelContext()
     id = int(pc.id())
     print "%d start seed=%d nchannels=%d"%(id, seed, nchannels)
-    r = TestCR(nchannels,seed,modelses,datagenhoc, run=3)
+    r = TestCR(nchannels,seed,modelses,datagenhoc, run=2)
     tt = h.startsw() - tt
     print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
     #return value suitable for bulletin board
-    return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, r.H)
+    return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, prin())
 
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
@@ -162,11 +173,14 @@ def parrun(nruns=0,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"
         nruns = int(pc.nhost())
     for i in range(nruns):
 	pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
-    f = open("results.dat", "w")
+    f = open('results_'+str(nchannels)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
+    i = 0
     while (pc.working() != 0.0):
         r = pc.pyret()
 	pickle.dump(r, f); f.flush()
+        i += 1
+        print '%d seed %d'%(i,r[1][0])
     f.close()	
     pc.done()
     h.quit()
@@ -189,4 +203,3 @@ def batch():
     first('ch3.ses')
     T = run(3,10000,'ch3.ses')
     pickelWOH(T,'TCRtry.pkl')
-
