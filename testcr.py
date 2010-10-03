@@ -17,6 +17,37 @@ def first(modelses):
     Z = h.MulRunFitter[0].p.pf.parmlist
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
+class TestRao(TestCR):
+    def __init__(self,n,seed,modelses,datagenhoc):
+        self.n = n
+        h.load_file(modelses)
+        self.N = h.List("PythonObject").o(0)
+        h('objref nb')
+        h.nb = h.List("PythonObject").o(0)
+        cvodewrap.fs.panel()
+        self.true = self.N.getParm()
+        self.modelses = modelses
+        self.seed = seed
+        if n == 0:
+            G = noisegen.Gen(self.N)
+            G.reseed(seed)
+            self.seed = seed
+            self.Data = G.datasim()
+        else:
+            h.load_file(datagenhoc)
+            tvec = h.Vector(self.N,Eve.collectionTimes)
+            vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
+            self.Data = []
+            for i in range(len(vec)):
+                self.Data.append(numpy.matrix(vec[i]))
+        if fitglobals.verbose: h.topology()
+        ss = h.Vector()
+        cvodewrap.states(ss)
+        if fitglobals.verbose: ss.printf()
+        self.N.overwrite(self.Data)
+        self.H = numpy.matrix(self.Hessian())
+
+
 class TestCR(object):
     def __init__(self,n,seed,modelses,datagenhoc,run=3):
         self.alpha = 0.05
@@ -138,7 +169,7 @@ def prin():
         pval.append(h.pval_praxis(i, v))
         paxis.append(numpy.array(v))
     return (pval, paxis)
-      
+
 def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
     cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
@@ -150,6 +181,15 @@ def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.ho
     print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
     #return value suitable for bulletin board
     return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, prin())
+
+
+def runRao(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
+    TCRs = []
+    for i in range(nruns):
+        TCRi = TestRao(nchannels,i+1,modelses,datagenhoc)
+        TCRs.append(TCRi)
+        print TCRi.H
+    return TCRs
 
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
@@ -172,16 +212,16 @@ def parrun(nruns=0,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"
     if nruns == 0:
         nruns = int(pc.nhost())
     for i in range(nruns):
-	pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
+        pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
     f = open('results_'+str(nchannels)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
     i = 0
     while (pc.working() != 0.0):
         r = pc.pyret()
-	pickle.dump(r, f); f.flush()
+        pickle.dump(r, f); f.flush()
         i += 1
         print '%d seed %d'%(i,r[1][0])
-    f.close()	
+    f.close()
     pc.done()
     h.quit()
 
