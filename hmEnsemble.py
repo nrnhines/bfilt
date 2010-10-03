@@ -2,6 +2,12 @@ import copy
 import math
 import numpy
 import numpy.matlib
+import hmm
+
+def initialCov(smallQ, n):
+    pstates = hmm.equilibrium(smallQ)
+    iCov = (1/math.sqrt(n))*(numpy.matlib.diag(pstates) - numpy.matrix(pstates).T*numpy.matrix(pstates)) # pstates a row vector
+    return iCov
 
 class Ensemble(object):
     def __init__(self,nchannels,pconfig,output_config,smallQ):

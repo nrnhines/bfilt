@@ -49,8 +49,11 @@ def equilibrium(Q):
     pstates = []
     for i in range(V.shape[0]):
         pstates.append(eigvect[i,0])
+    normalization = sum(pstates)
+    for i in range(V.shape[0]):
+        pstates[i] = pstates[i]/normalization
     tol = 1e-6
-    # print 'pstates', pstates
+    print 'pstates', pstates
     for i in range(len(pstates)):
         assert(pstates[i] >= 0.0)
         assert(pstates[i] <= 1.0)
