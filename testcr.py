@@ -17,37 +17,6 @@ def first(modelses):
     Z = h.MulRunFitter[0].p.pf.parmlist
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
-class TestRao(TestCR):
-    def __init__(self,n,seed,modelses,datagenhoc):
-        self.n = n
-        h.load_file(modelses)
-        self.N = h.List("PythonObject").o(0)
-        h('objref nb')
-        h.nb = h.List("PythonObject").o(0)
-        cvodewrap.fs.panel()
-        self.true = self.N.getParm()
-        self.modelses = modelses
-        self.seed = seed
-        if n == 0:
-            G = noisegen.Gen(self.N)
-            G.reseed(seed)
-            self.seed = seed
-            self.Data = G.datasim()
-        else:
-            h.load_file(datagenhoc)
-            tvec = h.Vector(self.N,Eve.collectionTimes)
-            vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
-            self.Data = []
-            for i in range(len(vec)):
-                self.Data.append(numpy.matrix(vec[i]))
-        if fitglobals.verbose: h.topology()
-        ss = h.Vector()
-        cvodewrap.states(ss)
-        if fitglobals.verbose: ss.printf()
-        self.N.overwrite(self.Data)
-        self.H = numpy.matrix(self.Hessian())
-
-
 class TestCR(object):
     def __init__(self,n,seed,modelses,datagenhoc,run=3):
         self.alpha = 0.05
@@ -138,6 +107,36 @@ class TestCR(object):
         HessFun = nd.Hessian(LamFun)
         # Evaluate Hessian and return
         return numpy.matrix(HessFun(parmList))
+
+class TestRao(TestCR):
+    def __init__(self,n,seed,modelses,datagenhoc):
+        self.n = n
+        h.load_file(modelses)
+        self.N = h.List("PythonObject").o(0)
+        h('objref nb')
+        h.nb = h.List("PythonObject").o(0)
+        cvodewrap.fs.panel()
+        self.true = self.N.getParm()
+        self.modelses = modelses
+        self.seed = seed
+        if n == 0:
+            G = noisegen.Gen(self.N)
+            G.reseed(seed)
+            self.seed = seed
+            self.Data = G.datasim()
+        else:
+            h.load_file(datagenhoc)
+            tvec = h.Vector(self.N.Eve.collectionTimes)
+            vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
+            self.Data = []
+            for i in range(len(vec)):
+                self.Data.append(numpy.matrix(vec[i]))
+        if fitglobals.verbose: h.topology()
+        ss = h.Vector()
+        cvodewrap.states(ss)
+        if fitglobals.verbose: ss.printf()
+        self.N.overwrite(self.Data)
+        self.H = numpy.matrix(self.Hessian())
 
 class WOHoc(object):
     def __init__(self, WH):
