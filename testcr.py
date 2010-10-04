@@ -190,6 +190,13 @@ def runRao(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"
         print TCRi.H
     return TCRs
 
+def calcRaoCov(TCRs):
+    EH = TCRs[0].H*0.0
+    w = 1.0/len(TCRs)
+    for T in TCRs:
+        EH += w*T.H
+    return EH.I
+
 def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
