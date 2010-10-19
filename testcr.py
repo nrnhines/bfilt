@@ -18,7 +18,7 @@ def first(modelses):
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
 class TestCR(object):
-    def __init__(self,n,seed,modelses,datagenhoc,run=3):
+    def __init__(self,n,seed,modelses,datagenhoc,run=2):
         self.alpha = 0.05
         self.n = n  # number of channels
         h.load_file(modelses)
@@ -212,14 +212,14 @@ def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
     print ncovers, 'covers out of', nruns
     return TCRs
 
-def parrun(nruns=0,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
+def parrun(nruns=0,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
     pc = h.ParallelContext()
     pc.runworker()
     if nruns == 0:
         nruns = int(pc.nhost())
     for i in range(nruns):
         pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
-    f = open('results_'+str(nchannels)+'.'+str(nruns), "w")
+    f = open('results_11p_'+str(nchannels)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
     i = 0
     while (pc.working() != 0.0):
