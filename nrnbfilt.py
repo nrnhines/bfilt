@@ -29,6 +29,7 @@ class NrnBFilt(object):
         f.close()
 
     def __init__(self, ho):
+        h.mulfit_after_quad_pycallback = self.after_quad
         pc = h.ParallelContext()
         nhost = int(pc.nhost_bbs())
 	if nhost > 1:
@@ -417,4 +418,7 @@ class NrnBFilt(object):
             self.Eve.Sto.hhB = pickle.load(f)
         except:
             print 'HH Button Flag not yet saved'
+
+    def after_quad(self):
+        pass
 

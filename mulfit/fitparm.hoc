@@ -1,9 +1,11 @@
 mulfit_optimizers_append("Praxis", "MulfitPraxWrap")
+objref mulfit_after_quad_pycallback
 
 begintemplate MulfitPraxWrap
 public prun, praxis_efun, minerr, nefun, time, nstep
 public saveflag, start, after_quad, nquad, showopt
 
+external mulfit_after_quad_pycallback
 objref savepath, tl, pf, tobj
 objref start
 objref prin_origargs, prin_val, prin_fac, prin_ax
@@ -37,6 +39,14 @@ func praxis_efun() {local i
 }
 
 proc after_quad() {
+	if (object_id(mulfit_after_quad_pycallback)){
+		mulfit_after_quad_pycallback._()
+	}else{
+		after_quad1()
+	}
+}
+
+proc after_quad1() {
 	time = startsw() - st
 	if (savepath.isopen) {
 		lines += 1
