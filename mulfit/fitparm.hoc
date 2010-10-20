@@ -12,6 +12,7 @@ objref prin_origargs, prin_val, prin_fac, prin_ax
 strdef tstr
 
 proc init() {
+	n_after_quad = 0
 	nstep = 0
 	pf = $o1
 	start = new Vector()
@@ -40,10 +41,11 @@ func praxis_efun() {local i
 
 proc after_quad() {
 	if (object_id(mulfit_after_quad_pycallback)){
-		mulfit_after_quad_pycallback._()
+		mulfit_after_quad_pycallback._(n_after_quad)
 	}else{
 		after_quad1()
 	}
+	n_after_quad += 1
 }
 
 proc after_quad1() {
@@ -83,9 +85,12 @@ func prun() {
 		minerr = praxis_efun(start.size, &start.x[0])
 		if (stoprun) {return minerr}
 		//if (minerr > 10000) {return minerr}
+		n_after_quad = -1e9
 		stop_praxis(nstep)
 		after_quad()
+		n_after_quad = 0
 		minerr = fit_praxis(start.size, "praxis_efun", &start.x[0],"after_quad()\n")
+		n_after_quad = -1e9
 		minerr = praxis_efun(start.size, &start.x[0])
 	}
 	time = startsw() - st

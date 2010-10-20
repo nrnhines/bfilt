@@ -419,6 +419,6 @@ class NrnBFilt(object):
         except:
             print 'HH Button Flag not yet saved'
 
-    def after_quad(self):
-        pass
+    def after_quad(self, n):
+	print 'after_quad ', n
 
