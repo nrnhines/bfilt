@@ -22,9 +22,11 @@ class TestCR(object):
         self.alpha = 0.05
         self.n = n  # number of channels
         h.load_file(modelses)
-        self.N = h.List("PythonObject").o(0)
+        mrflist = h.List("MulRunFitter")
+        mrf = mrflist.o(int(mrflist.count())-1)
+        self.N = mrf.p.pf.generatorlist.o(0).gen.po
         h('objref nb')
-        h.nb = h.List("PythonObject").o(0)
+        h.nb = mrf.p.pf.generatorlist.o(0).gen.po
         cvodewrap.fs.panel()
         self.true = self.N.getParm()
         self.modelses = modelses
@@ -112,9 +114,11 @@ class TestRao(TestCR):
     def __init__(self,n,seed,modelses,datagenhoc):
         self.n = n
         h.load_file(modelses)
-        self.N = h.List("PythonObject").o(0)
+        mrflist = h.List("MulRunFitter")
+        mrf = mrflist.o(int(mrflist.count())-1)
+        self.N = mrf.p.pf.generatorlist.o(0).gen.po
         h('objref nb')
-        h.nb = h.List("PythonObject").o(0)
+        h.nb = mrf.p.pf.generatorlist.o(0).gen.po
         cvodewrap.fs.panel()
         self.true = self.N.getParm()
         self.modelses = modelses
@@ -155,7 +159,7 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
-def start(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
+def start(seed=1, nchannels=50, modelses="ch3_11p.ses", datagenhoc="ch3ssdatagen.hoc"):
     return TestCR(nchannels,seed,modelses,datagenhoc,run=0)
 
 def prin():
@@ -169,7 +173,7 @@ def prin():
         paxis.append(numpy.array(v))
     return (pval, paxis)
 
-def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.hoc"):
+def onerun(seed=1, nchannels=50, modelses="ch3_11p.ses", datagenhoc="ch3ssdatagen.hoc"):
     cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
     pc = h.ParallelContext()
@@ -182,7 +186,7 @@ def onerun(seed=1, nchannels=50, modelses="ch3.ses", datagenhoc="ch3ssdatagen.ho
     return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, prin())
 
 
-def runRao(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
+def runRao(nruns=1,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     for i in range(nruns):
         TCRi = TestRao(nchannels,i+1,modelses,datagenhoc)
@@ -197,7 +201,7 @@ def calcRaoCov(TCRs):
         EH += w*T.H
     return EH.I
 
-def run(nruns=1,nchannels=50,modelses="ch3.ses",datagenhoc="ch3ssdatagen.hoc"):
+def run(nruns=1,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
     for i in range(nruns):
@@ -246,6 +250,6 @@ def load(filename):
     return T
 
 def batch():
-    first('ch3.ses')
-    T = run(3,10000,'ch3.ses')
+    first('ch3_11p.ses')
+    T = run(3,10000,'ch3_11p.ses')
     pickelWOH(T,'TCRtry.pkl')
