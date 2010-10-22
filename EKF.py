@@ -45,6 +45,7 @@ def modelMeasurement(Obs,time,ObsNum,m,P):
     H = Obs.Dstate([time], m, ObsNum)
     V = Obs.Dnoise([time], m, ObsNum)
     S = H*P*H.T + V*V.T
+    assert(not numpy.isnan(S).any())
     return (hh,S,H,V)
 
 def saveData(Obs,time,m,P):
@@ -226,6 +227,7 @@ def injectionEffectsList(injectionTimes,Eve):
     Bs = []
     for i in range(len(injectionTimes)-1):
         Bs.append(Eve.Sto.noiseJac([injectionTimes[i],injectionTimes[i+1]]))
+        assert(not numpy.isnan(Bs[-1]).any())
     return Bs
 
 def lastTrivialStepAddedDFlowTable(Bs, DsF, injectionTimes, t1, times, mbs):
@@ -322,6 +324,7 @@ def PbTable(P,As,Bs):
             Pb.append(As[i]*Pb[i]*As[i].T)
         else:
             Pb.append(As[i]*Pb[i]*As[i].T + Bs[i]*Bs[i].T)
+        assert(not numpy.isnan(Pb[-1]).any())
     return Pb
 
 def predict(Eve,Sys,m,P,t0,t1,injectionTimes):

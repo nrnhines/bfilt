@@ -8,7 +8,7 @@ import fitglobals
 import eve
 import copy
 import cvodewrap
-	
+
 class StochasticModel(object):
     def __init__(self, dim, tlast):
         self.hhB = False
@@ -65,5 +65,9 @@ class StochasticModel(object):
             self.B[3,3] = math.sqrt((alpha_n*(1.0-state_n) + beta_n*state_n)/self.nK)
             return self.scale*self.B*math.sqrt(tFinal - inject0)
         else:
-            return self.scale*self.B*math.sqrt(tFinal - inject0)
+            assert(tFinal-inject0>=0.0)
+            assert(not numpy.isnan(self.scale))
+            R = self.scale*self.B*math.sqrt(tFinal - inject0)
+            assert(not numpy.isnan(R).any())
+            return R
 
