@@ -52,6 +52,12 @@ class TestCR(object):
         # print self.tl
         self.Z = h.MulRunFitter[0].p.pf.parmlist
         if fitglobals.verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
+        # DESTROY
+        while self.Z.count() > 2:
+            self.Z.remove(self.Z.count()-1)
+        h.FitnessGenerator1[0].use_likelihood=0
+        h.MulRunFitter[0].efun()
+        h.FitnessGenerator1[0].use_likelihood=1
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
         self.Z.append(foo)
@@ -159,7 +165,7 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
-def start(seed=1, nchannels=50, modelses="ch3_11p.ses", datagenhoc="ch3ssdatagen.hoc"):
+def start(seed=1, nchannels=50, modelses="ch3_101p.ses", datagenhoc="ch3ssdatagen.hoc"):
     return TestCR(nchannels,seed,modelses,datagenhoc,run=0)
 
 def prin():
@@ -173,7 +179,7 @@ def prin():
         paxis.append(numpy.array(v))
     return (pval, paxis)
 
-def onerun(seed=1, nchannels=50, modelses="ch3_11p.ses", datagenhoc="ch3ssdatagen.hoc"):
+def onerun(seed=1, nchannels=50, modelses="ch3_101p.ses", datagenhoc="ch3ssdatagen.hoc"):
     cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
     pc = h.ParallelContext()
@@ -186,7 +192,7 @@ def onerun(seed=1, nchannels=50, modelses="ch3_11p.ses", datagenhoc="ch3ssdatage
     return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, prin())
 
 
-def runRao(nruns=1,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
+def runRao(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     for i in range(nruns):
         TCRi = TestRao(nchannels,i+1,modelses,datagenhoc)
@@ -201,7 +207,7 @@ def calcRaoCov(TCRs):
         EH += w*T.H
     return EH.I
 
-def run(nruns=1,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
+def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
     TCRs = []
     ncovers = 0
     for i in range(nruns):
@@ -216,14 +222,14 @@ def run(nruns=1,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc
     print ncovers, 'covers out of', nruns
     return TCRs
 
-def parrun(nruns=0,nchannels=50,modelses="ch3_11p.ses",datagenhoc="ch3ssdatagen.hoc"):
+def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
     pc = h.ParallelContext()
     pc.runworker()
     if nruns == 0:
         nruns = int(pc.nhost())
     for i in range(nruns):
         pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
-    f = open('results_11p_'+str(nchannels)+'.'+str(nruns), "w")
+    f = open('results_101p_'+str(nchannels)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
     i = 0
     while (pc.working() != 0.0):
@@ -250,6 +256,6 @@ def load(filename):
     return T
 
 def batch():
-    first('ch3_11p.ses')
-    T = run(3,10000,'ch3_11p.ses')
+    first('ch3_101p.ses')
+    T = run(3,10000,'ch3_101p.ses')
     pickelWOH(T,'TCRtry.pkl')
