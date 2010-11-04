@@ -63,6 +63,7 @@ class TestCR(object):
         self.Z.append(foo)
         self.Z.o(0).doarg = 0
         self.Z.o(1).doarg = 0
+        self.Z.o(2).doarg = 1
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
         if run == 0:
@@ -74,6 +75,7 @@ class TestCR(object):
           return
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
+        self.Z.o(2).doarg = 1
         h.attr_praxis(seed)
         h.MulRunFitter[0].efun()
         self.mle = self.N.getParmVal()
