@@ -56,7 +56,9 @@ class TestCR(object):
         while self.Z.count() > 2:
             self.Z.remove(self.Z.count()-1)
         h.FitnessGenerator1[0].use_likelihood=0
+        self.pre0Parm = self.N.getParmVal()
         h.MulRunFitter[0].efun()
+        self.post0Parm = self.N.getParmVal()
         h.FitnessGenerator1[0].use_likelihood=1
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
@@ -68,7 +70,9 @@ class TestCR(object):
         #print 'SIZE =', self.N.getParm().size()
         if run == 0:
           return
+        self.pre1Parm = self.N.getParmVal()
         h.MulRunFitter[0].efun()
+        self.post1Parm = self.N.getParmVal()
         self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if run == 1:
@@ -77,7 +81,9 @@ class TestCR(object):
         self.Z.o(1).doarg = 1
         self.Z.o(2).doarg = 1
         h.attr_praxis(seed)
+        self.pre2Parm = self.N.getParmVal()
         h.MulRunFitter[0].efun()
+        self.post2Parm = self.N.getParmVal()
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
         self.CS = 2.0*(self.otml - self.ml)
