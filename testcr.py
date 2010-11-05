@@ -56,9 +56,14 @@ class TestCR(object):
         while self.Z.count() > 2:
             self.Z.remove(self.Z.count()-1)
         h.FitnessGenerator1[0].use_likelihood=0
+	ef = h.MulRunFitter[0].p.run
         self.pre0Parm = self.N.getParmVal()
+        self.pre0f = ef()
         h.MulRunFitter[0].efun()
         self.post0Parm = self.N.getParmVal()
+	self.post0f = ef()
+        if run == 0:
+          return
         h.FitnessGenerator1[0].use_likelihood=1
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
@@ -66,13 +71,14 @@ class TestCR(object):
         self.Z.o(0).doarg = 0
         self.Z.o(1).doarg = 0
         self.Z.o(2).doarg = 1
+        h.MulRunFitter[0].p.pf.def_parmlist_use()
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
-        if run == 0:
-          return
         self.pre1Parm = self.N.getParmVal()
+	self.pre1f = ef()
         h.MulRunFitter[0].efun()
         self.post1Parm = self.N.getParmVal()
+	self.post1f = ef()
         self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if run == 1:
@@ -80,6 +86,7 @@ class TestCR(object):
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
         self.Z.o(2).doarg = 1
+        h.MulRunFitter[0].p.pf.def_parmlist_use()
         h.attr_praxis(seed)
         self.pre2Parm = self.N.getParmVal()
         h.MulRunFitter[0].efun()
@@ -173,8 +180,8 @@ class WOHoc(object):
         self.precision =WH.precision
         self.likefailed = WH.likefailed
 
-def start(seed=1, nchannels=50, modelses="ch3_101p.ses", datagenhoc="ch3ssdatagen.hoc"):
-    return TestCR(nchannels,seed,modelses,datagenhoc,run=0)
+def start(seed=1, nchannels=50, modelses="ch3_101p.ses", datagenhoc="ch3ssdatagen.hoc", run=0):
+    return TestCR(nchannels,seed,modelses,datagenhoc,run)
 
 def prin():
     v = h.Vector()

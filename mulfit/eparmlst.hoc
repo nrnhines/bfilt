@@ -106,7 +106,7 @@ endtemplate GenInfo
 begintemplate ParmFitness
 public parmlist, efun, doarg_get, generatorlist, title, errval, pc
 public rfile, wfile, usegen, parmlist_use, putall, argget, randomize
-public use_parallel, save_context, declare, verbose
+public use_parallel, save_context, declare, verbose, def_parmlist_use
 external classname
 objref parmlist, generatorlist, tobj, sf, this, usegen, parmlist_use
 objref ran, pc, parmvec
@@ -400,14 +400,14 @@ proc init() {
 	sf = new StringFunctions()
 }
 
-proc run() {
+func run() {
 	pf.putall()
 	tobj = new Vector(50)
 	pf.doarg_get(tobj)
 	if (tobj.size) {
-		pf.efun(tobj.size, &tobj.x[0])
+		return pf.efun(tobj.size, &tobj.x[0])
 	}else{
-		pf.efun(0)
+		return pf.efun(0)
 	}
 }
 
