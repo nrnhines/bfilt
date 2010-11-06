@@ -19,6 +19,8 @@ def first(modelses):
 
 class TestCR(object):
     def __init__(self,n,seed,modelses,datagenhoc,run=2):
+        self.sqrnormfit = False
+        self.componentfit = False
         self.alpha = 0.05
         self.n = n  # number of channels
         h.load_file(modelses)
@@ -55,16 +57,19 @@ class TestCR(object):
         # DESTROY
         while self.Z.count() > 2:
             self.Z.remove(self.Z.count()-1)
-        h.FitnessGenerator1[0].use_likelihood=0
-	ef = h.MulRunFitter[0].p.run
-        self.pre0Parm = self.N.getParmVal()
-        self.pre0f = ef()
-        h.MulRunFitter[0].efun()
-        self.post0Parm = self.N.getParmVal()
-	self.post0f = ef()
+        ef = h.MulRunFitter[0].p.run
+        if self.sqrnormfit:
+            h.FitnessGenerator1[0].use_likelihood=0
+            self.pre0Parm = self.N.getParmVal()
+            self.pre0f = ef()
+            h.MulRunFitter[0].efun()
+            self.post0Parm = self.N.getParmVal()
+            self.post0f = ef()
+            h.FitnessGenerator1[0].use_likelihood=1
+        else:
+            self.pre0Parm = self.N.getParmVal()
         if run == 0:
           return
-        h.FitnessGenerator1[0].use_likelihood=1
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
         self.Z.append(foo)
@@ -75,22 +80,35 @@ class TestCR(object):
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
         self.pre1Parm = self.N.getParmVal()
-	self.pre1f = ef()
+        self.pre1f = ef()
         h.MulRunFitter[0].efun()
         self.post1Parm = self.N.getParmVal()
-	self.post1f = ef()
+        self.post1f = ef()
         self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if run == 1:
           return
+        if self.componentfit:
+            self.Z.o(0).doarg = 1
+            self.Z.o(1).doarg = 1
+            self.Z.o(2).doarg = 0
+            h.MulRunFitter[0].p.pf.def_parmlist_use()
+            h.attr_praxis(seed)
+            self.pre2Parm = self.N.getParmVal()
+            self.pre2f = ef()
+            h.MulRunFitter[0].efun()
+            self.post2Parm = self.N.getParmVal()
+            self.post2f = ef()
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
         self.Z.o(2).doarg = 1
         h.MulRunFitter[0].p.pf.def_parmlist_use()
         h.attr_praxis(seed)
-        self.pre2Parm = self.N.getParmVal()
+        self.pre3Parm = self.N.getParmVal()
+        self.pre3f = ef()
         h.MulRunFitter[0].efun()
-        self.post2Parm = self.N.getParmVal()
+        self.post3Parm = self.N.getParmVal()
+        self.post3f = ef()
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
         self.CS = 2.0*(self.otml - self.ml)
