@@ -1,5 +1,5 @@
 import neuron
-#import neuron.gui
+# import neuron.gui
 import init
 from neuron import h
 import noisegen
@@ -17,103 +17,122 @@ def first(modelses):
     Z = h.MulRunFitter[0].p.pf.parmlist
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
+def NrnBFiltHandles():
+    mrflist = h.List("MulRunFitter")
+    mrf = mrflist.o(int(mrflist.count())-1)
+    N = mrf.p.pf.generatorlist.o(0).gen.po
+    h('objref nb')
+    h.nb = mrf.p.pf.generatorlist.o(0).gen.po
+    return N
+
+def printSomeInfo():
+    if fitglobals.verbose: h.topology()
+    ss = h.Vector()
+    cvodewrap.states(ss)
+    if fitglobals.verbose: ss.printf()
+
 class TestCR(object):
+    def destroyNuisanceParms(self,nMain):  #Destroy all but nMain=2 Parms
+        while self.Z.count() > nMain:
+            self.Z.remove(self.Z.count()-1)
+
     def __init__(self,n,seed,modelses,datagenhoc,run=2):
-        self.sqrnormfit = False
-        self.componentfit = False
-        self.alpha = 0.05
+        self.sesHasTrueParm = True  # True indicates ses file loads w. true Parms
+        # If availiable, code tests if the confidence region covers the true parms
+        self.alpha = 0.05  # p < alpha outside confidence region, 0.5: 95% CRs
         self.n = n  # number of channels
-        h.load_file(modelses)
-        mrflist = h.List("MulRunFitter")
-        mrf = mrflist.o(int(mrflist.count())-1)
-        self.N = mrf.p.pf.generatorlist.o(0).gen.po
-        h('objref nb')
-        h.nb = mrf.p.pf.generatorlist.o(0).gen.po
+        h.load_file(modelses)  # load session file
+        self.N = NrnBFiltHandles()  # Handle to nrnbfilt object; also defines h.nb
         cvodewrap.fs.panel()
-        self.true = self.N.getParm()
+        if self.sesHasTrueParm:
+            self.trueParm = self.N.getParm()
         self.modelses = modelses
         self.seed = seed
-        if n == 0:
+        if n == 0:  # n=0 (no channels) means use Gaussian noise
+          # Generate data in self.Data
           G = noisegen.Gen(self.N)
           G.reseed(seed)
           self.seed = seed
           self.Data = G.datasim()
-        else:
+        else:  # n > 0 means use n-channel noise
+          # Generate data in self.Data
           h.load_file(datagenhoc)
           tvec = h.Vector(self.N.Eve.collectionTimes)
-          vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
+          vec = h.ch3ssdata(n, seed, tvec, self.trueParm, self.N.rf.fitnesslist.o(0))
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
-        if fitglobals.verbose: h.topology()
-        ss = h.Vector()
-        cvodewrap.states(ss)
-        if fitglobals.verbose: ss.printf()
-        self.N.overwrite(self.Data)
+        printSomeInfo()
+        self.N.overwrite(self.Data)   # Put the Data into NrnBFilt object
         # self.tl = self.N.likelihood()
         # print self.tl
         self.Z = h.MulRunFitter[0].p.pf.parmlist
         if fitglobals.verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
-        # DESTROY
-        while self.Z.count() > 2:
-            self.Z.remove(self.Z.count()-1)
-        ef = h.MulRunFitter[0].p.run
-        if self.sqrnormfit:
-            h.FitnessGenerator1[0].use_likelihood=0
-            self.pre0Parm = self.N.getParmVal()
-            self.pre0f = ef()
-            h.MulRunFitter[0].efun()
-            self.post0Parm = self.N.getParmVal()
-            self.post0f = ef()
-            h.FitnessGenerator1[0].use_likelihood=1
-        else:
-            self.pre0Parm = self.N.getParmVal()
+        nMain = 2
+        nNuisance = 1
+        ef = h.MulRunFitter[0].p.run   # ef is a function
         if run == 0:
+            return
+        # Nuisance Fit At True
+        if self.sesHasTrueParm:
+            self.destroyNuisanceParms(nMain)  #Destroy all but nMain Parms
+            foo = h.RunFitParm("nb.Eve.Sto.scale")
+            foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
+            self.Z.append(foo)
+            self.Z.o(0).doarg = 0
+            self.Z.o(1).doarg = 0
+            self.Z.o(2).doarg = 1
+            h.MulRunFitter[0].p.pf.def_parmlist_use()
+            h.attr_praxis(seed)
+            #print 'SIZE =', self.N.getParm().size()
+            self.preTrueParm = self.N.getParmVal()
+            self.preTruef = ef()
+            h.MulRunFitter[0].efun()
+            self.postTrueParm = self.N.getParmVal()
+            self.postTruef = ef()
+            self.otle = self.N.getParmVal()
+            self.otml = self.N.likelihood()  #optimized true maximum likelihood
+        if run == 1:
           return
+        # Square Norm Fit
+        self.destroyNuisanceParms(nMain)  #Destroy all but nMain Parms
+        self.Z.o(0).doarg = 1
+        self.Z.o(1).doarg = 1
+        h.FitnessGenerator1[0].use_likelihood=0
+        self.preSNFParm = self.N.getParmVal()
+        self.preSNFf = ef()
+        h.MulRunFitter[0].efun()
+        self.postSNFParm = self.N.getParmVal()
+        self.postSNFf = ef()
+        # Main Parm Fit:
+        h.FitnessGenerator1[0].use_likelihood=1
+        h.MulRunFitter[0].p.pf.def_parmlist_use()
+        h.attr_praxis(seed)
+        self.preMPFParm = self.N.getParmVal()
+        self.preMPFf = ef()
+        h.MulRunFitter[0].efun()
+        self.postMPFParm = self.N.getParmVal()
+        self.postMPFf = ef()
+        # All Parm Fit
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
         self.Z.append(foo)
-        self.Z.o(0).doarg = 0
-        self.Z.o(1).doarg = 0
-        self.Z.o(2).doarg = 1
-        h.MulRunFitter[0].p.pf.def_parmlist_use()
-        h.attr_praxis(seed)
-        #print 'SIZE =', self.N.getParm().size()
-        self.pre1Parm = self.N.getParmVal()
-        self.pre1f = ef()
-        h.MulRunFitter[0].efun()
-        self.post1Parm = self.N.getParmVal()
-        self.post1f = ef()
-        self.otle = self.N.getParmVal()
-        self.otml = self.N.likelihood()  #optimized true maximum likelihood
-        if run == 1:
-          return
-        if self.componentfit:
-            self.Z.o(0).doarg = 1
-            self.Z.o(1).doarg = 1
-            self.Z.o(2).doarg = 0
-            h.MulRunFitter[0].p.pf.def_parmlist_use()
-            h.attr_praxis(seed)
-            self.pre2Parm = self.N.getParmVal()
-            self.pre2f = ef()
-            h.MulRunFitter[0].efun()
-            self.post2Parm = self.N.getParmVal()
-            self.post2f = ef()
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
         self.Z.o(2).doarg = 1
         h.MulRunFitter[0].p.pf.def_parmlist_use()
         h.attr_praxis(seed)
-        self.pre3Parm = self.N.getParmVal()
-        self.pre3f = ef()
+        self.preAPFParm = self.N.getParmVal()
+        self.preAPFf = ef()
         h.MulRunFitter[0].efun()
-        self.post3Parm = self.N.getParmVal()
-        self.post3f = ef()
+        self.postAPFParm = self.N.getParmVal()
+        self.postAPFf = ef()
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
-        self.CS = 2.0*(self.otml - self.ml)
-        self.pValue = stats.chisqprob(self.CS,self.true.size())
-        self.covers = (self.pValue >= self.alpha)
+        if self.sesHasTrueParm:
+            self.CS = 2.0*(self.otml - self.ml)
+            self.pValue = stats.chisqprob(self.CS,self.trueParm.size())
+            self.covers = (self.pValue >= self.alpha)
         if run == 2:
           return
         self.H = numpy.matrix(self.Hessian())
@@ -122,7 +141,6 @@ class TestCR(object):
         for sl in svdList:
             sl_positive = max(sl,1e-14)
             self.precision += math.log(sl_positive)
-        self.N.setParm(self.true)
         self.likefailed = self.N.likefailed
         self.N.likefailed = False
 
@@ -159,7 +177,7 @@ class TestRao(TestCR):
         h('objref nb')
         h.nb = mrf.p.pf.generatorlist.o(0).gen.po
         cvodewrap.fs.panel()
-        self.true = self.N.getParm()
+        self.trueParm = self.N.getParm()
         self.modelses = modelses
         self.seed = seed
         if n == 0:
@@ -170,7 +188,7 @@ class TestRao(TestCR):
         else:
             h.load_file(datagenhoc)
             tvec = h.Vector(self.N.Eve.collectionTimes)
-            vec = h.ch3ssdata(n, seed, tvec, self.true, self.N.rf.fitnesslist.o(0))
+            vec = h.ch3ssdata(n, seed, tvec, self.trueParm, self.N.rf.fitnesslist.o(0))
             self.Data = []
             for i in range(len(vec)):
                 self.Data.append(numpy.matrix(vec[i]))
@@ -185,7 +203,7 @@ class WOHoc(object):
     def __init__(self, WH):
         self.alpha = WH.alpha
         self.n = WH.n
-        self.true = numpy.matrix(WH.true)
+        self.trueParm = numpy.matrix(WH.trueParm)
         self.modelses = WH.modelses
         self.seed = WH.seed
         self.otml = WH.otml
