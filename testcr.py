@@ -12,6 +12,8 @@ import svd
 import cvodewrap
 import fitglobals
 
+MPF = True
+
 def first(modelses):
     h.load_file(modelses)
     Z = h.MulRunFitter[0].p.pf.parmlist
@@ -36,9 +38,14 @@ class TestCR(object):
         while self.Z.count() > nMain:
             self.Z.remove(self.Z.count()-1)
 
-    def __init__(self,n,seed,modelses,datagenhoc,run=2):
-        self.sesHasTrueParm = True  # True indicates ses file loads w. true Parms
+    def __init__(self,n,seed,modelses,datagenhoc,run=4):
+        # The "run" parameter controls when the fitting stops
+        # If run = 0 doesn't fit
+        # If run > 0 assumes session file has true parameters
+        # The value of abs(run) controls what susequent steps are taken
+        self.sesHasTrueParm = (run>0) # True indicates ses file loads w. true Parms
         # If availiable, code tests if the confidence region covers the true parms
+        run = abs(run)
         self.alpha = 0.05  # p < alpha outside confidence region, 0.5: 95% CRs
         self.n = n  # number of channels
         h.load_file(modelses)  # load session file
@@ -46,6 +53,7 @@ class TestCR(object):
         cvodewrap.fs.panel()
         if self.sesHasTrueParm:
             self.trueParm = self.N.getParm()
+        self.saveParm = self.N.getParm()
         self.modelses = modelses
         self.seed = seed
         if n == 0:  # n=0 (no channels) means use Gaussian noise
@@ -58,7 +66,10 @@ class TestCR(object):
           # Generate data in self.Data
           h.load_file(datagenhoc)
           tvec = h.Vector(self.N.Eve.collectionTimes)
-          vec = h.ch3ssdata(n, seed, tvec, self.trueParm, self.N.rf.fitnesslist.o(0))
+          if self.sesHasTrueParm:
+            vec = h.ch3ssdata(n, seed, tvec, self.trueParm, self.N.rf.fitnesslist.o(0))
+          else:
+            vec = h.ch3ssdata(n, seed, tvec, self.saveParm, self.N.rf.fitnesslist.o(0))
           self.Data = []
           for i in range(len(vec)):
             self.Data.append(numpy.matrix(vec[i]))
@@ -99,20 +110,27 @@ class TestCR(object):
         self.Z.o(0).doarg = 1
         self.Z.o(1).doarg = 1
         h.FitnessGenerator1[0].use_likelihood=0
+        h.attr_praxis(seed)
         self.preSNFParm = self.N.getParmVal()
         self.preSNFf = ef()
         h.MulRunFitter[0].efun()
         self.postSNFParm = self.N.getParmVal()
         self.postSNFf = ef()
-        # Main Parm Fit:
         h.FitnessGenerator1[0].use_likelihood=1
         h.MulRunFitter[0].p.pf.def_parmlist_use()
-        h.attr_praxis(seed)
-        self.preMPFParm = self.N.getParmVal()
-        self.preMPFf = ef()
-        h.MulRunFitter[0].efun()
-        self.postMPFParm = self.N.getParmVal()
-        self.postMPFf = ef()
+        if run == 2:
+            return
+        # Main Parm Fit:
+        global MPF
+        if MPF:
+            h.attr_praxis(seed)
+            self.preMPFParm = self.N.getParmVal()
+            self.preMPFf = ef()
+            h.MulRunFitter[0].efun()
+            self.postMPFParm = self.N.getParmVal()
+            self.postMPFf = ef()
+        if run == 3:
+            return
         # All Parm Fit
         foo = h.RunFitParm("nb.Eve.Sto.scale")
         foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
@@ -133,7 +151,7 @@ class TestCR(object):
             self.CS = 2.0*(self.otml - self.ml)
             self.pValue = stats.chisqprob(self.CS,self.trueParm.size())
             self.covers = (self.pValue >= self.alpha)
-        if run == 2:
+        if run == 4:
           return
         self.H = numpy.matrix(self.Hessian())
         svdList = svd.svd(numpy.array(self.H))[1]
@@ -141,6 +159,7 @@ class TestCR(object):
         for sl in svdList:
             sl_positive = max(sl,1e-14)
             self.precision += math.log(sl_positive)
+        self.N.setParm(self.saveParm)
         self.likefailed = self.N.likefailed
         self.N.likefailed = False
 
@@ -258,19 +277,21 @@ def calcRaoCov(TCRs):
         EH += w*T.H
     return EH.I
 
-def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
+def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc",run=4):
     TCRs = []
     ncovers = 0
     for i in range(nruns):
-        TCRi = TestCR(nchannels,i+1,modelses,datagenhoc)
+        TCRi = TestCR(nchannels,i+1,modelses,datagenhoc,run)
         TCRs.append(TCRi)
         # return TCRs
-        if TCRi.covers:
-            print i, 'IN:', TCRi.pValue
-            ncovers += 1
-        else:
-            print i, 'OUT:', TCRi.pValue
-    print ncovers, 'covers out of', nruns
+        if run > 0:
+            if TCRi.covers:
+                print i, 'IN:', TCRi.pValue
+                ncovers += 1
+            else:
+                print i, 'OUT:', TCRi.pValue
+    if run > 0:
+        print ncovers, 'covers out of', nruns
     return TCRs
 
 def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
