@@ -184,14 +184,16 @@ class NrnBFilt(object):
                     return pf
 
     def getParm(self):
-        #return Hoc Vector of current objective function parameters
+	#return current objective function used parameters (log space)
+        #return Hoc Vector
         v = h.Vector()
         self.pf.doarg_get(v)
         # print 'getParm', v[0]
         return v
 
     def getParmVal(self):
-        #return Hoc Vector of current objective function parameters
+	#return current objective function used parameters (linear space)
+        #return Hoc Vector
 	# differs from getParm in that it is the values, not the log values.
 	# differs from pf.argget, in that only the 'use' values are returned
 	v = h.Vector()
@@ -201,9 +203,18 @@ class NrnBFilt(object):
         return v
 
     def setParm(self, hvec):
-        #assign current objective funtion parameters
+        #assign current objective function used parameters (log space)
         # print 'setParm', hvec[0]
         self.pf.parm(hvec)
+
+    def setParmVal(self, hvec):
+        #assign current objective function used parameters (linear space)
+        i = 0
+        for o in self.pf.parmlist:
+            if o.doarg > 0:
+                o.val = hvec.x[i] 
+                i += 1
+                o.play_one()
 
     def fillS(self, i):
         print 'Sdiag', self.Sdiag[i].x
