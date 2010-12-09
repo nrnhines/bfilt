@@ -1,18 +1,20 @@
 {load_file("ch3ppchannel.ses")}
+
+
 objref tobj
 tobj = new List("ChannelBuild")
-ch3pp_cbindex_ = tobj.count-1
+channel_cbindex_ = tobj.count-1
 objref tobj
 
 begintemplate ExperimentalModelContext
 public soma1, ch, stim, record, setseed
 create soma1
 objref ch, stim, cb, this
-external ch3pp_cbindex_, ChannelBuild
+external channel_cbindex_, ChannelBuild
 
 proc init() {localobj s
 	s = new String()
-	cb = ChannelBuild[ch3pp_cbindex_]
+	cb = ChannelBuild[channel_cbindex_]
 	sprint(s.s, "ch = new %s(.5)", cb.ks.name)
 	soma1 {
 		ch = new ch3pp(.5)
