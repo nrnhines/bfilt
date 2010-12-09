@@ -17,7 +17,7 @@ proc init() {localobj s
 	cb = ChannelBuild[channel_cbindex_]
 	sprint(s.s, "ch = new %s(.5)", cb.ks.name)
 	soma1 {
-		ch = new ch3pp(.5)
+		execute(s.s, this)
 		ch.Nsingle = $1
 		stim = new SEClamp(.5)
 		stim.dur1 = 1e9
