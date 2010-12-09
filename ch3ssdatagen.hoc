@@ -7,11 +7,13 @@ objref tobj
 begintemplate ExperimentalModelContext
 public soma1, ch, stim, record, setseed
 create soma1
-objref ch, stim, cb
+objref ch, stim, cb, this
 external ch3pp_cbindex_, ChannelBuild
 
-proc init() {
+proc init() {localobj s
+	s = new String()
 	cb = ChannelBuild[ch3pp_cbindex_]
+	sprint(s.s, "ch = new %s(.5)", cb.ks.name)
 	soma1 {
 		ch = new ch3pp(.5)
 		ch.Nsingle = $1
@@ -73,5 +75,5 @@ proc test() {localobj vv, tvec, pvec
 	vv.printf()
 }
 
-test(1000, 1, 4, 2)
+//test(1000, 1, 4, 2)
 
