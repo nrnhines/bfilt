@@ -1,5 +1,4 @@
-{load_file("ch3ppchannel.ses")}
-
+{load_file("exper_channel.ses")}
 
 objref tobj
 tobj = new List("ChannelBuild")
