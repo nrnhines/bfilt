@@ -1,2 +1,7 @@
 {load_file("ch3ppchannel.ses")}
-
+objref true_parameters
+proc set_true_parameters() {
+	true_parameters = new Vector()
+	true_parameters.append($o1.tauC2O.A)
+	true_parameters.append($o1.tauCC2.A)
+}

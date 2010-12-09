@@ -4,6 +4,7 @@ objref tobj
 tobj = new List("ChannelBuild")
 channel_cbindex_ = tobj.count-1
 objref tobj
+set_true_parameters(ChannelBuild[channel_cbindex_].aliases)
 
 begintemplate ExperimentalModelContext
 public soma1, ch, stim, record, setseed
