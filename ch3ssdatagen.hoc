@@ -4,13 +4,14 @@ tobj = new List("ChannelBuild")
 ch3pp_cbindex_ = tobj.count-1
 objref tobj
 
-begintemplate ch3datagen
-public soma1, ch, stim
+begintemplate ExperimentalModelContext
+public soma1, ch, stim, record, setseed
 create soma1
-objref ch, stim
-external ch3pp_cbindex_
+objref ch, stim, cb
+external ch3pp_cbindex_, ChannelBuild
 
 proc init() {
+	cb = ChannelBuild[ch3pp_cbindex_]
 	soma1 {
 		ch = new ch3pp(.5)
 		ch.Nsingle = $1
@@ -20,28 +21,32 @@ proc init() {
 		stim.rs = .1
 	}
 }
-endtemplate ch3datagen
 
-obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil, ff, xmd, ymd
-	ff = $o5 // fitnes function
+proc record() {
+	$o1.record(&ch.O, $o2)
+}
+
+proc setseed() {
+	cb.ks.rseed($1*100000)
+}
+
+endtemplate ExperimentalModelContext
+
+obfunc experimentalDataGenerator() { local sav localobj m, tvec, ov, nil, ff, xmd, ymd
+	if (numarg() > 3 ) ff = $o4 // fitness function
 	xmd = new Vector()
 	ymd = new Vector()
 	xmd.indgen(0,tstop,0.1)
 
-	cb = ChannelBuild[ch3pp_cbindex_]
-	m = new ch3datagen($1)
+	m = new ExperimentalModelContext($1)
 	ov = new Vector()
-	cb.aliases.tauC2O.A = exp($o4.x[0])
-	cb.aliases.tauCC2.A = exp($o4.x[1])
-	m.soma1 {
-		ov.record(&m.ch.O, $o3)
-		ymd.record(&m.ch.O, xmd)
-	}
+	m.record(ov, $o3)
+	m.record(ymd, xmd)
         sav = cvode.active()
         cvode.active(0)
 	dt = 0.025
         finitialize(v_init)
-	cb.ks.rseed($2*100000)
+	m.setseed($2)
 	run()
 	// for some reason the BG/P clears ymd and ov when m is destroyed
 	ymd = ymd.c()
@@ -49,11 +54,13 @@ obfunc ch3ssdata() { local sav localobj m, tvec, ov, cb, nil, ff, xmd, ymd
         m = nil
         cvode.active(sav)
         finitialize()
-	sav = ff.n_chdat
 	ymd.mul(1/$1)
-	ff.set_data(xmd,ymd)
-	execute("setxy()", ff)
-//	ff.n_chdat = sav
+	if (ff != nil) {
+		sav = ff.n_chdat
+		ff.set_data(xmd,ymd)
+		execute("setxy()", ff)
+//		ff.n_chdat = sav
+	}
 	return ov.mul(1/$1)
 }
 
@@ -62,9 +69,9 @@ proc test() {localobj vv, tvec, pvec
 	pvec.append($3, $4)
 	tvec = new Vector()
 	tvec.indgen(0,tstop,.1)
-	vv = ch3ssdata($1, $2, tvec, pvec)
+	vv = experimentalDataGenerator($1, $2, tvec)
 	vv.printf()
 }
 
-//test(1000, 1, 4, 2)
+test(1000, 1, 4, 2)
 
