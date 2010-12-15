@@ -1,4 +1,4 @@
-{load_file("exper_channel.hoc")}
+// {load_file("exper_channel.hoc")}
 
 objref tobj
 tobj = new List("ChannelBuild")
