@@ -117,8 +117,8 @@ def test(nchannel, seed):
   fitfun.ydat_.printf()
 
 if __name__ == '__main__':
+  import ch3 # first since session file assumes ChannelBuild[0]
   h.load_file("exper_data.hoc")
-  import ch3
   r = Repro(h.experimentalDataGenerator, 1, 1)
   fitfun = h.MulRunFitter[0].p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
   print 'test of Repro'
