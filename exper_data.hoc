@@ -1,4 +1,4 @@
-// {load_file("exper_channel.hoc")}
+{load_file("exper_channel.hoc")}
 
 objref tobj
 tobj = new List("ChannelBuild")
@@ -37,18 +37,11 @@ proc setseed() {
 endtemplate ExperimentalModelContext
 
 obfunc experimentalDataGenerator() { local sav localobj m, tvec, ov, nil, xmd, ymd
-	// m = $o4
+	// args are #channels, seed, tvec
+	// returns the measurement at tvec times.
 	m = new ExperimentalModelContext($1)
 	ov = new Vector()
 	m.record(ov, $o3)
-
-	// TAKE THIS CODE OUT: Filling Fitness Function via Repro passing tvec=$o3
-	// if (numarg() > 3 ) {
-	//  	ff = $o4 // fitness function
-	//  	xmd = ff.xdat.c
-	//  	ymd = new Vector()
-	//  	m.record(ymd, xmd)
-	// }
 
 	sav = cvode.active()
 	cvode.active(0)
@@ -59,31 +52,19 @@ obfunc experimentalDataGenerator() { local sav localobj m, tvec, ov, nil, xmd, y
 	m.setseed($2)
 	run()
 	// for some reason the BG/P clears ymd and ov when m is destroyed
-	// take out ff does equal nil:
-	// if (ff != nil) ymd = ymd.c()
 	ov = ov.c()
 	m = nil
 	cvode.active(sav)
-	finitialize()
-	// Take out ff does equal nil:
-	// if (ff != nil) {
-	//		ymd.mul(1/$1)
-	//		sav = ff.n_chdat
-	//		ff.set_data(xmd,ymd)
-	//		execute("setxy()", ff)
-//		ff.n_chdat = sav
-	// }
+	finitialize(v_init)
 	return ov.mul(1/$1)
 }
 
-proc test() {localobj vv, tvec, pvec
-	pvec = new Vector(0)
-	pvec.append($3, $4)
+proc test() {localobj vv, tvec
 	tvec = new Vector()
 	tvec.indgen(0,tstop,.1)
 	vv = experimentalDataGenerator($1, $2, tvec)
 	vv.printf()
 }
 
-// test(1000, 1, 4, 2)
+//test(1000, 1)
 

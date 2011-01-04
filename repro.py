@@ -5,31 +5,29 @@ from neuron import h
 import os
 import os.path
 
-def channelData(channels, seed, tvec, parm)
+def channelData(channels, seed, tvec, parm):
     Data = h.experimentalDataGenerator(channels, seed, tvec)
     h.set_true_parameters()
-        if parm == None:
-            parm = h.true_parameters
-        else:  # Saved params should match true params, unlike above
-            assert(len(parm) == len(h.true_parameters))
-            for i in range(len(parm)):
-                assert(parm[i] == h.true_parameters[i])
+    if parm == None:
+        parm = h.true_parameters
+    else:  # Saved params should match true params, unlike above
+        assert(len(parm) == len(h.true_parameters))
+        for i in range(len(parm)):
+            assert(parm[i] == h.true_parameters[i])
 
 class Repro(object):
     def __init__(self, datagen, channels, seed):
-        self.datagen = self.datagen
-        self.channels = self.channels
-        self.seed = self.seed
+        self.datagen = datagen
+        self.channels = channels
+        self.seed = seed
         self.tvec = None
         self.parm = None
 
     def fill(self, fitfun):
-        xmd = fitfun.xdat.c
-        ymd = self.datagen(self.channels,self.seed,self.xmd)
-        sav = fitfun.n_chdat
+        xmd = fitfun.xdat.c()
+        ymd = self.datagen(self.channels,self.seed,xmd)
         fitfun.set_data(xmd,ymd)
         h.execute("setxy()", fitfun)
-        fitfun.n_chdat = sav  # Comment Out???
 
     #~ def __init__(self, fitfun, datagen, in datagen: channels=0, seed=0, tvec=None, parm=None):
         #~ # tvec == None: uses CollectionTimes
@@ -111,3 +109,17 @@ class Repro(object):
         #~ h.execute("setxy()", ff)
         #~ ff.n_chdat = sav  # Comment Out???
 
+def test(nchannel, seed):
+  global fitfun
+  r.channels = nchannel
+  r.seed = seed
+  r.fill(fitfun)
+  fitfun.ydat_.printf()
+
+if __name__ == '__main__':
+  h.load_file("exper_data.hoc")
+  import ch3
+  r = Repro(h.experimentalDataGenerator, 1, 1)
+  fitfun = h.MulRunFitter[0].p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
+  print 'test of Repro'
+  print '  call test(nchannel, seed) and verify data makes it into the fitness function'  
