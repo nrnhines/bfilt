@@ -11,6 +11,7 @@ import pickle
 import svd
 import cvodewrap
 import fitglobals
+import repro
 
 MPF = True
 
@@ -19,12 +20,15 @@ def first(modelses):
     Z = h.MulRunFitter[0].p.pf.parmlist
     #Z.append(h.RunFitParm("nb.Eve.Sto.scale",1,1e-9,1e9,1,1))
 
-def NrnBFiltHandles():
+def MulRunFitHandle():
     mrflist = h.List("MulRunFitter")
     mrf = mrflist.o(int(mrflist.count())-1)
+    return mrf
+
+def NrnBFiltHandle(mrf):
     N = mrf.p.pf.generatorlist.o(0).gen.po
     h('objref nb')
-    h.nb = mrf.p.pf.generatorlist.o(0).gen.po
+    h.nb = N
     return N
 
 def printSomeInfo():
@@ -34,125 +38,115 @@ def printSomeInfo():
     if fitglobals.verbose: ss.printf()
 
 class TestCR(object):
-    def destroyNuisanceParms(self,nMain):  #Destroy all but nMain=2 Parms
-        while self.Z.count() > nMain:
-            self.Z.remove(self.Z.count()-1)
+    def destroyNuisanceParms(self):  #Destroy all but nMain=2 Parms
+        while self.parmlist.count() > self.nMain:
+            self.parmlist.remove(self.parmlist.count()-1)
+        self.nuisanceParms = []
+	self.nNuisance = 0
 
-    def __init__(self,n,seed,modelses,datagenhoc,run=4):
+    def addNuisanceParm(self, parmName):
+        foo = h.RunFitParm(parmName)
+        foo.set(parmName,1,1e-9,1e9,1,1)
+        self.parmlist.append(foo)
+
+    def usingArgs(self, fit_the_real_parms=True, fit_the_nuisance_parms=False):
+        for i in range(self.nMain):
+            self.parmlist.o(i).doarg = fit_the_real_parms
+        for i in range(self.nMain, len(self.parmlist)):
+            self.parmlist.o(i).doarg = fit_the_nuisance_parms
+        self.mrf.p.pf.def_parmlist_use()
+
+    def __init__(self, multiple_run_fitter, nrnbfilt, datagen):
+        # datagen is a Repro from repro.py and fills the multiple run fitter fitness
+        # function with reproducible data via datagen.fill(n, seed) in such a
+	# way that the likelihood calculation uses the latest data
+
+        # If available, code tests if the confidence region covers the true parms
+        self.alpha = 0.05  # p < alpha outside confidence region, 0.5: 95% CRs
+	self.mrf = multiple_run_fitter
+	self.N = nrnbfilt
+	self.datagen = datagen
+        self.trueParm = h.true_parameters #from exper_channel.hoc set by exper_data.hoc
+        self.saveParm = self.N.getParm()
+	assert(len(self.trueParm) == len(self.saveParm))
+	self.nMain = len(self.saveParm)
+        if fitglobals.verbose: print "ASSUMES PARAMETERS 0...nMain-1 main parameters rest NUISANCE"
+        self.nNuisance = 1
+        self.parmlist = self.mrf.p.pf.parmlist
+        self.ef = self.mrf.p.run   # ef is a function
+	self.nuisanceParms = []
+	self.generator = self.mrf.p.pf.generatorlist.o(0).gen
+
+    def compute(self, n, seed, run=4):
         # The "run" parameter controls when the fitting stops
         # If run = 0 doesn't fit
-        # If run > 0 assumes session file has true parameters
-        # The value of abs(run) controls what susequent steps are taken
-        self.sesHasTrueParm = (run>0) # True indicates ses file loads w. true Parms
-        # If availiable, code tests if the confidence region covers the true parms
-        run = abs(run)
-        self.alpha = 0.05  # p < alpha outside confidence region, 0.5: 95% CRs
-        self.n = n  # number of channels
-        h.load_file(modelses)  # load session file
-        self.N = NrnBFiltHandles()  # Handle to nrnbfilt object; also defines h.nb
+	self.datagen.fill(n, seed)
         cvodewrap.fs.panel()
-        if self.sesHasTrueParm:
-            self.trueParm = self.N.getParm()
-        self.saveParm = self.N.getParm()
-        self.modelses = modelses
-        self.seed = seed
-        if n == 0:  # n=0 (no channels) means use Gaussian noise
-          # Generate data in self.Data
-          G = noisegen.Gen(self.N)
-          G.reseed(seed)
-          self.seed = seed
-          self.Data = G.datasim()
-        else:  # n > 0 means use n-channel noise
-          # Generate data in self.Data
-          h.load_file(datagenhoc)
-          tvec = h.Vector(self.N.Eve.collectionTimes)
-          if self.sesHasTrueParm:
-            vec = h.ch3ssdata(n, seed, tvec, self.trueParm, self.N.rf.fitnesslist.o(0))
-          else:
-            vec = h.ch3ssdata(n, seed, tvec, self.saveParm, self.N.rf.fitnesslist.o(0))
-          self.Data = []
-          for i in range(len(vec)):
-            self.Data.append(numpy.matrix(vec[i]))
         printSomeInfo()
-        self.N.overwrite(self.Data)   # Put the Data into NrnBFilt object
         # self.tl = self.N.likelihood()
         # print self.tl
-        self.Z = h.MulRunFitter[0].p.pf.parmlist
-        if fitglobals.verbose: print "ASSUMES PARAMETERS 0,1 main parameters rest NUISANCE"
-        nMain = 2
-        nNuisance = 1
-        ef = h.MulRunFitter[0].p.run   # ef is a function
         if run == 0:
             return
+
         # Nuisance Fit At True
-        if self.sesHasTrueParm:
-            self.destroyNuisanceParms(nMain)  #Destroy all but nMain Parms
-            foo = h.RunFitParm("nb.Eve.Sto.scale")
-            foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
-            self.Z.append(foo)
-            self.Z.o(0).doarg = 0
-            self.Z.o(1).doarg = 0
-            self.Z.o(2).doarg = 1
-            h.MulRunFitter[0].p.pf.def_parmlist_use()
-            h.attr_praxis(seed)
-            #print 'SIZE =', self.N.getParm().size()
-            self.preTrueParm = self.N.getParmVal()
-            self.preTruef = ef()
-            h.MulRunFitter[0].efun()
-            self.postTrueParm = self.N.getParmVal()
-            self.postTruef = ef()
-            self.otle = self.N.getParmVal()
-            self.otml = self.N.likelihood()  #optimized true maximum likelihood
+        self.destroyNuisanceParms()  #Destroy all but nMain Parms
+	self.usingArgs(True, False)
+	self.N.setParmVal(self.trueParm)
+        self.addNuisanceParm("nb.Eve.Sto.scale")
+	self.usingArgs(False, True)
+        h.attr_praxis(seed)
+        #print 'SIZE =', self.N.getParm().size()
+        self.preTrueParm = self.N.getParmVal()
+        self.preTruef = self.ef()
+        self.mrf.efun()
+        self.postTrueParm = self.N.getParmVal()
+        self.postTruef = self.ef()
+        self.otle = self.N.getParmVal()
+        self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if run == 1:
           return
+
         # Square Norm Fit
-        self.destroyNuisanceParms(nMain)  #Destroy all but nMain Parms
-        self.Z.o(0).doarg = 1
-        self.Z.o(1).doarg = 1
-        h.FitnessGenerator1[0].use_likelihood=0
+	self.usingArgs(True, False)
+        self.generator.use_likelihood=0
         h.attr_praxis(seed)
         self.preSNFParm = self.N.getParmVal()
-        self.preSNFf = ef()
-        h.MulRunFitter[0].efun()
+        self.preSNFf = self.ef()
+        self.mrf.efun()
         self.postSNFParm = self.N.getParmVal()
-        self.postSNFf = ef()
-        h.FitnessGenerator1[0].use_likelihood=1
-        h.MulRunFitter[0].p.pf.def_parmlist_use()
+        self.postSNFf = self.ef()
+        self.generator.use_likelihood=1
         if run == 2:
             return
+
         # Main Parm Fit:
         global MPF
         if MPF:
             h.attr_praxis(seed)
             self.preMPFParm = self.N.getParmVal()
-            self.preMPFf = ef()
-            h.MulRunFitter[0].efun()
+            self.preMPFf = self.ef()
+            self.mrf.efun()
             self.postMPFParm = self.N.getParmVal()
-            self.postMPFf = ef()
+            self.postMPFf = self.ef()
         if run == 3:
             return
+
         # All Parm Fit
-        foo = h.RunFitParm("nb.Eve.Sto.scale")
-        foo.set("nb.Eve.Sto.scale",1,1e-9,1e9,1,1)
-        self.Z.append(foo)
-        self.Z.o(0).doarg = 1
-        self.Z.o(1).doarg = 1
-        self.Z.o(2).doarg = 1
-        h.MulRunFitter[0].p.pf.def_parmlist_use()
+	self.usingArgs(True, True)
         h.attr_praxis(seed)
         self.preAPFParm = self.N.getParmVal()
-        self.preAPFf = ef()
-        h.MulRunFitter[0].efun()
+        self.preAPFf = self.ef()
+        self.mrf.efun()
         self.postAPFParm = self.N.getParmVal()
-        self.postAPFf = ef()
+        self.postAPFf = self.ef()
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
-        if self.sesHasTrueParm:
-            self.CS = 2.0*(self.otml - self.ml)
-            self.pValue = stats.chisqprob(self.CS,self.trueParm.size())
-            self.covers = (self.pValue >= self.alpha)
+        self.CS = 2.0*(self.otml - self.ml)
+        self.pValue = stats.chisqprob(self.CS,self.trueParm.size())
+        self.covers = (self.pValue >= self.alpha)
         if run == 4:
           return
+
         self.H = numpy.matrix(self.Hessian())
         svdList = svd.svd(numpy.array(self.H))[1]
         self.precision = 0.0
@@ -249,17 +243,25 @@ def prin():
         paxis.append(numpy.array(v))
     return (pval, paxis)
 
-def onerun(seed=1, nchannels=50, modelses="ch3_101p.ses", datagenhoc="ch3ssdatagen.hoc"):
+def onerun(seed=1, nchannels=50):
+    r = tcr # global from parrun
     cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
     pc = h.ParallelContext()
     id = int(pc.id())
     print "%d start seed=%d nchannels=%d"%(id, seed, nchannels)
-    r = TestCR(nchannels,seed,modelses,datagenhoc, run=2)
+    run = 2
+    r.compute(nchannels, seed, run)
     tt = h.startsw() - tt
     print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
     #return value suitable for bulletin board
-    return (tt, (seed, nchannels), numpy.array(r.otle), r.otml, numpy.array(r.mle), r.ml, prin())
+    result = [seed, nchannels, run]
+    print 'run ', run
+    if run >= 1: result += [numpy.array(r.postTrueParm), r.postTruef]
+    if run >= 2: result += [numpy.array(r.postSNFParm), r.postSNFf]
+    if run >= 3: result += [numpy.array(r.postMPFParm), r.postMPFf]
+    if run >= 4: result += [numpy.array(r.postAPFParm), r.postAPFf, r.pValue]
+    return result
 
 
 def runRao(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
@@ -294,13 +296,21 @@ def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.ho
         print ncovers, 'covers out of', nruns
     return TCRs
 
-def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.hoc"):
+def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.hoc"):
+    h.load_file(modelses)
+    mrf = MulRunFitHandle()
+    fitfun = mrf.p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
+    h.load_file(datacode)
+    r = repro.Repro(fitfun, h.experimentalDataGenerator, 1, 1)
+    global tcr
+    tcr = TestCR(mrf, NrnBFiltHandle(mrf), r)
+
     pc = h.ParallelContext()
     pc.runworker()
     if nruns == 0:
         nruns = int(pc.nhost())
     for i in range(nruns):
-        pc.submit(onerun, i+1, nchannels, modelses, datagenhoc)
+        pc.submit(onerun, i+1, nchannels)
     f = open('results_101p_'+str(nchannels)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
     i = 0
@@ -308,7 +318,7 @@ def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen
         r = pc.pyret()
         pickle.dump(r, f); f.flush()
         i += 1
-        print '%d seed %d'%(i,r[1][0])
+        print '%d seed %d'%(i,r[1])
     f.close()
     pc.done()
     h.quit()

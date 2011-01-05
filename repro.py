@@ -16,18 +16,21 @@ def channelData(channels, seed, tvec, parm):
             assert(parm[i] == h.true_parameters[i])
 
 class Repro(object):
-    def __init__(self, datagen, channels, seed):
+    def __init__(self, fitfun, datagen, channels, seed):
+        self.fitfun = fitfun
         self.datagen = datagen
         self.channels = channels
         self.seed = seed
         self.tvec = None
         self.parm = None
 
-    def fill(self, fitfun):
-        xmd = fitfun.xdat.c()
+    def fill(self, channels, seed):
+        self.seed = seed
+        self.channels = channels
+        xmd = self.fitfun.xdat.c()
         ymd = self.datagen(self.channels,self.seed,xmd)
-        fitfun.set_data(xmd,ymd)
-        h.execute("setxy()", fitfun)
+        self.fitfun.set_data(xmd,ymd)
+        h.execute("setxy()", self.fitfun)
 
     #~ def __init__(self, fitfun, datagen, in datagen: channels=0, seed=0, tvec=None, parm=None):
         #~ # tvec == None: uses CollectionTimes
@@ -110,16 +113,13 @@ class Repro(object):
         #~ ff.n_chdat = sav  # Comment Out???
 
 def test(nchannel, seed):
-  global fitfun
-  r.channels = nchannel
-  r.seed = seed
-  r.fill(fitfun)
-  fitfun.ydat_.printf()
+  r.fill(nchannel, seed)
+  r.fitfun.ydat_.printf()
 
 if __name__ == '__main__':
   import ch3 # first since session file assumes ChannelBuild[0]
   h.load_file("exper_data.hoc")
-  r = Repro(h.experimentalDataGenerator, 1, 1)
   fitfun = h.MulRunFitter[0].p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
+  r = Repro(fitfun, h.experimentalDataGenerator, 1, 1)
   print 'test of Repro'
   print '  call test(nchannel, seed) and verify data makes it into the fitness function'  
