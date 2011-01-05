@@ -77,6 +77,11 @@ class TestCR(object):
 	self.nuisanceParms = []
 	self.generator = self.mrf.p.pf.generatorlist.o(0).gen
 
+    def get_pValue(self, old, new, size):
+        CS = 2.0*(old - new)
+        pValue = stats.chisqprob(CS, size)
+        return pValue
+
     def compute(self, n, seed, run=4):
         # The "run" parameter controls when the fitting stops
         # If run = 0 doesn't fit
@@ -128,6 +133,7 @@ class TestCR(object):
             self.mrf.efun()
             self.postMPFParm = self.N.getParmVal()
             self.postMPFf = self.ef()
+	    self.MPFpValue = self.get_pValue(self.postTruef, self.postMPFf, self.trueParm.size())
         if run == 3:
             return
 
@@ -139,11 +145,9 @@ class TestCR(object):
         self.mrf.efun()
         self.postAPFParm = self.N.getParmVal()
         self.postAPFf = self.ef()
+        self.APFpValue = self.get_pValue(self.postTruef, self.postAPFf, self.trueParm.size())
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
-        self.CS = 2.0*(self.otml - self.ml)
-        self.pValue = stats.chisqprob(self.CS,self.trueParm.size())
-        self.covers = (self.pValue >= self.alpha)
         if run == 4:
           return
 
@@ -250,17 +254,17 @@ def onerun(seed=1, nchannels=50):
     pc = h.ParallelContext()
     id = int(pc.id())
     print "%d start seed=%d nchannels=%d"%(id, seed, nchannels)
-    run = 2
+    run = 3
     r.compute(nchannels, seed, run)
     tt = h.startsw() - tt
     print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
     #return value suitable for bulletin board
-    result = [seed, nchannels, run]
+    result = [[tt, seed, nchannels, run]]
     print 'run ', run
-    if run >= 1: result += [numpy.array(r.postTrueParm), r.postTruef]
-    if run >= 2: result += [numpy.array(r.postSNFParm), r.postSNFf]
-    if run >= 3: result += [numpy.array(r.postMPFParm), r.postMPFf]
-    if run >= 4: result += [numpy.array(r.postAPFParm), r.postAPFf, r.pValue]
+    if run >= 1: result += [[numpy.array(r.postTrueParm), r.postTruef]]
+    if run >= 2: result += [[numpy.array(r.postSNFParm), r.postSNFf]]
+    if run >= 3: result += [[numpy.array(r.postMPFParm), r.postMPFf]]
+    if run >= 4: result += [[numpy.array(r.postAPFParm), r.postAPFf]]
     return result
 
 
@@ -318,7 +322,7 @@ def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.ho
         r = pc.pyret()
         pickle.dump(r, f); f.flush()
         i += 1
-        print '%d seed %d'%(i,r[1])
+        print '%d seed %d'%(i,r[0][1])
     f.close()
     pc.done()
     h.quit()
