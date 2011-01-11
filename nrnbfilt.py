@@ -32,7 +32,7 @@ class NrnBFilt(object):
         h.mulfit_after_quad_pycallback = self.after_quad
         pc = h.ParallelContext()
         nhost = int(pc.nhost_bbs())
-	if nhost > 1:
+        if nhost > 1:
           fitglobals.verbose = 0
         self.xlvec = h.Vector()
         self.ylvec = h.Vector()
@@ -77,7 +77,7 @@ class NrnBFilt(object):
         # self.M = models.Model(Sys, Obs, P)
         self.Data = self.__data(fl,self.Eve)
         self.pf = self.getParmFitness()
-	self.pf.verbose = fitglobals.verbose
+        self.pf.verbose = fitglobals.verbose
         self.dlikedt = h.Vector()
         self.likefailed = False
         #CONSTRAINTS GUI INIT
@@ -184,7 +184,7 @@ class NrnBFilt(object):
                     return pf
 
     def getParm(self):
-	#return current objective function used parameters (log space)
+        #return current objective function used parameters (log space)
         #return Hoc Vector
         v = h.Vector()
         self.pf.doarg_get(v)
@@ -192,9 +192,9 @@ class NrnBFilt(object):
         return v
 
     def getParmVal(self):
-	#return current objective function used parameters (linear space)
+        #return current objective function used parameters (linear space)
         #return Hoc Vector
-	# differs from getParm in that it is the values, not the log values.
+        # differs from getParm in that it is the values, not the log values.
 	# differs from pf.argget, in that only the 'use' values are returned
 	v = h.Vector()
         for o in self.pf.parmlist:

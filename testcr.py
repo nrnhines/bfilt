@@ -42,7 +42,7 @@ class TestCR(object):
         while self.parmlist.count() > self.nMain:
             self.parmlist.remove(self.parmlist.count()-1)
         self.nuisanceParms = []
-	self.nNuisance = 0
+        self.nNuisance = 0
 
     def addNuisanceParm(self, parmName):
         foo = h.RunFitParm(parmName)
@@ -59,23 +59,23 @@ class TestCR(object):
     def __init__(self, multiple_run_fitter, nrnbfilt, datagen):
         # datagen is a Repro from repro.py and fills the multiple run fitter fitness
         # function with reproducible data via datagen.fill(n, seed) in such a
-	# way that the likelihood calculation uses the latest data
+        # way that the likelihood calculation uses the latest data
 
         # If available, code tests if the confidence region covers the true parms
         self.alpha = 0.05  # p < alpha outside confidence region, 0.5: 95% CRs
-	self.mrf = multiple_run_fitter
-	self.N = nrnbfilt
-	self.datagen = datagen
+        self.mrf = multiple_run_fitter
+        self.N = nrnbfilt
+        self.datagen = datagen
         self.trueParm = h.true_parameters #from exper_channel.hoc set by exper_data.hoc
         self.saveParm = self.N.getParm()
-	assert(len(self.trueParm) == len(self.saveParm))
-	self.nMain = len(self.saveParm)
+        assert(len(self.trueParm) == len(self.saveParm))
+        self.nMain = len(self.saveParm)
         if fitglobals.verbose: print "ASSUMES PARAMETERS 0...nMain-1 main parameters rest NUISANCE"
         self.nNuisance = 1
         self.parmlist = self.mrf.p.pf.parmlist
         self.ef = self.mrf.p.run   # ef is a function
-	self.nuisanceParms = []
-	self.generator = self.mrf.p.pf.generatorlist.o(0).gen
+        self.nuisanceParms = []
+        self.generator = self.mrf.p.pf.generatorlist.o(0).gen
 
     def get_pValue(self, old, new, size):
         CS = 2.0*(old - new)
@@ -85,7 +85,7 @@ class TestCR(object):
     def compute(self, n, seed, run=4):
         # The "run" parameter controls when the fitting stops
         # If run = 0 doesn't fit
-	self.datagen.fill(n, seed)
+        self.datagen.fill(n, seed)
         cvodewrap.fs.panel()
         printSomeInfo()
         # self.tl = self.N.likelihood()
@@ -95,10 +95,10 @@ class TestCR(object):
 
         # Nuisance Fit At True
         self.destroyNuisanceParms()  #Destroy all but nMain Parms
-	self.usingArgs(True, False)
-	self.N.setParmVal(self.trueParm)
+        self.usingArgs(True, False)
+        self.N.setParmVal(self.trueParm)
         self.addNuisanceParm("nb.Eve.Sto.scale")
-	self.usingArgs(False, True)
+        self.usingArgs(False, True)
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
         self.preTrueParm = self.N.getParmVal()
@@ -112,7 +112,7 @@ class TestCR(object):
           return
 
         # Square Norm Fit
-	self.usingArgs(True, False)
+        self.usingArgs(True, False)
         self.generator.use_likelihood=0
         h.attr_praxis(seed)
         self.preSNFParm = self.N.getParmVal()
@@ -133,12 +133,12 @@ class TestCR(object):
             self.mrf.efun()
             self.postMPFParm = self.N.getParmVal()
             self.postMPFf = self.ef()
-	    self.MPFpValue = self.get_pValue(self.postTruef, self.postMPFf, self.trueParm.size())
+            self.MPFpValue = self.get_pValue(self.postTruef, self.postMPFf, self.trueParm.size())
         if run == 3:
             return
 
         # All Parm Fit
-	self.usingArgs(True, True)
+        self.usingArgs(True, True)
         h.attr_praxis(seed)
         self.preAPFParm = self.N.getParmVal()
         self.preAPFf = self.ef()
