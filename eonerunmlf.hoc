@@ -247,35 +247,41 @@ printf("Invalid format. Nonempty line that does not contain a Fitness substring.
 	}
 }
 
-proc select_likelihood() {local i  localobj ts
-	objref po
-	if (use_likelihood == 0) {
-		objref po
-	}else if (nrnpython("import nrnbfilt")) {
+proc select_likelihood() {local i  localobj ts, nil
+	if (use_likelihood != 0) {
+	    if (object_id(po) == 0) {
+		if (nrnpython("import nrnbfilt") == 0) {
+			execerror("nrnbfilt does not exist")
+		}
 		po = new PythonObject()
 		if (yvarlist.count == 0) {
 			continue_dialog("No variables to fit. Declare all variables and specify data before selecting Likelihood")
 			use_likelihood = 0
+			po = nil
 		}
 		for i=0, fitnesslist.count-1 {
 			if (object_id(fitnesslist.o(i).xdat_) == 0) {
 				use_likelihood = 0
+				po = nil
 			}else if (fitnesslist.o(i).xdat_.size == 0) {
 				use_likelihood = 0
+				po = nil
 			}
 			if (use_likelihood == 0) {
 				ts = new String()
+				po = nil
 				sprint(ts.s, "No data for %s. Declare all variables and specify data before selecting Likelihood", yvarlist.o(i).s)
 				continue_dialog(ts.s)
 				break
 			}
 		}
-		if (use_likelihood) {
-			po = po.nrnbfilt.NrnBFilt(this)
-			if (strcmp(likelihood_session_name, "") != 0) {
-				po.restore_session(likelihood_session_name)
-			}
+		po = po.nrnbfilt.NrnBFilt(this)
+		if (strcmp(likelihood_session_name, "") != 0) {
+			po.restore_session(likelihood_session_name)
 		}
+	    }else{
+		po.data_change()
+	    }
 	}else{
 		use_likelihood = 0
 	}

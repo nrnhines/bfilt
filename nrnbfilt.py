@@ -331,6 +331,7 @@ class NrnBFilt(object):
         self.box.map('Likelihood parameters')
 
     def data_change(self):
+        print "data_change", self
         inj_invl = self.inj_invl
         covGrowthTime = self.covGrowthTime
         varTerm = self.varTerm
@@ -338,6 +339,7 @@ class NrnBFilt(object):
         nNa = self.nNa
         nK = self.nK
         c = self.Eve.Obs.C
+        scl = self.Eve.Sto.scale
         pn = self.processNoise
         sd = self.Sdiag
         g = self.g
@@ -353,6 +355,7 @@ class NrnBFilt(object):
         self.Eve.Sto.hhB = hhB
         self.Eve.Sto.nNa = nNa
         self.Eve.Sto.nK = nK
+        self.Eve.Sto.scale = scl
         cnew = self.Eve.Obs.C
         for i in range(len(c)):
             cnew[i].sigma = c[i].sigma

@@ -17,14 +17,18 @@ def read(fname):
   f.close()
   return rl
 
-def within95(r):
-  alpha = 0.05
+def chisqprob(r):
   r3 = r[3]
   n = len(r3[0])
   ml = r3[1]
   otml = r[1][1]
   cs = 2.0*(otml - ml)
   pval = stats.chisqprob(cs, n)
+  return pval
+
+def within95(r):
+  alpha = 0.05
+  pval = chisqprob(r)
   return pval >= alpha
 
 def n_within(rl):
@@ -63,4 +67,4 @@ if 1 and __name__ == '__main__':
   #a.append(doit('results_100.512'))
   #a.append(doit('results_1000.512'))
   #a.append(doit('results.fixed.1.128'))
-  a.append(doit('test4.dat'))
+  a.append(doit('test256.dat'))

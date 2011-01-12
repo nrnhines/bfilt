@@ -2,6 +2,7 @@ import neuron
 # import neuron.gui
 import init
 from neuron import h
+h.ivoc_style("*xvalue_format", "%.15g")
 import noisegen
 import scipy.stats as stats
 import numpy
@@ -76,6 +77,9 @@ class TestCR(object):
         self.ef = self.mrf.p.run   # ef is a function
         self.nuisanceParms = []
         self.generator = self.mrf.p.pf.generatorlist.o(0).gen
+        self.usingArgs(True, False)
+        self.N.setParmVal(self.trueParm)
+        self.addNuisanceParm("nb.Eve.Sto.scale")
 
     def get_pValue(self, old, new, size):
         CS = 2.0*(old - new)
@@ -94,10 +98,6 @@ class TestCR(object):
             return
 
         # Nuisance Fit At True
-        self.destroyNuisanceParms()  #Destroy all but nMain Parms
-        self.usingArgs(True, False)
-        self.N.setParmVal(self.trueParm)
-        self.addNuisanceParm("nb.Eve.Sto.scale")
         self.usingArgs(False, True)
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
@@ -300,7 +300,7 @@ def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.ho
         print ncovers, 'covers out of', nruns
     return TCRs
 
-def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.hoc"):
+def mk_tcr(modelses="ch3_101p.ses", datacode="exper_data.hoc"):
     h.load_file(modelses)
     mrf = MulRunFitHandle()
     fitfun = mrf.p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
@@ -308,6 +308,10 @@ def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.ho
     r = repro.Repro(fitfun, h.experimentalDataGenerator, 1, 1)
     global tcr
     tcr = TestCR(mrf, NrnBFiltHandle(mrf), r)
+    return tcr
+
+def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.hoc"):
+    mk_tcr(nchannels, modelsed, datacode)
 
     pc = h.ParallelContext()
     pc.runworker()
