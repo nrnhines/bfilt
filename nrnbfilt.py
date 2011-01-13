@@ -101,18 +101,22 @@ class NrnBFilt(object):
 
     def __data(self,fl,Eve):
         counter = [0]*(len(fl))
-        Data = []
+        n_trajectories = len(fl.o(0).ydat_)
+        Data = [[]]*n_trajectories
+        
         for idx, time in enumerate(Eve.collectionTimes):
+          for i_trajec in range(n_trajectories):
             obindices = Eve.ObsNum[idx]
             DataEV = []
             for i in obindices:
                 x = fl.o(i).xdat_
-                y = fl.o(i).ydat_
+                y = fl.o(i).ydat_[i_trajec]
                 #print i, counter[i], time, x[counter[i]], time - x[counter[i]]
                 assert(math.fabs(time - x[counter[i]]) < 1e-10)
                 DataEV.append(y[counter[i]])
-                counter[i] += 1
-            Data.append(numpy.matrix(DataEV).T)
+                if i_trajec == 0 :
+                    counter[i] += 1
+            Data[i_trajec].append(numpy.matrix(DataEV).T)
         for i in range(len(fl)):
             assert(counter[i] == len(fl.o(i).xdat_))
         if fitglobals.verbose: print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
@@ -126,15 +130,18 @@ class NrnBFilt(object):
         # x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
         # x = float(x)
         # return -x
+        x = 0
         if not trap_errors:
-            x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+            for data in self.Data:
+                x += EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
             x = float(x)
             #self.xlvec.append(self.getParm().x[0])
             #self.ylvec.append(x)
             return -x
         else:
             try:
-                x = EKF.ekf(self.Data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                for data in self.Data:
+                    x += EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
                 x = float(x)
                 #self.xlvec.append(self.getParm().x[0])
                 #self.ylvec.append(x)

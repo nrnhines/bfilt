@@ -28,7 +28,8 @@ class Repro(object):
         self.seed = seed
         self.channels = channels
         xmd = self.fitfun.xdat.c()
-        ymd = self.datagen(self.channels,self.seed,xmd)
+	ymd = h.List()
+        ymd.append(self.datagen(self.channels,self.seed,xmd))
         self.fitfun.set_data(xmd,ymd)
         h.execute("setxy()", self.fitfun)
 
