@@ -100,12 +100,13 @@ class NrnBFilt(object):
         EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
 
     def __data(self,fl,Eve):
+      n_trajectories = len(fl.o(0).ydat_)
+      Data = []
+      for i in range(n_trajectories):
+        Data.append([])
+      for i_trajec in range(n_trajectories):
         counter = [0]*(len(fl))
-        n_trajectories = len(fl.o(0).ydat_)
-        Data = [[]]*n_trajectories
-        
         for idx, time in enumerate(Eve.collectionTimes):
-          for i_trajec in range(n_trajectories):
             obindices = Eve.ObsNum[idx]
             DataEV = []
             for i in obindices:
@@ -114,13 +115,12 @@ class NrnBFilt(object):
                 #print i, counter[i], time, x[counter[i]], time - x[counter[i]]
                 assert(math.fabs(time - x[counter[i]]) < 1e-10)
                 DataEV.append(y[counter[i]])
-                if i_trajec == 0 :
-                    counter[i] += 1
+                counter[i] += 1
             Data[i_trajec].append(numpy.matrix(DataEV).T)
         for i in range(len(fl)):
             assert(counter[i] == len(fl.o(i).xdat_))
-        if fitglobals.verbose: print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
-        return Data
+      #if fitglobals.verbose: print 'Collection Times\n', Eve.collectionTimes, '\nData\n', Data
+      return Data
 
     def overwrite(self,Data):
         self.Data = Data
@@ -133,7 +133,9 @@ class NrnBFilt(object):
         x = 0
         if not trap_errors:
             for data in self.Data:
-                x += EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                x1 = EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                print x1
+                x = x1
             x = float(x)
             #self.xlvec.append(self.getParm().x[0])
             #self.ylvec.append(x)
@@ -141,7 +143,9 @@ class NrnBFilt(object):
         else:
             try:
                 for data in self.Data:
-                    x += EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                    x1 = EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
+                    print x1
+                    x += x1
                 x = float(x)
                 #self.xlvec.append(self.getParm().x[0])
                 #self.ylvec.append(x)
@@ -202,8 +206,8 @@ class NrnBFilt(object):
         #return current objective function used parameters (linear space)
         #return Hoc Vector
         # differs from getParm in that it is the values, not the log values.
-	# differs from pf.argget, in that only the 'use' values are returned
-	v = h.Vector()
+        # differs from pf.argget, in that only the 'use' values are returned
+        v = h.Vector()
         for o in self.pf.parmlist:
             if o.doarg > 0:
                 v.append(o.val)

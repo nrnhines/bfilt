@@ -86,10 +86,10 @@ class TestCR(object):
         pValue = stats.chisqprob(CS, size)
         return pValue
 
-    def compute(self, n, seed, run=4):
+    def compute(self, nchan, seed, n_trajec, run=4):
         # The "run" parameter controls when the fitting stops
         # If run = 0 doesn't fit
-        self.datagen.fill(n, seed)
+        self.datagen.fill(nchan, seed, n_trajec)
         cvodewrap.fs.panel()
         printSomeInfo()
         # self.tl = self.N.likelihood()
@@ -247,7 +247,7 @@ def prin():
         paxis.append(numpy.array(v))
     return (pval, paxis)
 
-def onerun(seed=1, nchannels=50):
+def onerun(seed=1, nchannels=50, n_trajectory=1):
     r = tcr # global from parrun
     cvodewrap.fs.use_fixed_step = 1.0
     tt = h.startsw()
@@ -255,11 +255,11 @@ def onerun(seed=1, nchannels=50):
     id = int(pc.id())
     print "%d start seed=%d nchannels=%d"%(id, seed, nchannels)
     run = 3
-    r.compute(nchannels, seed, run)
+    r.compute(nchannels, seed, n_trajectory, run)
     tt = h.startsw() - tt
-    print "%d finish walltime=%g seed=%d nchannels=%d"%(id, tt, seed, nchannels)
+    print "%d finish walltime=%g seed=%d nchannels=%d n_trajectory=%d"%(id, tt, seed, nchannels, n_trajectory)
     #return value suitable for bulletin board
-    result = [[tt, seed, nchannels, run]]
+    result = [[tt, seed, nchannels, n_trajectory, run]]
     print 'run ', run
     if run >= 1: result += [[numpy.array(r.postTrueParm), r.postTruef]]
     if run >= 2: result += [[numpy.array(r.postSNFParm), r.postSNFf]]
@@ -310,7 +310,7 @@ def mk_tcr(modelses="ch3_101p.ses", datacode="exper_data.hoc"):
     tcr = TestCR(mrf, NrnBFiltHandle(mrf), r)
     return tcr
 
-def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.hoc"):
+def parrun(nruns=0,nchannels=50, n_trajectory=1, modelses="ch3_101p.ses", datacode="exper_data.hoc"):
     mk_tcr(nchannels, modelsed, datacode)
 
     pc = h.ParallelContext()
@@ -318,8 +318,8 @@ def parrun(nruns=0,nchannels=50,modelses="ch3_101p.ses", datacode="exper_data.ho
     if nruns == 0:
         nruns = int(pc.nhost())
     for i in range(nruns):
-        pc.submit(onerun, i+1, nchannels)
-    f = open('results_101p_'+str(nchannels)+'.'+str(nruns), "w")
+        pc.submit(onerun, i+1, nchannels, n_trajectory)
+    f = open('results'+str(nchannels)+'.'+str(n_trajectory)+'.'+str(nruns), "w")
     pickle.dump(nruns, f); f.flush()
     i = 0
     while (pc.working() != 0.0):

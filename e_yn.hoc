@@ -48,6 +48,7 @@ func mintstop() {
 }
 
 proc init() {local i
+	show_i = 0
 	n_chdat = 0
 	sprint(tag, "%s", this)
 	sscanf(tag, "%[^[]", tag)
@@ -71,13 +72,16 @@ proc clone() {
 	$o1.set_modelx(indx_)
 }
 
-proc redraw() {
+proc redraw() {local i
     if (use_gui) {
 	g.erase()
 	if (have_data) {
 		g.label(.8, .95)
-		ydat.o(0).plot(g, xdat, 2, 1)
-		ydat_.o(0).mark(g, xdat_,"|",12, 3, 1)
+		for i=0, ydat.count-1 {
+			if (i != show_i) ydat.o(i).plot(g, xdat, 9, 1)
+		}
+		ydat.o(show_i).plot(g, xdat, 2, 1)
+		if (ydat_.count > show_i) ydat_.o(show_i).mark(g, xdat_,"|",12, 3, 1)
 	}
 	if (numarg() == 2) {
 		$o2.line(g, $o1)
@@ -97,6 +101,7 @@ proc set_data() {local i  localobj yd
 	}
 	ydat = yd
 	have_data = 1
+	show_i = ydat.count-1
 	if (use_gui) {
 		g.size(xdat.min(), xdat.max(), ydat.o(0).min(), ydat.o(0).max())
 		redraw()
@@ -148,6 +153,7 @@ proc build() {
 		xbutton("Paste points", "paste_points()")
 		xbutton("# equally spaced points", "npoints()")
 	xmenu()
+	xmenu("Trajectory", "show_trajec()", 1)
 	mserrlabel="MeanSqErr xxxxxxxxxxx"
 	xvarlabel(mserrlabel)
 	xpanel()
@@ -161,6 +167,16 @@ proc build() {
 	g.menu_tool("Remove Point","remove_point")
 	g.menu_action("Data from Clipboard", "clipboard_data()")
 	vbox.intercept(0)
+}
+
+proc show_trajec() {local i  localobj s1, s2
+	s1 = new String()
+	s2 = new String()
+	for i = 0, ydat.count-1 {
+		sprint(s1.s, "%d", i)
+		sprint(s2.s, "show_i=%d redraw()", i)
+		xradiobutton(s1.s, s2.s, i==(ydat.count-1))
+	}
 }
 
 proc map() {
