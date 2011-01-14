@@ -33,7 +33,7 @@ func efun() { local i, e // the least squares error function.
 	e = 0
 	if (xdat_.size > 0) {
 	    for i=0, ydat_.count - 1 {
-		e = $o1.yfitness($o2, 0, ydat_.o(i), xdat_)
+		e += $o1.yfitness($o2, 0, ydat_.o(i), xdat_)
 	    }
 	}
 	if (use_gui) {

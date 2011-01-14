@@ -134,7 +134,7 @@ class NrnBFilt(object):
         if not trap_errors:
             for data in self.Data:
                 x1 = EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
-                print x1
+                #print x1
                 x = x1
             x = float(x)
             #self.xlvec.append(self.getParm().x[0])
@@ -144,7 +144,7 @@ class NrnBFilt(object):
             try:
                 for data in self.Data:
                     x1 = EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
-                    print x1
+                    #print x1
                     x += x1
                 x = float(x)
                 #self.xlvec.append(self.getParm().x[0])
