@@ -24,11 +24,14 @@ class Repro(object):
         self.tvec = None
         self.parm = None
 
-    def fill(self, channels, seed):
+    def fill(self, channels, seed, n_trajectory):
         self.seed = seed
         self.channels = channels
         xmd = self.fitfun.xdat.c()
-        ymd = self.datagen(self.channels,self.seed,xmd)
+	ymd = h.List()
+        for i in range(n_trajectory):
+          seed2 = i
+          ymd.append(self.datagen(self.channels,self.seed, seed2, xmd))
         self.fitfun.set_data(xmd,ymd)
         h.execute("setxy()", self.fitfun)
 

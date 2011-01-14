@@ -10,5 +10,7 @@ n = n[n.find('/'):n.rfind('/')]
 if len(n) and n[-1] != '/':
     n += '/'
 h.load_file(n+'eonerunmlf.hoc')
+h.load_file(n+'e_yn.hoc')
 del n
+
 
