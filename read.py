@@ -2,6 +2,7 @@ from neuron import h
 import numpy
 import scipy.stats as stats
 import pickle
+
 def read(fname):
   f = open(fname, "r")
   n = pickle.load(f)
@@ -17,27 +18,45 @@ def read(fname):
   f.close()
   return rl
 
-def chisqprob(r):
+def csvfile(fname, differDOF=None):
+  rl = read(fname+'.dat')
+  f = open(fname+'.csv','w')
+  f.write('Seed, Time, pVal, ml, otml\n')
+  for r in rl:
+    assert(r[0][3] >= 3)
+    v1 = str(r[0][1])
+    v2 = str(r[0][0])
+    v3 = str(chisqprob(r, differDOF))
+    v4 = str(r[3][1])
+    v5 = str(r[1][1])
+    c = ', '
+    n = '\n'
+    f.write(str(v1+c+v2+c+v3+c+v4+c+v5+n))
+
+def chisqprob(r, differDOF=None):
   r3 = r[3]
-  n = len(r3[0])
+  if differDOF == None:
+    n = len(r3[0])
+  else:
+    n = differDOF
   ml = r3[1]
   otml = r[1][1]
   cs = 2.0*(otml - ml)
   pval = stats.chisqprob(cs, n)
   return pval
 
-def within95(r):
+def within95(r, differDOF=None):
   alpha = 0.05
-  pval = chisqprob(r)
+  pval = chisqprob(r, differDOF)
   return pval >= alpha
 
-def n_within(rl):
+def n_within(rl, differDOF=None):
   if rl[0][3] < 3 :
     print "file does not contain data needed by n_within"
     return
   i = 0
   for r in rl:
-    if (within95(r)):
+    if (within95(r, differDOF)):
       i += 1
   return i
 
