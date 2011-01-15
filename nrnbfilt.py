@@ -29,7 +29,7 @@ class NrnBFilt(object):
         f.close()
 
     def __init__(self, ho):
-        h.mulfit_after_quad_pycallback = self.after_quad
+        #h.mulfit_after_quad_pycallback = self.after_quad
         pc = h.ParallelContext()
         nhost = int(pc.nhost_bbs())
         if nhost > 1:
