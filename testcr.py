@@ -300,18 +300,24 @@ def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.ho
         print ncovers, 'covers out of', nruns
     return TCRs
 
-def mk_tcr(modelses="ch3_101p.ses", datacode="exper_data.hoc"):
+def mk_tcr(modelses="ch3_101p.ses", datagen=None):
     h.load_file(modelses)
     mrf = MulRunFitHandle()
     fitfun = mrf.p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
-    h.load_file(datacode)
-    r = repro.Repro(fitfun, h.experimentalDataGenerator, 1, 1)
+    # requirement is that datagen(nchannel, seed1, seed2, xmd) returns
+    # a h.Vector of measurement values corresponding to the xmd (h.Vector)
+    # time values. Note that seed2 will range from 0 to n_trajectory-1.
+    # seed1 and nchannel will be passed via onerun above.
+    if datagen == None:
+        h.load_file("exper_data.hoc")
+        datagen = h.experimentalDataGenerator
+    r = repro.Repro(fitfun, datagen, 1, 1)
     global tcr
     tcr = TestCR(mrf, NrnBFiltHandle(mrf), r)
     return tcr
 
-def parrun(nruns=0,nchannels=50, n_trajectory=1, modelses="ch3_101p.ses", datacode="exper_data.hoc"):
-    mk_tcr(nchannels, modelsed, datacode)
+def parrun(nruns=0,nchannels=50, n_trajectory=1, modelses="ch3_101p.ses", datagen=None):
+    mk_tcr(nchannels, modelsed, datagen)
 
     pc = h.ParallelContext()
     pc.runworker()
