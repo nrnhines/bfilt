@@ -27,8 +27,8 @@ class BFGS(object):
   def prun(self, opt):
     self.opt = opt
     x0 = numpy.array(opt.start)
-    print x0
-    e = fmin_bfgs(self.efun, x0)
+    # print x0
+    e = fmin_bfgs(self.efun, x0, full_output=True)
     print e
     return e[1]
 
