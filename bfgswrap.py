@@ -7,7 +7,7 @@ mulfit_optimizers_append("BFGS", "BFGSWrap")
 begintemplate BFGSWrap
 public prun, showopt, save_optimizer, bfgs
 objref bfgs
-proc init() { bfgs=new PythonObject()  bfgs=bfgs.bfgswrap.BFGS($o1) }
+proc init() { nrnpython("import bfgswrap") bfgs=new PythonObject()  bfgs=bfgs.bfgswrap.BFGS($o1) }
 func prun() { return bfgs.prun($o1) }
 proc showopt() {}
 proc save_optimizer() {}
