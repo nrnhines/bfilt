@@ -30,6 +30,7 @@ class BFGS(object):
     # print x0
     e = fmin_bfgs(self.efun, x0, full_output=True)
     print e
+    opt.start.from_python(e[0])
     return e[1]
 
   #callback for fmin_bfgs
