@@ -39,4 +39,4 @@ class BFGS(object):
       e = self.opt.optwrap_efun(v.size(), v._ref_x[0])
     else:
       e = self.pf.efun(v.size(), v._ref_x[0])
-
+    return e
