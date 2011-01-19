@@ -13,4 +13,4 @@ h.load_file(n+'eonerunmlf.hoc')
 h.load_file(n+'e_yn.hoc')
 del n
 
-
+import bfgswrap
