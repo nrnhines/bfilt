@@ -28,7 +28,7 @@ class BFGS(object):
     self.opt = opt
     x0 = numpy.array(opt.start)
     print x0
-    e = fmin_bfgs(self.efun, x0, epsilon=1e-4)
+    e = fmin_bfgs(self.efun, x0)
     print e
     return e[1]
 
