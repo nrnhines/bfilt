@@ -14,5 +14,6 @@ def mtr():
             seed +=1
             tcr.datagen.fill(nchannels,seed,nt)
             tcr.generator.fitnesslist.o(0).npoints(npoints)
-            tcr.compute(self, nchannels, seed, nt, run=4)
+            tcr.compute(nchannels, seed, nt, run=4)
             pValues[-1].append(tcr.APFpValue)
+    return pValues
