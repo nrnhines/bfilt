@@ -182,13 +182,13 @@ class TestCR(object):
         # Create Hessian (of likelihood) inline function
         HessFun = nd.Hessian(LamFun)
         # Evaluate Hessian and return
-        return numpy.matrix(HessFun(parmList)
+        return numpy.matrix(HessFun(parmList))
 
     def save(self):
         return saveTCR(self)
 
 class saveTCR(object):
-    def __init__(self,tcr)
+    def __init__(self,tcr):
         self.APFpValue = tcr.APFpValue
 
 class TestRao(TestCR):
