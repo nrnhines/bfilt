@@ -89,6 +89,10 @@ class TestCR(object):
     def compute(self, nchan, seed, n_trajec, run=4):
         # The "run" parameter controls when the fitting stops
         # If run = 0 doesn't fit
+        self.lastrun = run
+        self.lastnchan = nchan
+        self.lastseed = seed
+        self.lastn_trajec = n_trajec
         self.datagen.fill(nchan, seed, n_trajec)
         cvodewrap.fs.panel()
         printSomeInfo()
@@ -189,7 +193,43 @@ class TestCR(object):
 
 class saveTCR(object):
     def __init__(self,tcr):
-        self.APFpValue = tcr.APFpValue
+        self.run = tcr.lastrun
+        self.nchan = tcr.lastnchan
+        self.seed = tcr.lastseed
+        self.n_trajec = tcr.lastn_trajec
+        if run > 0:
+            # Nuisance Fit At True
+            self.preTrueParm = numpy.matrix(tcr.preTrueParm)
+            self.preTruef = tcr.preTruef
+            self.postTrueParm = numpy.matrix(tcr.postTrueParm)
+            self.postTruef = tcr.postTruef
+            self.otle = numpy.matrix(tcr.otle)
+            self.otml = tcr.otml
+        if run > 1:
+            # Square Norm Fit
+            self.preSNFParm = numpy.matrix(tcr.preSNFParm)
+            self.preSNFf = tcr.preSNFf
+            self.postSNFParm = numpy.matrix(tcr.postSNFParm)
+            self.postSNFf = tcr.postSNFf
+        if run > 2:
+            # Main Parm Fit:
+            global MPF
+            if MPF:
+                self.preMPFParm = numpy.matrix(tcr.preMPFParm)
+                self.preMPFf = tcr.preMPFf
+                self.postMPFParm = numpy.matrix(tcr.postMPFParm)
+                self.postMPFf = tcr.postMPFf
+                self.MPFpValue = tcr.MPFpValue
+        if run > 3:
+            # All Parm Fit
+            self.preAPFParm = numpy.matrix(tcr.preAPFParm)
+            self.preAPFf = tcr.preAPFf
+            self.postAPFParm = numpy.matrix(tcr.postAPFParm)
+            self.postAPFf = tcr.postAPFf
+            self.APFpValue = tcr.APFpValue
+            self.pValue = tcr.APFpValue
+            self.mle = numpy.matrix(tcr.mle)
+            self.ml = tcr.ml
 
 class TestRao(TestCR):
     def __init__(self,n,seed,modelses,datagenhoc):
