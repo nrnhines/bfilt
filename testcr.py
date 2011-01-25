@@ -80,6 +80,7 @@ class TestCR(object):
         self.usingArgs(True, False)
         self.N.setParmVal(self.trueParm)
         self.addNuisanceParm("nb.Eve.Sto.scale")
+        cvodewrap.fs.panel()
 
     def get_pValue(self, old, new, size):
         CS = 2.0*(old - new)
@@ -94,7 +95,6 @@ class TestCR(object):
         self.lastseed = seed
         self.lastn_trajec = n_trajec
         self.datagen.fill(nchan, seed, n_trajec)
-        cvodewrap.fs.panel()
         printSomeInfo()
         # self.tl = self.N.likelihood()
         # print self.tl
