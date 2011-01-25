@@ -26,6 +26,7 @@ class MTR(object):
             self.output.append([])
             for nr in range(self.nruns):
                 seed +=1
+                print nt, 'Trajectories AND', nr, 'Runs'
                 tcr.datagen.fill(self.nchannels,seed+self.seed_offset,nt)
                 tcr.generator.fitnesslist.o(0).npoints(self.npoints)
                 tcr.mrf.opt.set_optimizer("BFGSWrap")
