@@ -82,8 +82,8 @@ class TestCR(object):
         self.addNuisanceParm("nb.Eve.Sto.scale")
         cvodewrap.fs.panel()
 
-    def get_pValue(self, old, new, size):
-        CS = 2.0*(old - new)
+    def get_pValue(self, minusPointLogLike, minusMaxLogLike, size):
+        CS = 2.0*(minusPointLogLike - minusMaxLogLike)
         pValue = stats.chisqprob(CS, size)
         return pValue
 
