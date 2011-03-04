@@ -94,6 +94,11 @@ class cexperiment(object):
         self.sig=sig
         self.covers = []
         self.cutoff = []
+        self.newcovers = []
+        self.oldcovers = []
+        for i in range(nruns):
+            self.N0 = nexperiment(seed0=(2+i)*nruns*10000,nruns=self.reps,nsamp=[self.nsamp],mu=self.mu,sig=self.sig)
+            self.oldcovers.append(self.N0.newcovers(0.05)[0])
         for i in range(nruns):
             s = seed0+i
             self.N.reseed(s)
@@ -101,6 +106,7 @@ class cexperiment(object):
             self.covers.append(self.NE.covers[0])
             self.NE.pvs[0].sort()
             self.cutoff.append(self.NE.pvs[0][reps/20])
+            self.newcovers.append(self.N0.newcovers(self.cutoff[-1])[0])
 
 class nexperiment(object):
     def __init__(self, seed0=0, nruns=100, nsamp=[4,8,16,32,64,128,256,512], mu=0, sig=1):
@@ -133,7 +139,7 @@ class nexperiment(object):
         for pv in self.pvs:
             c = 0
             for p in pv:
-                if p>self.alpha:
+                if p>alpha:
                     c += 1
             covers.append(c)
         return covers
