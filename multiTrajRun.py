@@ -10,7 +10,7 @@ def readmtr(filename):
 class MTR(object):
     def __init__(self, seed_offset=0):
         self.seed_offset = seed_offset
-        self.nruns = 100
+        self.nruns = 3
         self.ntrajlist = [1,4,16]
         self.nchannels = 50
         self.npoints = 21

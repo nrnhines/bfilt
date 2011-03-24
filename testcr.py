@@ -15,6 +15,7 @@ import fitglobals
 import repro
 
 MPF = True
+extraGH = True
 
 def first(modelses):
     h.load_file(modelses)
@@ -102,16 +103,23 @@ class TestCR(object):
             return
 
         # Nuisance Fit At True
+        global extraGH
         self.usingArgs(False, True)
         h.attr_praxis(seed)
         #print 'SIZE =', self.N.getParm().size()
         self.preTrueParm = self.N.getParmVal()
         self.preTruef = self.ef()
+        if extraGH:
+            self.preTrueGrad = numpy.matrix(self.Gradient())
+            self.preTrueHess = numpy.matrix(self.Hessian())
         self.mrf.efun()
         self.postTrueParm = self.N.getParmVal()
         self.postTruef = self.ef()
         self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
+        if extraGH:
+            self.TrueGrad = numpy.matrix(self.Gradient())
+            self.TrueHess = numpy.matrix(self.Hessian())
         if run == 1:
           return
 
@@ -146,12 +154,18 @@ class TestCR(object):
         h.attr_praxis(seed)
         self.preAPFParm = self.N.getParmVal()
         self.preAPFf = self.ef()
+        if extraGH:
+            self.preAPFGrad = numpy.matrix(self.Gradient())
+            self.preAPFHess = numpy.matrix(self.Hessian())
         self.mrf.efun()
         self.postAPFParm = self.N.getParmVal()
         self.postAPFf = self.ef()
         self.APFpValue = self.get_pValue(self.postTruef, self.postAPFf, self.trueParm.size())
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
+        if extraGH:
+            self.APFGrad = numpy.matrix(self.Gradient())
+            self.APFHess = numpy.matrix(self.Hessian())
         if run == 4:
           return
 
@@ -188,11 +202,25 @@ class TestCR(object):
         # Evaluate Hessian and return
         return numpy.matrix(HessFun(parmList))
 
+    def Gradient(self):
+        # Read current values of parameters (hopefully MLEs)
+        parm = self.N.getParm()
+        parmList = []
+        for i in range(int(parm.size())):
+            parmList.append(parm[i])
+        # Create (likelihood) inline function
+        LamFun = lambda p: self.evalFun(p)
+        # Create Hessian (of likelihood) inline function
+        GradFun = nd.Gradient(LamFun)
+        # Evaluate Hessian and return
+        return numpy.matrix(GradFun(parmList))
+
     def save(self):
         return saveTCR(self)
 
 class saveTCR(object):
     def __init__(self,tcr):
+        global extraGH
         self.run = tcr.lastrun
         self.nchan = tcr.lastnchan
         self.seed = tcr.lastseed
@@ -205,6 +233,11 @@ class saveTCR(object):
             self.postTruef = tcr.postTruef
             self.otle = numpy.matrix(tcr.otle)
             self.otml = tcr.otml
+            if extraGH:
+                self.preTrueGrad = tcr.preTrueGrad
+                self.preTrueHess = tcr.preTrueHess
+                self.TrueGrad = tcr.TrueGrad
+                self.TrueHess = tcr.TrueHess
         if run > 1:
             # Square Norm Fit
             self.preSNFParm = numpy.matrix(tcr.preSNFParm)
@@ -230,6 +263,11 @@ class saveTCR(object):
             self.pValue = tcr.APFpValue
             self.mle = numpy.matrix(tcr.mle)
             self.ml = tcr.ml
+            if extraGH:
+                self.preAPFGrad = tcr.preAPFGrad
+                self.preAPFHess = tcr.preAPFHess
+                self.APFGrad = tcr.APFGrad
+                self.APFHess = tcr.APFHess
 
 class TestRao(TestCR):
     def __init__(self,n,seed,modelses,datagenhoc):
@@ -348,6 +386,7 @@ def run(nruns=1,nchannels=50,modelses="ch3_101p.ses",datagenhoc="ch3ssdatagen.ho
     return TCRs
 
 def mk_tcr(modelses="ch3_101p.ses", datagen=None):
+    cvodewrap.fs.use_fixed_step = 1.0
     h.load_file(modelses)
     mrf = MulRunFitHandle()
     fitfun = mrf.p.pf.generatorlist.o(0).gen.fitnesslist.o(0)
