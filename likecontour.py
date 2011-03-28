@@ -49,14 +49,14 @@ def evalpoint(x,y,nu=None, tcr=None, efun=likeslice):
     N.setParmVal(saveParm)
     return z
 
-def eval2D(xx,yy,nu=None, tcr=None, efun=likeslice):
+def eval2D(xx,yy,nu=None, tcr=None, efun=likeslice, onemain=False):
     if tcr == None:
         assert False
         N = handle()
     else:
         N = tcr.N
     saveParm = N.getParmVal()
-    if not nu == None:
+    if not nu == None and not onemain:
         v = N.getParmVal()
         v.x[2] = nu
         N.setParmVal(v)
@@ -69,8 +69,8 @@ def eval2D(xx,yy,nu=None, tcr=None, efun=likeslice):
     N.setParmVal(saveParm)
     return zz
 
-def save2D(fname,xx,yy,nu=None,tcr=None,efun=confslice):
-    zz = eval2D(xx,yy,nu,tcr,efun)
+def save2D(fname,xx,yy,nu=None,tcr=None,efun=confslice,onemain=False):
+    zz = eval2D(xx,yy,nu,tcr,efun,onemain)
     f = open(fname+"_x.txt","w")
     for x in xx:
         f.write(str(x)+' ')
@@ -84,4 +84,3 @@ def save2D(fname,xx,yy,nu=None,tcr=None,efun=confslice):
         for z in zr:
             f.write(str(z)+' ')
     f.close()
-
