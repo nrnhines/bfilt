@@ -85,7 +85,6 @@ class normtcr(object):
 
 class cexperiment(object):
     def __init__(self, seed0=0, nruns=10, reps=1000, nsamp=4, mu=0, sig=1):
-        self.N = normtcr(seed=seed0,nsamp=nsamp,mu=mu,sig=sig)
         self.seed0=seed0
         self.nruns=nruns
         self.reps = reps
@@ -97,12 +96,10 @@ class cexperiment(object):
         self.newcovers = []
         self.oldcovers = []
         for i in range(nruns):
-            self.N0 = nexperiment(seed0=(2+i)*nruns*10000,nruns=self.reps,nsamp=[self.nsamp],mu=self.mu,sig=self.sig)
+            self.N = normtcr(seed=3*i*nruns*self.reps,nsamp=nsamp,mu=mu,sig=sig)
+            self.N0 = nexperiment(seed0=i*self.reps,nruns=self.reps,nsamp=[self.nsamp],mu=self.mu,sig=self.sig)
             self.oldcovers.append(self.N0.newcovers(0.05)[0])
-        for i in range(nruns):
-            s = seed0+i
-            self.N.reseed(s)
-            self.NE = nexperiment(seed0=s*10000,nruns=self.reps,nsamp=[self.nsamp],mu=self.N.mle[0],sig=self.N.mle[1])
+            self.NE = nexperiment(seed0=(i+nruns)*self.reps,nruns=self.reps,nsamp=[self.nsamp],mu=self.N.mle[0],sig=self.N.mle[1])
             self.covers.append(self.NE.covers[0])
             self.NE.pvs[0].sort()
             self.cutoff.append(self.NE.pvs[0][reps/20])
