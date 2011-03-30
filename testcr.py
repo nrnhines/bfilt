@@ -112,7 +112,9 @@ class TestCR(object):
         if extraGH:
             self.preTrueGrad = numpy.matrix(self.Gradient())
             self.preTrueHess = numpy.matrix(self.Hessian())
+        print "USE 0", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
+        print "USE 1", cvodewrap.fs.use_fixed_step
         self.postTrueParm = self.N.getParmVal()
         self.postTruef = self.ef()
         self.otle = self.N.getParmVal()
@@ -157,7 +159,9 @@ class TestCR(object):
         if extraGH:
             self.preAPFGrad = numpy.matrix(self.Gradient())
             self.preAPFHess = numpy.matrix(self.Hessian())
+        print "USE 2", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
+        print "USE 3", cvodewrap.fs.use_fixed_step
         self.postAPFParm = self.N.getParmVal()
         self.postAPFf = self.ef()
         self.APFpValue = self.get_pValue(self.postTruef, self.postAPFf, self.trueParm.size())
