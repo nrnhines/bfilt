@@ -1,5 +1,6 @@
 from neuron import h
 import testcr
+import cvodewrap
 
 def handle():
     return testcr.NrnBFiltHandle(testcr.MulRunFitHandle())
@@ -61,12 +62,14 @@ def eval2D(xx,yy,nu=None, tcr=None, efun=likeslice, onemain=False):
         v.x[2] = nu
         N.setParmVal(v)
     zz = []
+    print "USE 0:", cvodewrap.fs.use_fixed_step
     for x in xx:
         zz.append([])
         for y in yy:
             zz[-1].append(efun(x,y,tcr))
             print 'x', x, 'y', y, 'z', zz[-1][-1]
     N.setParmVal(saveParm)
+    print "USE 1:", cvodewrap.fs.use_fixed_step
     return zz
 
 def save2D(fname,xx,yy,nu=None,tcr=None,efun=confslice,onemain=False):
