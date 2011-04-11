@@ -11,7 +11,7 @@ class MTR(object):
     def __init__(self, seed_offset=0):
         self.seed_offset = seed_offset
         self.nruns = 3
-        self.ntrajlist = [1,4,16]
+        self.ntrajlist = [1,4]
         self.nchannels = 50
         self.npoints = 21
         self.output = None
@@ -29,7 +29,8 @@ class MTR(object):
                 print nt, 'Trajectories AND', nr, 'Runs'
                 tcr.datagen.fill(self.nchannels,seed+self.seed_offset,nt)
                 tcr.generator.fitnesslist.o(0).npoints(self.npoints)
-                tcr.mrf.opt.set_optimizer("BFGSWrap")
+                # tcr.mrf.opt.set_optimizer("BFGSWrap")
+                print  "NUM TRAJ:", len(tcr.N.rf.fitnesslist.o(0).ydat_)
                 tcr.compute(self.nchannels,seed+self.seed_offset, nt, run=4)
                 self.output[-1].append(tcr.save())
 
