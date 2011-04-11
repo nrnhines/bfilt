@@ -135,7 +135,7 @@ class NrnBFilt(object):
             for data in self.Data:
                 x1 = EKF.ekf(data, self.Eve, self.Sys, DLikeDt_hvec = self.dlikedt)
                 #print x1
-                x = x1
+                x += x1
             x = float(x)
             #self.xlvec.append(self.getParm().x[0])
             #self.ylvec.append(x)
@@ -223,7 +223,7 @@ class NrnBFilt(object):
         i = 0
         for o in self.pf.parmlist:
             if o.doarg > 0:
-                o.val = hvec.x[i] 
+                o.val = hvec.x[i]
                 i += 1
                 o.play_one()
 
