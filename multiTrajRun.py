@@ -16,7 +16,7 @@ class MTR(object):
         self.npoints = 21
         self.output = None
 
-    def run(self):
+    def run(self,fname="saveMTR"):
         if not self.output == None:
             return
         tcr = testcr.mk_tcr()
@@ -33,6 +33,7 @@ class MTR(object):
                 print  "NUM TRAJ:", len(tcr.N.rf.fitnesslist.o(0).ydat_)
                 tcr.compute(self.nchannels,seed+self.seed_offset, nt, run=4)
                 self.output[-1].append(tcr.save())
+                self.save(fname)
 
     def save(self,filename):
         f = open(filename,'w')
