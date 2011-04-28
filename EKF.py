@@ -152,7 +152,6 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     m0 = copy.deepcopy(m)
     # print "vvvvvvvvvvvvvvvvvvvvvv"
     # print 'm0', m
-    # print "m_update", m
     # print "any", QP.anyConstraints
     if QP.anyConstraints:
         #print "P before copy", P
@@ -504,7 +503,7 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
             DLikeDt_hvec.append(mll*0.5)
         smll += mll
         k += 1
-    # assert(k<5)
+        # assert(k<5)
     #global likesParm, likesLike
     #if h.List("PythonObject").o(0).getParm().size() == 1.0:
     #   likesParm.append(h.List("PythonObject").o(0).getParm()[0])
