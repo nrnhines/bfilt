@@ -354,6 +354,9 @@ class NrnBFilt(object):
         pn = self.processNoise
         sd = self.Sdiag
         g = self.g
+        geq0 = self.geq0
+        leq1 = self.leq1
+        sumto1 = self.sumto1
 
         self.__init__(self.rf)
 
@@ -363,6 +366,9 @@ class NrnBFilt(object):
         self.hhB = hhB
         self.nNa = nNa
         self.nK = nK
+        self.geq0 = geq0
+        self.leq1 = leq1
+        self.sumto1 = sumto1
         self.Eve.Sto.hhB = hhB
         self.Eve.Sto.nNa = nNa
         self.Eve.Sto.nK = nK
@@ -379,6 +385,7 @@ class NrnBFilt(object):
         self.Initial_changed()
         self.inj_invl_changed()
         self.g = g
+        EKF.constraintsOn(self.geq0,self.leq1,self.sumto1)
 
     def show_state_funnels(self):
         t = self.Etime()

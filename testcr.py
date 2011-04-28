@@ -101,14 +101,16 @@ class TestCR(object):
         # print self.tl
         if run == 0:
             return
-
         # Nuisance Fit At True
         global extraGH
         self.usingArgs(False, True)
         h.attr_praxis(seed)
+        #  passes here assert(False)
         #print 'SIZE =', self.N.getParm().size()
         self.preTrueParm = self.N.getParmVal()
+        # passes here assert(False)
         self.preTruef = self.ef()
+        # fails here:  assert(False)
         if extraGH:
             self.preTrueGrad = numpy.matrix(self.Gradient())
             self.preTrueHess = numpy.matrix(self.Hessian())
@@ -189,7 +191,11 @@ class TestCR(object):
         for i in range(len(p)):
             newParm.x[i] = p[i]
         self.N.setParm(newParm)
-        L = self.N.likelihood()
+        try:
+            L = self.N.likelihood()
+        except:
+            print "Likelihood calculation failed for computing gradient/hessian"
+            L = numpy.NaN
         self.N.setParm(saveParm)
         return L
 

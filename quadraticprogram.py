@@ -16,7 +16,9 @@ class QuadraticProgram(object):
 
     def setGUIConstraints(self,geq0,leq1,sumto1):
         dim = len(geq0)
+        #print "dim", dim
         nsums = len(sumto1)
+        #print "nsums", nsums
         assert(dim == len(leq1))
         for j in range(nsums):
             assert(dim == len(sumto1[j]))
@@ -33,6 +35,9 @@ class QuadraticProgram(object):
             for j in range(nsums):
                 if sumto1[j][i].x:
                     sumto1list[j].append(i)
+        #print "geq0list", geq0list
+        #print "leq1list", leq1list
+        #print "sumto1list", sumto1list
         self.geq = (len(geq0list) > 0)
         self.leq = (len(leq1list) > 0)
         self.ineq = self.leq | self.geq

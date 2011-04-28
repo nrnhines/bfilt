@@ -6,6 +6,7 @@ import HHBounds
 import svd
 import quadraticprogram
 import copy
+import numpy.linalg
 from neuron import h
 
 #likesParm = []
@@ -56,6 +57,10 @@ def saveData(Obs,time,m,P):
         H = Obs.Dstate([time], m, ObsNum)
         V = Obs.Dnoise([time], m, ObsNum)
         S = H*P*H.T + V*V.T
+        # print 'saveData P', P
+        # print 'saveData H', H
+        # print 'saveData V', V
+        # print "saveData S", S
         global Etime, Ecenter, Ewidth, Scenter, Swidth, Ps, ms
         Etime.append(time)
         for iObs in range(Obs.D):
@@ -142,11 +147,45 @@ def update(Obs,data,time,ObsNum,mb,Pb,bounds):
     e = data - hh
     K = Pb*H.T*S.I
     P = Pb - K*S*K.T
+    P = 0.5*(P+P.T)
     m = mb + K*e
+    m0 = copy.deepcopy(m)
+    # print "vvvvvvvvvvvvvvvvvvvvvv"
+    # print 'm0', m
+    # print "m_update", m
+    # print "any", QP.anyConstraints
     if QP.anyConstraints:
-        PI = P.I
+        #print "P before copy", P
+        perturb = copy.deepcopy(P)
+        perturb[0,0] = 1 # WARNING THIS STATEMENT NOT GENERAL
+        #print "pertrub", perturb
+        # m(0) is clamped voltage, perturb P to make invertible
+        PI = perturb.I
+        #print "PI", PI
+        #assert(False)
         QP.setObjective(PI,-PI*m)
         m = QP.solve()
+        m[0] = m0[0] #WARNING THIS STATEMENT NOT GENERAL
+        # print "m1", m
+        # p2 = copy.deepcopy(P)
+        # p2[0][0] = 1e-16
+        # PI2 = p2.I
+        # QP.setObjective(PI2,-PI2*m0)
+        # try:
+        #     m16 = QP.solve()
+        #     print "m16", m16
+        # except:
+        #    print "Failed"
+        #print "^^^^^^^^^^^^^^^^^^^^^^"
+        #prune = P[1:,1:]
+        #m0 = m[0]
+        #mprune = m[1:,:]
+        #PI = prune.I
+        #QP.setObjective(PI,-PI*mprune)
+        #mnew = QP.solve()
+        #m = numpy.vstack((m0,mnew))
+    #print "new_m", m
+    #print "update P", P
     saveData(Obs,time,m,P)  # Saves error bars
     return (m,P,e,S)
 
@@ -440,10 +479,12 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
     bounds = HHBounds.bounds # model.stateBoundaries
     ObsNum = Eve.ObsNum
     (m0, P0) = initialStateCov(Eve.Sto,Sys)
+    # print "P0", numpy.linalg.eig(P0)[0]
 
     # Main loop
     if collectionTimes[0] == 0.0:
         (m,P,e,S) = update(Eve.Obs,data[0],collectionTimes[0],ObsNum[0],m0,P0,bounds)
+        # print "P", numpy.linalg.eig(P)[0]
         mll = minusTwiceLogGaussianPDF(e,S)
         if DLikeDt_hvec != None:
             DLikeDt_hvec.append(mll*0.5)
@@ -454,12 +495,16 @@ def ekf(data, Eve, Sys, DLikeDt_hvec = None):
         k = 0
     while(k<len(data)):
         (mb,Pb,time) = predict(Eve,Sys,m,P,time,collectionTimes[k],injectionTimes[k])
+        #print 'Pb', numpy.linalg.eig(Pb)[0]
         (m,P,e,S) = update(Eve.Obs,data[k],collectionTimes[k],ObsNum[k],mb,Pb,bounds)
+        # print "S", S,
+        # print 'P', numpy.linalg.eig(P)[0]
         mll = minusTwiceLogGaussianPDF(e,S)
         if DLikeDt_hvec != None:
             DLikeDt_hvec.append(mll*0.5)
         smll += mll
         k += 1
+    # assert(k<5)
     #global likesParm, likesLike
     #if h.List("PythonObject").o(0).getParm().size() == 1.0:
     #   likesParm.append(h.List("PythonObject").o(0).getParm()[0])
