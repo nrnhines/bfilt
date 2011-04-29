@@ -26,7 +26,7 @@ class MTR(object):
             self.output.append([])
             for nr in range(self.nruns):
                 seed +=1
-                print nt, 'Trajectories AND', nr, 'Runs'
+                print nt, 'Trajectories AND', nr, 'Runs with Seed', seed+self.seed_offset
                 tcr.datagen.fill(self.nchannels,seed+self.seed_offset,nt)
                 tcr.generator.fitnesslist.o(0).npoints(self.npoints)
                 tcr.mrf.opt.set_optimizer("BFGSWrap")
@@ -40,3 +40,14 @@ class MTR(object):
         pickle.dump(self,f)
         f.close()
 
+    def covers(self):
+        i = 0
+        for traj in self.output:
+            ntotal = 0
+            ncovers = 0
+            for case in traj:
+                ntotal += 1
+                if case.pValue < 0.05:
+                    ncovers +=1
+            print self.ntrajlist[i], "Trajectories", ncovers, "covers out of", ntotal
+            i += 1
