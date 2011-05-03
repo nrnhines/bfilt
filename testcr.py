@@ -15,7 +15,10 @@ import fitglobals
 import repro
 
 MPF = True
-extraGH = True
+preG = False
+preH = False
+postG = True
+postH = False
 
 def first(modelses):
     h.load_file(modelses)
@@ -102,7 +105,7 @@ class TestCR(object):
         if run == 0:
             return
         # Nuisance Fit At True
-        global extraGH
+        global preG, preH, postG, postH 
         self.usingArgs(False, True)
         h.attr_praxis(seed)
         #  passes here assert(False)
@@ -111,8 +114,9 @@ class TestCR(object):
         # passes here assert(False)
         self.preTruef = self.ef()
         # fails here:  assert(False)
-        if extraGH:
+        if preG:
             self.preTrueGrad = numpy.matrix(self.Gradient())
+	if preH:
             self.preTrueHess = numpy.matrix(self.Hessian())
         print "USE 0", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
@@ -121,8 +125,9 @@ class TestCR(object):
         self.postTruef = self.ef()
         self.otle = self.N.getParmVal()
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
-        if extraGH:
+        if postG:
             self.TrueGrad = numpy.matrix(self.Gradient())
+	if postH:
             self.TrueHess = numpy.matrix(self.Hessian())
         if run == 1:
           return
@@ -158,8 +163,9 @@ class TestCR(object):
         h.attr_praxis(seed)
         self.preAPFParm = self.N.getParmVal()
         self.preAPFf = self.ef()
-        if extraGH:
+        if preG:
             self.preAPFGrad = numpy.matrix(self.Gradient())
+	if preH:
             self.preAPFHess = numpy.matrix(self.Hessian())
         print "USE 2", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
@@ -169,8 +175,9 @@ class TestCR(object):
         self.APFpValue = self.get_pValue(self.postTruef, self.postAPFf, self.trueParm.size())
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
-        if extraGH:
+        if postG: 
             self.APFGrad = numpy.matrix(self.Gradient())
+	if postH:
             self.APFHess = numpy.matrix(self.Hessian())
         if run == 4:
           return
@@ -230,7 +237,7 @@ class TestCR(object):
 
 class saveTCR(object):
     def __init__(self,tcr):
-        global extraGH
+        global preG, preH, postG, postH
         self.run = tcr.lastrun
         self.nchan = tcr.lastnchan
         self.seed = tcr.lastseed
@@ -243,10 +250,13 @@ class saveTCR(object):
             self.postTruef = tcr.postTruef
             self.otle = numpy.matrix(tcr.otle)
             self.otml = tcr.otml
-            if extraGH:
+            if preG:
                 self.preTrueGrad = tcr.preTrueGrad
+            if preH:
                 self.preTrueHess = tcr.preTrueHess
+            if postG:
                 self.TrueGrad = tcr.TrueGrad
+            if postH:
                 self.TrueHess = tcr.TrueHess
         if run > 1:
             # Square Norm Fit
@@ -273,10 +283,13 @@ class saveTCR(object):
             self.pValue = tcr.APFpValue
             self.mle = numpy.matrix(tcr.mle)
             self.ml = tcr.ml
-            if extraGH:
+            if preG:
                 self.preAPFGrad = tcr.preAPFGrad
+            if preH:
                 self.preAPFHess = tcr.preAPFHess
+            if postG:
                 self.APFGrad = tcr.APFGrad
+            if postH:
                 self.APFHess = tcr.APFHess
 
 class TestRao(TestCR):
