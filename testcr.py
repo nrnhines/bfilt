@@ -105,7 +105,7 @@ class TestCR(object):
         if run == 0:
             return
         # Nuisance Fit At True
-        global preG, preH, postG, postH 
+        global preG, preH, postG, postH
         self.usingArgs(False, True)
         h.attr_praxis(seed)
         #  passes here assert(False)
@@ -116,7 +116,7 @@ class TestCR(object):
         # fails here:  assert(False)
         if preG:
             self.preTrueGrad = numpy.matrix(self.Gradient())
-	if preH:
+        if preH:
             self.preTrueHess = numpy.matrix(self.Hessian())
         print "USE 0", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
@@ -127,7 +127,7 @@ class TestCR(object):
         self.otml = self.N.likelihood()  #optimized true maximum likelihood
         if postG:
             self.TrueGrad = numpy.matrix(self.Gradient())
-	if postH:
+        if postH:
             self.TrueHess = numpy.matrix(self.Hessian())
         if run == 1:
           return
@@ -165,7 +165,7 @@ class TestCR(object):
         self.preAPFf = self.ef()
         if preG:
             self.preAPFGrad = numpy.matrix(self.Gradient())
-	if preH:
+        if preH:
             self.preAPFHess = numpy.matrix(self.Hessian())
         print "USE 2", cvodewrap.fs.use_fixed_step
         self.mrf.efun()
@@ -175,9 +175,9 @@ class TestCR(object):
         self.APFpValue = self.get_pValue(self.postTruef, self.postAPFf, self.trueParm.size())
         self.mle = self.N.getParmVal()
         self.ml = self.N.likelihood()
-        if postG: 
+        if postG:
             self.APFGrad = numpy.matrix(self.Gradient())
-	if postH:
+        if postH:
             self.APFHess = numpy.matrix(self.Hessian())
         if run == 4:
           return
