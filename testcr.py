@@ -49,9 +49,9 @@ class TestCR(object):
         self.nuisanceParms = []
         self.nNuisance = 0
 
-    def addNuisanceParm(self, parmName):
+    def addNuisanceParm(self, parmName, guess=1):
         foo = h.RunFitParm(parmName)
-        foo.set(parmName,1,1e-9,1e9,1,1)
+        foo.set(parmName,guess,1e-9,1e9,1,1)
         self.parmlist.append(foo)
 
     def usingArgs(self, fit_the_real_parms=True, fit_the_nuisance_parms=False):
@@ -83,7 +83,11 @@ class TestCR(object):
         self.generator = self.mrf.p.pf.generatorlist.o(0).gen
         self.usingArgs(True, False)
         self.N.setParmVal(self.trueParm)
-        self.addNuisanceParm("nb.Eve.Sto.scale")
+        nuisguess = 14 #THIS NEEDS TO BE TWEAKED
+        self.addNuisanceParm("nb.Eve.Sto.scale",nuisguess)
+        self.usingArgs(True, True)
+        self.guess = self.N.getParmVal()
+        self.usingArgs(True,False)
         cvodewrap.fs.panel()
 
     def get_pValue(self, minusPointLogLike, minusMaxLogLike, size):
@@ -104,6 +108,9 @@ class TestCR(object):
         # print self.tl
         if run == 0:
             return
+        # Initial Guess
+        self.usingArgs(True,True)
+        self.N.setParmVal(self.guess)
         # Nuisance Fit At True
         global preG, preH, postG, postH
         self.usingArgs(False, True)
@@ -188,6 +195,7 @@ class TestCR(object):
         for sl in svdList:
             sl_positive = max(sl,1e-14)
             self.precision += math.log(sl_positive)
+        # THESE STATEMENTS INTENDED to always run but don't
         self.N.setParm(self.saveParm)
         self.likefailed = self.N.likefailed
         self.N.likefailed = False
