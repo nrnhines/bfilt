@@ -20,7 +20,7 @@ def ch3Qv(V, tau01, tau12):
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
     return Q
 
-def ch3hmm(V0, V1, tau01, tau12):
+def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4):
     Q0 = ch3Qv(V0, tau01, tau12)
     pstates = equilibrium(Q0)
     output = [0.0, 0.0, 1.0]
