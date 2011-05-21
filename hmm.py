@@ -20,12 +20,12 @@ def ch3Qv(V, tau01, tau12):
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
     return Q
 
-def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4):
+def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4,sigma=0.001):
     Q0 = ch3Qv(V0, tau01, tau12)
     pstates = equilibrium(Q0)
     output = [0.0, 0.0, 1.0]
     Q = ch3Qv(V1, tau01, tau12)
-    H = HMM(pstates,output,Q)
+    H = HMM(pstates,output,Q,sigma)
     return H
 
 def equilibrium(Q):
@@ -62,7 +62,7 @@ def equilibrium(Q):
     return pstates
 
 class HMM(object):
-    def __init__(self, pstates, output, Q):
+    def __init__(self, pstates, output, Q, sigma=0.001):
         self.simmed = False
         self.liked = False
         self.nstates = len(pstates)
@@ -72,11 +72,12 @@ class HMM(object):
         self.output = output
         self.dt = None
         self.skip = None
-        self.sigma = None
+        self.sigma = sigma #std of measurement error
         self.simStates = None
         self.simOut = None
         self.nsamples = None
-        self.Data = None
+        self.simData = None
+        self.fitData = None
         self.center = None
         self.width = None
         self.R = random.Random()
@@ -96,11 +97,10 @@ class HMM(object):
                 return i
         assert False
 
-    def sim(self, seed, dt, tstop, sigma):
+    def sim(self, seed=0, dt=0.1, tstop=20):
         self.seed = seed
         self.dt = dt
         self.tstop = tstop
-        self.sigma = sigma
         self.trans = scipy.linalg.expm(dt*self.Q)
         tol = 1e-7
         for i in range(self.nstates):
@@ -121,10 +121,10 @@ class HMM(object):
         for s in self.simStates:
             self.simOut.append(self.output[s])
         # print 'Output with out noise:', self.simOut
-        self.Data = []
+        self.simData = []
         for o in self.simOut:
-            self.Data.append(o + self.R.normalvariate(0,self.sigma))
-        # print 'Data:', self.Data
+            self.simData.append(o + self.R.normalvariate(0,self.sigma))
+        # print 'simData:', self.simData
         self.simmed = True
 
     def normpdf(self,x,m,sigma):
@@ -170,29 +170,27 @@ class HMM(object):
         # print 'posterior', posterior
         return (posterior, marg)
 
-    def likelihood(self, skip):
+    def likelihood(self, fitData, skip):
+        self.fitData = fitData
         self.skip = skip
         self.transfit = scipy.linalg.expm(self.dt*self.skip*self.Q)
         self.initializeErrorBars()
         pmf = self.init
         sll = 0
-        for i in range(self.skip,len(self.Data),self.skip):
-            # print i, i*self.dt #, self.Data[i]
+        for i in range(self.skip,len(self.fitData),self.skip):
+            # print i, i*self.dt #, self.fitData[i]
             pre = self.predict(pmf)
-            (pmf, lk) = self.update(self.Data[i], pre)
+            (pmf, lk) = self.update(self.fitData[i], pre)
             sll += math.log(lk)
         self.liked = True
         return sll
 
     def plot(self):
-        if not self.simmed:
-            return
+        assert(self.liked)
         x = numpy.arange(0,self.dt*self.nsamples,self.dt)
-        y = numpy.array(self.Data)
+        y = numpy.array(self.fitData)
         pylab.hold(False)
         pylab.plot(x,y)
-        if not self.liked:
-            return
         xf = self.time
         yfh = []
         yfl = []
