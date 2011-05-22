@@ -4,6 +4,12 @@ import numpy
 import numpy.matlib
 import hmm
 
+def ch3Ensemble(tau01=2.,tau12=4.,nchannels=5):
+    H = hmm.ch3hmm(tau01=tau01,tau12=tau12)
+    E = Ensemble(nchannels,H.pstates,H.output,H.Q)
+    M = hmm.HMM(E.pstates,E.output,E.Q)
+    return M
+
 def initialCov(smallQ, n):
     pstates = hmm.equilibrium(smallQ)
     iCov = (1/math.sqrt(n))*(numpy.matlib.diag(pstates) - numpy.matrix(pstates).T*numpy.matrix(pstates)) # pstates a row vector

@@ -13,14 +13,15 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
 def ch3Qv(V, tau01, tau12):
     inf01 = 1./(1. + math.exp(1.*(-20. - V)))
     inf12 = 1./(1. + math.exp(1.*(-25. - V)))
-    alpha01 = tau01*inf01
-    beta01 = tau01-alpha01
-    alpha12 = tau12*inf12
-    beta12 = tau12-alpha12
+    alpha01 = inf01/tau01
+    beta01 = alpha01-(1./tau01)
+    alpha12 = inf12/tau12
+    beta12 = alpha12-(1./tau12)
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
+    print Q
     return Q
 
-def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4,sigma=0.001):
+def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4, sigma=0.001):
     Q0 = ch3Qv(V0, tau01, tau12)
     pstates = equilibrium(Q0)
     output = [0.0, 0.0, 1.0]
@@ -30,6 +31,11 @@ def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4,sigma=0.001):
 
 def equilibrium(Q):
     (V,D) = numpy.linalg.eig(Q.T)
+    print 'Q.T',Q.T
+    print 'V', V
+    print 'D', D
+    print 'd', D[:,0]
+    print 'Q.T*d', Q.T*D[:,0]
     # Find index of eigenvalue 0
     m = 1.0
     for i in range(V.shape[0]):
@@ -52,11 +58,18 @@ def equilibrium(Q):
     normalization = sum(pstates)
     for i in range(V.shape[0]):
         pstates[i] = pstates[i]/normalization
+    tol1 = 1e-12
     tol = 1e-6
     print 'pstates', pstates
+    print 'Q0', Q
+    print 'pstates*exp(Q)', pstates*scipy.linalg.expm(Q)
     for i in range(len(pstates)):
-        assert(pstates[i] >= 0.0)
-        assert(pstates[i] <= 1.0)
+        assert(pstates[i] >= -tol1)
+        assert(pstates[i] <= 1.0+tol1)
+        if pstates[i] < 0:
+            pstates[i] = 0
+        if pstates[i] > 1:
+            pstates[i] = 1
     assert(sum(pstates)<1.0+tol)
     assert(sum(pstates)>1.0-tol)
     return pstates
@@ -98,15 +111,15 @@ class HMM(object):
         assert False
 
     def sim(self, seed=0, dt=0.1, tstop=20):
-        self.seed = seed
-        self.dt = dt
-        self.tstop = tstop
-        self.trans = scipy.linalg.expm(dt*self.Q)
+        self.simseed = seed
+        self.simdt = dt
+        self.simtstop = tstop
+        self.simtrans = scipy.linalg.expm(dt*self.Q)
         tol = 1e-7
         for i in range(self.nstates):
             rowsum = 0
             for j in range(self.nstates):
-                rowsum += self.trans[i,j]
+                rowsum += self.simtrans[i,j]
             assert math.fabs(rowsum - 1.0) < tol
         assert(tstop>0.0)
         print "Checks out..."
@@ -115,16 +128,21 @@ class HMM(object):
         self.simStates = []
         self.simStates.append(self.select(self.init,0))
         for i in range(self.nsamples-1):
-            self.simStates.append(self.select(self.trans,self.simStates[-1]))
+            self.simStates.append(self.select(self.simtrans,self.simStates[-1]))
         # print 'States as a function of discrete time:', self.simStates
         self.simOut = []
         for s in self.simStates:
             self.simOut.append(self.output[s])
         # print 'Output with out noise:', self.simOut
-        self.simData = []
+        simDataX = []
+        simDataT = []
+        t = 0.0
         for o in self.simOut:
-            self.simData.append(o + self.R.normalvariate(0,self.sigma))
+            t+=dt
+            simDataT.append(t)
+            simDataX.append(o + self.R.normalvariate(0,self.sigma))
         # print 'simData:', self.simData
+        self.simData = (simDataT,simDataX)
         self.simmed = True
 
     def normpdf(self,x,m,sigma):
@@ -147,12 +165,15 @@ class HMM(object):
         if t>0.0:  # self.time initialized as [0.0]
             self.time.append(t)
 
-    def predict(self,inter):
+    def predict(self,skips,extraskipdt,extratrans,inter):
         # print 'time', self.time[-1], 'pmf', inter
         self.saveErrorBars(inter,self.time[-1])
-        for i in range(self.skip):
-            inter = inter*self.trans
-            self.saveErrorBars(inter,self.time[-1]+self.dt)
+        if not self.plotskipdt == None:
+            for i in range(skip):
+                inter = inter*self.skiptrans
+                self.saveErrorBars(inter,self.time[-1]+self.plotskipdt)
+        inter = inter*extratrans
+        self.saveErrorBars(inter,self.time[-1]+extraskipdt)
         return inter
 
     def update(self,datapoint,prior):
@@ -170,25 +191,80 @@ class HMM(object):
         # print 'posterior', posterior
         return (posterior, marg)
 
-    def likelihood(self, fitData, skip):
+    def likelihood(self, fitData, plotskipdt=None):
         self.fitData = fitData
-        self.skip = skip
-        self.transfit = scipy.linalg.expm(self.dt*self.skip*self.Q)
+        ts = fitData[0]
+        xs = fitData[1]
+        assert(len(ts) == len(xs))
+        nData = len(xs)
+        self.processTimeIntervals(ts, plotskipdt)
         self.initializeErrorBars()
         pmf = self.init
         sll = 0
-        for i in range(self.skip,len(self.fitData),self.skip):
+        for i in range(nData):
             # print i, i*self.dt #, self.fitData[i]
-            pre = self.predict(pmf)
-            (pmf, lk) = self.update(self.fitData[i], pre)
+            pre = self.predict(self.plotskips[i],self.extraskipdt[i],self.extratrans[i],pmf)
+            (pmf, lk) = self.update(xs[i], pre)
             sll += math.log(lk)
         self.liked = True
         return sll
 
+    def processTimeIntervals(self, ts, plotskipdt):
+        # Still need to make first time = 0 possible
+        self.plotskipdt = plotskipdt
+        nData = len(ts)
+        tpre = 0.0
+        self.dts = []
+        for t in ts:
+            newdt = t-tpre
+            assert(newdt>0) #Must make first time OK for t0 = 0 newdt=0
+            self.dts.append(newdt)
+            tpre = t
+        mindt = min(self.dts)
+        maxdt = max(self.dts)
+        dttol = 1e-7
+        skiptol = 1e-7
+        if (not self.plotskipdt == None) and self.plotskipdt < maxdt - dttol:  # I.e. we want to plot likelihood at higher sample freq
+            self.plotskiptrans = scipy.linalg.expm(plotskipdt*self.Q)
+            self.plotskips = []
+            self.extraskipdt = []
+            self.extratrans = []
+            for dt in dts:
+                nskip = int(math.floor(dt/plotskipdt))
+                assert(nskip > -1)
+                self.extradt.append(dt - nskip*plotskipdt)
+                assert(self.extraskipdt[-1] > - skiptol)
+                self.plotskips.append(nskip)
+                if self.extraskipdt[-1] > skiptol:
+                    self.extratrans.append(scipy.linalg.expm(self.extraskipdt[-1]*self.Q))
+                else:
+                    self.extratrans = None
+        elif max(self.dts) - min(self.dts) < dttol:  # i.e. if all dts are approximately the same
+            self.plotskipdt = None
+            self.extratrans = [scipy.linalg.expm(self.dts[-1]*self.Q)]*nData
+            self.extraskipdt = [self.dts[-1]]*nData
+            self.plotskips = [0]*nData
+        else:
+            self.plotskipdt = None
+            self.plotskips = []
+            self.extraskipdt = []
+            self.extratrans = []
+            for dt in dts:
+                self.extratrans.append(scipy.linalg.expm(dt*self.Q))
+                self.extraskipdt.append(dt)
+                self.plotskips.append(0)
+
+    def simplot(self):
+        assert(self.simmed)
+        x = numpy.array(self.simData[0])
+        y = numpy.array(self.simData[1])
+        pylab.hold(False)
+        pylab.plot(x,y)
+
     def plot(self):
         assert(self.liked)
-        x = numpy.arange(0,self.dt*self.nsamples,self.dt)
-        y = numpy.array(self.fitData)
+        x = numpy.array(self.fitData[0])
+        y = numpy.array(self.fitData[1])
         pylab.hold(False)
         pylab.plot(x,y)
         xf = self.time
