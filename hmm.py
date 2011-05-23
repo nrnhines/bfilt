@@ -14,9 +14,9 @@ def ch3Qv(V, tau01, tau12):
     inf01 = 1./(1. + math.exp(1.*(-20. - V)))
     inf12 = 1./(1. + math.exp(1.*(-25. - V)))
     alpha01 = inf01/tau01
-    beta01 = alpha01-(1./tau01)
+    beta01 = (1./tau01)-alpha01
     alpha12 = inf12/tau12
-    beta12 = alpha12-(1./tau12)
+    beta12 = (1./tau12)-alpha12
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
     print Q
     return Q
@@ -64,6 +64,9 @@ def equilibrium(Q):
     print 'Q0', Q
     print 'pstates*exp(Q)', pstates*scipy.linalg.expm(Q)
     for i in range(len(pstates)):
+        assert(math.fabs(pstates[i].imag)<tol1)
+        pstates[i] = pstates[i].real
+        print "HERE: pstates[i]", pstates[i]
         assert(pstates[i] >= -tol1)
         assert(pstates[i] <= 1.0+tol1)
         if pstates[i] < 0:
