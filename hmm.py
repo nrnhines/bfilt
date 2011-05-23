@@ -18,7 +18,7 @@ def ch3Qv(V, tau01, tau12):
     alpha12 = inf12/tau12
     beta12 = (1./tau12)-alpha12
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
-    print Q
+    # print Q
     return Q
 
 def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4, sigma=0.001):
@@ -31,11 +31,11 @@ def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4, sigma=0.001):
 
 def equilibrium(Q):
     (V,D) = numpy.linalg.eig(Q.T)
-    print 'Q.T',Q.T
-    print 'V', V
-    print 'D', D
-    print 'd', D[:,0]
-    print 'Q.T*d', Q.T*D[:,0]
+    # print 'Q.T',Q.T
+    # print 'V', V
+    # print 'D', D
+    # print 'd', D[:,0]
+    # print 'Q.T*d', Q.T*D[:,0]
     # Find index of eigenvalue 0
     m = 1.0
     for i in range(V.shape[0]):
@@ -60,13 +60,14 @@ def equilibrium(Q):
         pstates[i] = pstates[i]/normalization
     tol1 = 1e-12
     tol = 1e-6
-    print 'pstates', pstates
-    print 'Q0', Q
-    print 'pstates*exp(Q)', pstates*scipy.linalg.expm(Q)
+    # print 'pstates', pstates
+    # print 'Q0', Q
+    # print 'pstates*exp(Q)', pstates*scipy.linalg.expm(Q)
     for i in range(len(pstates)):
-        assert(math.fabs(pstates[i].imag)<tol1)
-        pstates[i] = pstates[i].real
-        print "HERE: pstates[i]", pstates[i]
+        assert(pstates[i].imag == 0)
+        # assert(math.fabs(pstates[i].imag)<tol1)
+        # pstates[i] = pstates[i].real
+        # print "HERE: pstates[i]", pstates[i]
         assert(pstates[i] >= -tol1)
         assert(pstates[i] <= 1.0+tol1)
         if pstates[i] < 0:
