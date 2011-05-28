@@ -22,8 +22,13 @@ def ch3Qv(V, tau01, tau12):
     return Q
 
 def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4, sigma=0.001):
-    Q0 = ch3Qv(V0, tau01, tau12)
-    pstates = equilibrium(Q0)
+    if V0 < -40:
+        pstates = [1.0, 0.0, 0.0]  # Saves an expensive eig computation
+    elif V0 > 0:
+        pstates = [0.0, 0.0, 1.0]  # Saves an expensive eig computation
+    else:
+        Q0 = ch3Qv(V0, tau01, tau12)
+        pstates = equilibrium(Q0)
     output = [0.0, 0.0, 1.0]
     Q = ch3Qv(V1, tau01, tau12)
     H = HMM(pstates,output,Q,sigma)
