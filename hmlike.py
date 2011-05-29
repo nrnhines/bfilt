@@ -1,7 +1,18 @@
 import hmm
 import hmEnsemble
 import numpy
+import scipy.optimize
+import scipy.stats as stats
 import numdifftools as nd
+
+def  ch3like4opt(p,N,Data):
+    M_assumed = hmEnsemble.ch3Ensemble(tau01=p[0],tau12=p[1],nchannels=N)
+    try:
+        L = M_assumed.likelihood(Data)
+    except:
+        print "Out of range: tau01",p[0], "tau12",p[1]
+        L = numpy.nan
+    return -L
 
 class HML(object):
     def __init__(self,tau01=2.,tau12=4.,N=5):
@@ -9,6 +20,7 @@ class HML(object):
         self.tau12_true = tau12
         self.N_true = N
         self.M_true = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
+        self.ml = None
 
     def sim(self,seed=0):
         self.seed = seed
@@ -26,8 +38,44 @@ class HML(object):
     # def setN(self,N):
     #      self.N_assumed = N
 
-    def evallike(self,p,N_assumed):
-        return self.ch3like(p[0],p[1],N_assumed)
+    def find(self,tau01,tau12,N):
+        p0 = numpy.array([tau01,tau12])
+        # xopt,fopt,gopt,Bopt,funcalls,gradcalls,warnflag,allvecs =
+        return scipy.optimize.fmin_bfgs(ch3like4opt,p0,args=(N,self.M_true.simData),full_output=True,retall=True)
+
+    def findmle(self,tau01,tau12,N):
+        R = self.find(tau01,tau12,N)
+        self.mle = R[0]
+        self.ml = -R[1]
+        self.fopt = R[1]
+        self.gopt = R[2]
+        self.Bopt = R[3]
+        self.funcalls = R[4]
+        self.gradcalls = R[5]
+        self.warnflag = R[6]
+        self.allvecs = R[7]
+        return self.mle
+
+    def p_true(self):
+        self.truelike = self.M_true.likelihood(self.M_true.simData)
+        self.findmle(self.tau01_true,self.tau12_true,self.N_true)
+        self.CS = 2.0*(self.ml - self.truelike)  #plus log-likelihood
+        numparam = 2
+        self.pValue = stats.chisqprob(self.CS,numparam)
+        return self.pValue
+
+    def ch3p(self,tau01,tau12,N_assumed):
+        # Must compute ml first
+        like = self.ch3like(tau01,tau12,N_assumed)
+        numparam = 2
+        return stats.chisqprob(2.*(self.ml - like),numparam) # plus log-likelihood
+
+    def ch3c(self,tau01,tau12,N_assumed):
+        p = self.ch3p(tau01,tau12,N_assumed)
+        return 100.*(1.-p)
+
+    def evallike(self,param,N_assumed):
+        return self.ch3like(param[0],param[1],N_assumed)
 
     def Hessian(self,tau01,tau12,N):
         # Create (likelihood) inline function
@@ -41,7 +89,9 @@ class HML(object):
         self.eval2D(xx,yy,N)
         self.save2D(fname)
 
-    def eval2D(self,xx,yy,N_assumed):
+    def eval2D(self,xx,yy,N_assumed,efun=None):
+        if efun == None:
+            efun=self.ch3like
         self.xx = xx
         self.yy = yy
         self.N_assumed = N_assumed
@@ -49,8 +99,16 @@ class HML(object):
         for x in self.xx:
             self.zz.append([])
             for y in self.yy:
-                self.zz[-1].append(self.ch3like(x,y,self.N_assumed))
+                self.zz[-1].append(efun(x,y,self.N_assumed))
                 print 'x', x, 'y', y, 'z', self.zz[-1][-1]
+
+    def eval2Dp(self,xx,yy,N_assumed):
+        self.findmle(self.tau01_true,self.tau12_true,self.N_true)
+        self.eval2D(xx,yy,N_assumed,self.ch3p)
+
+    def eval2Dc(self,xx,yy,N_assumed):
+        self.findmle(self.tau01_true,self.tau12_true,self.N_true)
+        self.eval2D(xx,yy,N_assumed,self.ch3c)
 
     def save2D(self,fname):
         self.fname = fname
