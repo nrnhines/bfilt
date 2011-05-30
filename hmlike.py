@@ -25,9 +25,9 @@ class HML(object):
         self.M_true = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
         self.ml = None
 
-    def sim(self,seed=0):
-        self.seed = seed
-        self.M_true.sim(seed=self.seed)
+    def sim(self,seeds=[0]):
+        self.seeds = seeds
+        self.M_true.sim(seeds=self.seeds)
 
     def ch3like(self,tau01,tau12,N):
         M_assumed = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)

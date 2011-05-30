@@ -119,8 +119,11 @@ class HMM(object):
                 return i
         assert False
 
-    def sim(self, seed=0, dt=0.1, tstop=20):
-        self.simseed = seed
+    def sim(self, seeds=[0], dt=0.1, tstop=20):
+        if not type(seeds) is list:
+            seeds = [seeds]
+        self.simseeds = seeds
+        self.ntraj = len(self.simseeds)
         self.simdt = dt
         self.simtstop = tstop
         self.simtrans = scipy.linalg.expm(dt*self.Q)
@@ -132,26 +135,28 @@ class HMM(object):
             assert math.fabs(rowsum - 1.0) < tol
         assert(tstop>0.0)
         print "Checks out..."
-        self.R.seed(seed)
         self.nsamples = int(math.ceil(tstop/dt))
-        self.simStates = []
-        self.simStates.append(self.select(self.init,0))
-        for i in range(self.nsamples-1):
-            self.simStates.append(self.select(self.simtrans,self.simStates[-1]))
-        # print 'States as a function of discrete time:', self.simStates
-        self.simOut = []
-        for s in self.simStates:
-            self.simOut.append(self.output[s])
-        # print 'Output with out noise:', self.simOut
-        simDataX = []
-        simDataT = []
-        t = 0.0
-        for o in self.simOut:
-            t+=dt
-            simDataT.append(t)
-            simDataX.append(o + self.R.normalvariate(0,self.sigma))
-        # print 'simData:', self.simData
-        self.simData = (simDataT,simDataX)
+        self.simData = []
+        for seed in self.simseeds:
+            self.R.seed(seed)
+            self.simStates = []
+            self.simStates.append(self.select(self.init,0))
+            for i in range(self.nsamples-1):
+                self.simStates.append(self.select(self.simtrans,self.simStates[-1]))
+            # print 'States as a function of discrete time:', self.simStates
+            self.simOut = []
+            for s in self.simStates:
+                self.simOut.append(self.output[s])
+            # print 'Output with out noise:', self.simOut
+            simDataX = []
+            simDataT = []
+            t = 0.0
+            for o in self.simOut:
+                t+=dt
+                simDataT.append(t)
+                simDataX.append(o + self.R.normalvariate(0,self.sigma))
+            # print 'simData:', self.simData
+            self.simData.append((simDataT,simDataX))
         self.simmed = True
 
     def normpdf(self,x,m,sigma):
@@ -202,21 +207,24 @@ class HMM(object):
 
     def likelihood(self, fitData, plotskipdt=None):
         self.fitData = fitData
-        ts = fitData[0]
-        xs = fitData[1]
-        assert(len(ts) == len(xs))
-        nData = len(xs)
-        self.processTimeIntervals(ts, plotskipdt)
-        self.initializeErrorBars()
-        pmf = self.init
-        sll = 0
-        for i in range(nData):
-            # print i, i*self.dt #, self.fitData[i]
-            pre = self.predict(self.plotskips[i],self.extraskipdt[i],self.extratrans[i],pmf)
-            (pmf, lk) = self.update(xs[i], pre)
-            sll += math.log(lk)
+        total = 0
+        for fD in fitData:
+            ts = fD[0]
+            xs = fD[1]
+            assert(len(ts) == len(xs))
+            nData = len(xs)
+            self.processTimeIntervals(ts, plotskipdt)
+            self.initializeErrorBars()
+            pmf = self.init
+            sll = 0
+            for i in range(nData):
+                # print i, i*self.dt #, self.fitData[i]
+                pre = self.predict(self.plotskips[i],self.extraskipdt[i],self.extratrans[i],pmf)
+                (pmf, lk) = self.update(xs[i], pre)
+                sll += math.log(lk)
+            total += sll
         self.liked = True
-        return sll
+        return total
 
     def processTimeIntervals(self, ts, plotskipdt):
         # Still need to make first time = 0 possible
