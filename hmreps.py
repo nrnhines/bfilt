@@ -5,7 +5,7 @@ def getp(seed):
     print "seed", seed
     K = hmlike.HML()
     K.sim(seed)
-    return (K.p_true(),K.gtol)
+    return (K.p_true(),K.gopt)
 
 def reps(n):
     ps = []
