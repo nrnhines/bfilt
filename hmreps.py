@@ -16,9 +16,10 @@ def reps(n):
         ps.append(p)
         gs.append(g)
         xs.append(x)
-        print 'gtol', g
+        print 'gopt', g
     fname = "reps"+str(n)+".pkl"
     f = open(fname,'w')
     pickle.dump(ps,f)
     pickle.dump(gs,f)
+    pickle.dump(xs,f)
     f.close
