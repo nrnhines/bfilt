@@ -10,6 +10,7 @@ def getp(seed):
 def reps(n):
     ps = []
     gs = []
+    xs = []
     for seed in range(n):
         (p,g,x) = getp(seed)
         ps.append(p)
