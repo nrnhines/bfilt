@@ -4,11 +4,12 @@ import numpy
 import scipy.optimize
 import scipy.stats as stats
 import numdifftools as nd
+import copy
 
-def  ch3like4opt(p,N,Data):
-    tau01 = abs(tau01)
-    tau12 = abs(tau12)
-    M_assumed = hmEnsemble.ch3Ensemble(tau01=p[0],tau12=p[1],nchannels=N)
+def  ch3like4opt(param,N,Data):
+    tau01 = abs(param[0])
+    tau12 = abs(param[1])
+    M_assumed = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
     try:
         L = M_assumed.likelihood(Data)
     except:
