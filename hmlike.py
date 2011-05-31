@@ -6,10 +6,10 @@ import scipy.stats as stats
 import numdifftools as nd
 import copy
 
-def  ch3like4opt(param,N,Data):
+def  ch3like4opt(param,V0,V1,N,Data):
     tau01 = abs(param[0])
     tau12 = abs(param[1])
-    M_assumed = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
+    M_assumed = hmEnsemble.ch3Ensemble(V0=V0,V1=V1,tau01=tau01,tau12=tau12,nchannels=N)
     try:
         L = M_assumed.likelihood(Data)
     except:
@@ -18,11 +18,13 @@ def  ch3like4opt(param,N,Data):
     return -L
 
 class HML(object):
-    def __init__(self,tau01=2.,tau12=4.,N=5):
+    def __init__(self,V0=-65,V1=20,tau01=2.,tau12=4.,N=5):
+        self.V0 = V0
+        self.V1 = V1
         self.tau01_true = tau01
         self.tau12_true = tau12
         self.N_true = N
-        self.M_true = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
+        self.M_true = hmEnsemble.ch3Ensemble(V0=V0,V1=V1,tau01=tau01,tau12=tau12,nchannels=N)
         self.ml = None
 
     def sim(self,seeds=[0]):
@@ -30,12 +32,12 @@ class HML(object):
         self.M_true.sim(seeds=self.seeds)
 
     def ch3like(self,tau01,tau12,N):
-        M_assumed = hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,nchannels=N)
-        try:
-            L = M_assumed.likelihood(self.M_true.simData)
-        except:
-            print "Out of range: tau01", tau01, "tau12", tau12
-            L = numpy.nan
+        M_assumed = hmEnsemble.ch3Ensemble(V0=self.V0,V1=self.V1,tau01=tau01,tau12=tau12,nchannels=N)
+        #try:
+        L = M_assumed.likelihood(self.M_true.simData)
+        #except:
+            #print "Out of range: tau01", tau01, "tau12", tau12
+            #L = numpy.nan
         return L
 
     # def setN(self,N):
@@ -44,7 +46,7 @@ class HML(object):
     def find(self,tau01,tau12,N):
         p0 = numpy.array([tau01,tau12])
         # xopt,fopt,gopt,Bopt,funcalls,gradcalls,warnflag,allvecs =
-        return scipy.optimize.fmin_bfgs(ch3like4opt,p0,args=(N,self.M_true.simData),full_output=True,retall=True)
+        return scipy.optimize.fmin_bfgs(ch3like4opt,p0,args=(self.V0,self.V1,N,self.M_true.simData),full_output=True,retall=True)
 
     def findmle(self,tau01,tau12,N):
         R = self.find(tau01,tau12,N)

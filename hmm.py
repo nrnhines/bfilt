@@ -271,14 +271,15 @@ class HMM(object):
                 self.extraskipdt.append(dt)
                 self.plotskips.append(0)
 
-    def simplot(self):
+    def simplot(self,num=0):
         assert(self.simmed)
-        x = numpy.array(self.simData[0])
-        y = numpy.array(self.simData[1])
+        x = numpy.array(self.simData[num][0])
+        y = numpy.array(self.simData[num][1])
         pylab.hold(False)
         pylab.plot(x,y)
 
     def plot(self):
+        #MIGHT NOT WORK AFTER MULTIPLE TRAJS ADDED
         assert(self.liked)
         x = numpy.array(self.fitData[0])
         y = numpy.array(self.fitData[1])
