@@ -10,9 +10,9 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
     Q = numpy.matrix([[-alpha01, alpha01, 0], [beta01, -(beta01 + alpha12), alpha12], [0, beta12, -beta12]])
     return Q
 
-def ch3Qv(V, tau01, tau12):
-    inf01 = 1./(1. + math.exp(1.*(-20. - V)))
-    inf12 = 1./(1. + math.exp(1.*(-25. - V)))
+def ch3Qv(V, tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vslope01=1.,Vslope12=1.):
+    inf01 = 1./(1. + math.exp((1./Vslope01)*(-Vhalf01 - V)))
+    inf12 = 1./(1. + math.exp((1./Vslope12)*(-Vhalf12 - V)))
     alpha01 = inf01/tau01
     beta01 = (1./tau01)-alpha01
     alpha12 = inf12/tau12
@@ -21,13 +21,13 @@ def ch3Qv(V, tau01, tau12):
     # print Q
     return Q
 
-def ch3hmm(V0=-65, V1=20, tau01=2, tau12=4, sigma=0.001):
+def ch3hmm(V0=-65.,V1=20.,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vslope01=1.,Vslope12=1.,sigma=0.001):
     if V0 < -40:
         pstates = [1.0, 0.0, 0.0]  # Saves an expensive eig computation
     elif V0 > 0:
         pstates = [0.0, 0.0, 1.0]  # Saves an expensive eig computation
     else:
-        Q0 = ch3Qv(V0, tau01, tau12)
+        Q0 = ch3Qv(V0, tau01, tau12,Vhalf01,Vhalf12,Vslope01,Vslope12)
         pstates = equilibrium(Q0)
     output = [0.0, 0.0, 1.0]
     Q = ch3Qv(V1, tau01, tau12)
