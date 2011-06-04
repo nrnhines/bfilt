@@ -13,7 +13,6 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
 def ch3Qv(V, tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
     inf01 = 1./(1. + math.exp((1./Vchar01)*(Vhalf01 - V)))
     inf12 = 1./(1. + math.exp((1./Vchar12)*(Vhalf12 - V)))
-    print 'inf01', inf01, 'inf12', inf12
     alpha01 = inf01/tau01
     beta01 = (1./tau01)-alpha01
     alpha12 = inf12/tau12
@@ -30,6 +29,7 @@ def ch3hmm(V0=-65.,V1=20.,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.
     else:
         Q0 = ch3Qv(V0,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
         pstates = equilibrium(Q0)
+    # print "initial state", pstates
     output = [0.0, 0.0, 1.0]
     Q = ch3Qv(V1,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
     H = HMM(pstates,output,Q,sigma)

@@ -4,8 +4,8 @@ import numpy
 import numpy.matlib
 import hmm
 
-def ch3Ensemble(V0=-65,V1=20,tau01=2.,tau12=4.,nchannels=5):
-    H = hmm.ch3hmm(V0=V0,V1=V1,tau01=tau01,tau12=tau12)
+def ch3Ensemble(V0=-65,V1=20,tau01=2.,tau12=4.,Vchar01=1.,Vchar12=1.,Vhalf01=-20.,Vhalf12=-25,nchannels=5):
+    H = hmm.ch3hmm(V0=V0,V1=V1,tau01=tau01,tau12=tau12,Vchar01=Vchar01,Vchar12=Vchar12,Vhalf01=Vhalf01,Vhalf12=Vhalf12)
     E = Ensemble(nchannels,H.pstates,H.output,H.Q)
     M = hmm.HMM(E.pstates,E.output,E.Q)
     return M
