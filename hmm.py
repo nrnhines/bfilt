@@ -11,8 +11,8 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
     return Q
 
 def ch3Qv(V, tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vslope01=1.,Vslope12=1.):
-    inf01 = 1./(1. + math.exp((1./Vslope01)*(-Vhalf01 - V)))
-    inf12 = 1./(1. + math.exp((1./Vslope12)*(-Vhalf12 - V)))
+    inf01 = 1./(1. + math.exp((1./Vslope01)*(Vhalf01 - V)))
+    inf12 = 1./(1. + math.exp((1./Vslope12)*(Vhalf12 - V)))
     alpha01 = inf01/tau01
     beta01 = (1./tau01)-alpha01
     alpha12 = inf12/tau12
