@@ -39,10 +39,8 @@ def like4opt(param_values,param_names,known,structure,experiment):
     L = S.likelihood(experiment)
     return -L
 
-def like4eval(varied,fixed,structure,experiment):
-    # for d in varied:
-    #    fixed.update(d)
-    S = structure(**fixed)
+def like4eval(params,structure,experiment):
+    S = structure(**params)
     L = S.likelihood(experiment)
     return L
 
@@ -127,20 +125,36 @@ class fit(object):
         self.found = True
         return self.MLE
 
-    def evalD(self,params,experiment=None,efun):
+    def evalD(self,params,structure,experiment=None,efun=like4eval):
         if self.found:
             assert experiment == None  # self.simExper should already be defn
         else:
+            assert not experiment == None
             self.simExper = experiment
-        pnames = []
-        ptuples = {EMPTY_SET}
-        for k,v in guess.items():
-            pnames.append(k)
-            ptuples = ptuples {CARTESIAN PRODUCT} v
-        L = []
-        for p in ptuples:
-            L = ptuples
-            dictparam{FIGURE OUT dictionary(pnames,ptuples)}
-            L = like4eval(**dictparam)
-            zz.append(L)
-        return (pnames, ptuples, zz)
+        pnames = params.keys()
+        pfactorlist = params.values()
+        zz = {}
+        for ptuples in myutil.cartesian_product(*pfactorlist):
+            paramset = dict([(pnames[i],ptuples[i]) for i in range(len(ptuples))])
+            L = efun(paramset,structure,self.simExper)
+            zz.update({ptuple:L})
+        return (pnames, zz)
+
+    def save4plot(self,fname,params,xname,yname,pnzz,base={}):
+        self.fname = fname
+        f = open(self.fname+"_x.txt","w")
+        for x in params[xname]:
+            f.write(str(x)+' ')
+        f.close()
+        f.open(self.fname+"_y.txt","w")
+        for y in params[yname]:
+            f.write(str(y)+' ')
+        f.close()
+        f = open(self.fname+"_z.txt","w")
+        p = copy.deepcopy(params)
+        p.update(base)
+        for x in params[xname]:
+            p.update({xname:x})
+            for y in params[yname]:
+                p.update({yname:y})
+                for pn in pnzz[0]:
