@@ -136,7 +136,21 @@ class HMMChain(object):
                 self.HMMLinks[j][i].sim(None,self.simdt,self.simtstops[i],nextFirstState)
                 nextFirstState = self.HMMLinks[j][i].simStates[-1]
         self.simmed = True
-               
+    
+    def likelihood(self, fitChain, plotskipdt=None):
+        self.fitChain = fitChain
+        j = 0
+        total = 0
+        for oneSeed in fitChain.HMMLinks:
+            i = 0
+            nextinitpmf=None
+            for fitLink in oneSeed:
+                total+=self.HMMLinks[i][j].likelihood(fitLink.simData,plotskipdt,nextinitpmf)
+                nextinitpmf = self.HMMLinks[i][j].likefinalpmf
+                i += 1
+            j += 1
+        return total
+    
     def simplot(self,num=0):
         assert(self.simmed)
         seednum = 0
@@ -295,9 +309,10 @@ class HMM(object):
         # print 'posterior', posterior
         return (posterior, marg)
 
-    def likelihood(self, fitData, plotskipdt=None):
+    def likelihood(self, fitData, plotskipdt=None, initpmf=None):
         self.fitData = fitData
         total = 0
+        # For chains fitData is a list with one element
         for fD in fitData:
             ts = fD[0]
             xs = fD[1]
@@ -305,7 +320,10 @@ class HMM(object):
             nData = len(xs)
             self.processTimeIntervals(ts, plotskipdt)
             self.initializeErrorBars()
-            pmf = self.init
+            if initpmf == None:
+                pmf = self.init
+            else:
+                pmf = initpmf
             sll = 0
             for i in range(nData):
                 # print i, i*self.dt #, self.fitData[i]
@@ -313,6 +331,7 @@ class HMM(object):
                 (pmf, lk) = self.update(xs[i], pre)
                 sll += math.log(lk)
             total += sll
+        self.likefinalpmf=pmf
         self.liked = True
         return total
 
