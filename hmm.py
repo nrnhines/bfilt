@@ -35,6 +35,22 @@ def ch3hmm(V0=-65.,V1=20.,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.
     H = HMM(pstates,output,Q,sigma)
     return H
 
+def ch3chain(Vs,tau01=2.,tau12=4.,Vhalf01=-20,Vhalf12=-25,Vchar01=1,Vchar12=1.,sigma=0.001):
+    if Vs[0] < min(Vhalf01,Vhalf12) - 15*max(abs(Vchar01),abs(Vchar12)):
+        pstates = [1.0, 0.0, 0.0]  # Saves an expensive eig computation
+    elif Vs[0] > max(Vhalf01,Vhalf12) + 15*max(abs(Vchar01),abs(Vchar12)):
+        pstates = [0.0, 0.0, 1.0]  # Saves an expensive eig computation
+    else:
+        Q0 = ch3Qv(Vs[0],tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
+        pstates = equilibrium(Q0)
+    # print "initial state", pstates
+    output = [0.0, 0.0, 1.0]
+    Qs = []
+    for i in range(1,len(Vs)):
+        Qs.append(ch3Qv(Vs[i],tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12))
+    H = HMMChain(pstates,output,Qs,sigma)
+    return H
+
 def equilibrium(Q):
     (V,D) = numpy.linalg.eig(Q.T)
     # print 'Q.T',Q.T
@@ -84,8 +100,67 @@ def equilibrium(Q):
     assert(sum(pstates)>1.0-tol)
     return pstates
 
+class HMMChain(object):
+    def __init__(self, pstates0, output, Qs, sigma=0.001):
+        self.simmed = False
+        self.liked = False
+        self.pstates0 = pstates0
+        self.output = output
+        self.Qs = Qs
+        self.sigma = sigma
+        self.nstates = len(pstates0)
+        self.R = random.Random()
+        
+    def sim(self, seeds=[0], dt=0.1, tstops=[20]):
+        assert len(tstops) > 0
+        self.HMMLinks = []
+        for seedi in range(len(seeds)):
+            self.HMMLinks.append([])
+            for stopj in range(len(tstops)):
+                self.HMMLinks[-1].append(HMM(self.pstates0,self.output,self.Qs[stopj%len(self.Qs)],self.sigma,self.R))
+        if len(tstops) < len(self.Qs):
+            print "Warning: fewer stop-times than Qs, truncating protocol"
+        if len(tstops) > len(self.Qs):
+            print "Warning: more stop-times than Qs, looping protocol"
+        if not type(seeds) is list:
+            seeds = [seeds]
+        self.simseeds = seeds
+        self.ntraj = len(self.simseeds)
+        self.simdt = dt
+        self.simtstops = tstops
+        for j in range(len(self.simseeds)):
+            self.R.seed(self.simseeds[j])
+            nextFirstState = None
+            for i in range(len(tstops)):
+                # QIndex = i%len(self.Qs)  # QIndex = i mod len(Qs)   
+                self.HMMLinks[j][i].sim(None,self.simdt,self.simtstops[i],nextFirstState)
+                nextFirstState = self.HMMLinks[j][i].simStates[-1]
+        self.simmed = True
+               
+    def simplot(self,num=0):
+        assert(self.simmed)
+        seednum = 0
+        hold = False
+        for oneseed in self.HMMLinks: 
+            if seednum == num:
+                redSeed = oneseed
+            else:
+                tOrigin = 0
+                for H in oneseed:
+                    col = 'b'
+                    H.simplot(0,tOrigin,col,col,hold)
+                    hold = True
+                    tOrigin += H.simData[0][0][-1]
+            seednum += 1
+        tOrigin = 0.
+        for H in redSeed:
+            col = 'r'
+            H.simplot(0,tOrigin,col,col,hold)
+            hold = True
+            tOrigin += H.simData[0][0][-1]
+
 class HMM(object):
-    def __init__(self, pstates, output, Q, sigma=0.001):
+    def __init__(self, pstates, output, Q, sigma=0.001, R=None):
         self.simmed = False
         self.liked = False
         self.nstates = len(pstates)
@@ -103,7 +178,10 @@ class HMM(object):
         self.fitData = None
         self.center = None
         self.width = None
-        self.R = random.Random()
+        if R == None:
+            self.R = random.Random()
+        else:
+            self.R = R
         tol = 1e-7
         assert self.init.shape[1] == self.Q.shape[0]
         assert self.init.shape[1] == self.Q.shape[1]
@@ -120,13 +198,18 @@ class HMM(object):
                 return i
         assert False
 
-    def sim(self, seeds=[0], dt=0.1, tstop=20):
-        if not type(seeds) is list:
-            seeds = [seeds]
-        self.simseeds = seeds
-        self.ntraj = len(self.simseeds)
+    def sim(self, seeds=[0], dt=0.1, tstop=20, firstState=None):
+        if not seeds == None:
+            if not type(seeds) is list:
+                seeds = [seeds]
+            self.simseeds = seeds
+            self.ntraj = len(self.simseeds)
+        else:
+            self.simseeds = [None]
+            self.ntraj = 1
         self.simdt = dt
-        self.simtstop = tstop
+        self.firstState = firstState
+        self.simtstop = tstop 
         self.simtrans = scipy.linalg.expm(dt*self.Q)
         tol = 1e-7
         for i in range(self.nstates):
@@ -139,16 +222,22 @@ class HMM(object):
         self.nsamples = int(math.ceil(tstop/dt))
         self.simData = []
         for seed in self.simseeds:
-            self.R.seed(seed)
+            if not seed == None:
+                self.R.seed(seed)
             self.simStates = []
-            self.simStates.append(self.select(self.init,0))
+            if self.firstState == None:
+                # Pick a random state according to pmf self.init=numpy.matrix(pstates)
+                self.simStates.append(self.select(self.init,0))
+            else:
+                self.simStates.append(self.firstState)
             for i in range(self.nsamples-1):
+                # pick a random state as a function of pmf simState[-1]st row of self.simtrans
                 self.simStates.append(self.select(self.simtrans,self.simStates[-1]))
             # print 'States as a function of discrete time:', self.simStates
             self.simOut = []
             for s in self.simStates:
                 self.simOut.append(self.output[s])
-            # print 'Output with out noise:', self.simOut
+            # print 'Output without noise:', self.simOut
             simDataX = []
             simDataT = []
             t = 0.0
@@ -272,12 +361,21 @@ class HMM(object):
                 self.extraskipdt.append(dt)
                 self.plotskips.append(0)
 
-    def simplot(self,num=0):
+    def simplot(self,num=0,tOrigin=0.,colY='r',colN='b',hold=False):
         assert(self.simmed)
+        pylab.hold(hold)
+        for i in range(len(self.simData)):
+            if i == num:
+                redOrigin = tOrigin
+            else:
+                x = numpy.array(self.simData[i][0])
+                y = numpy.array(self.simData[i][1])
+                pylab.plot(x+tOrigin,y,colN)
+                pylab.hold(True)
+            # no need to increment tOrigin 
         x = numpy.array(self.simData[num][0])
         y = numpy.array(self.simData[num][1])
-        pylab.hold(False)
-        pylab.plot(x,y)
+        pylab.plot(x+redOrigin,y,colY)
 
     def plot(self):
         #MIGHT NOT WORK AFTER MULTIPLE TRAJS ADDED

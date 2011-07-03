@@ -3,14 +3,14 @@ import hmEnsemble
 import numpy
 import scipy.optimize
 
-# A structure
+# A model-structure
 def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
     E = HME([])
     E.append(hmEnsemble.ch3Ensemble(V0=-65,V1=20,tau01=tau01,tau12=tau12,nchannels=nchannels))
     E.append(hmEnsemble.ch3Ensemble(V0=20,V1=-65,tau01=tau01,tau12=tau12,nchannels=nchannels))
     return E
 
-# A structure
+# A model-structure
 def ch3mix():
     E = HME([])
     E.append(hmEnsemble.ch3Ensemble(V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.))
