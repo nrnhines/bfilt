@@ -6,7 +6,7 @@ import scipy.stats as stats
 import numdifftools as nd
 import copy
 
-def  ch3like4opt(param,V0,V1,N,Data):
+def ch3like4opt(param,V0,V1,N,Data):
     tau01 = abs(param[0])
     tau12 = abs(param[1])
     M_assumed = hmEnsemble.ch3Ensemble(V0=V0,V1=V1,tau01=tau01,tau12=tau12,nchannels=N)
@@ -17,6 +17,16 @@ def  ch3like4opt(param,V0,V1,N,Data):
         L = numpy.nan
     return -L
 
+class HMMLike(object):
+    def __init__(self,System,Model):
+        self.System = System
+        self.Model = Model
+    
+    def sim(self, seeds=[0], dt=0.1, tstops=[20]):
+        System.sim(seeds,dt,tstops)
+    
+    
+            
 class HML(object):
     def __init__(self,V0=-65,V1=20,tau01=2.,tau12=4.,N=5):
         self.V0 = V0

@@ -6,8 +6,14 @@ import hmm
 
 def ch3Ensemble(V0=-65,V1=20,tau01=2.,tau12=4.,Vchar01=1.,Vchar12=1.,Vhalf01=-20.,Vhalf12=-25,nchannels=5):
     H = hmm.ch3hmm(V0=V0,V1=V1,tau01=tau01,tau12=tau12,Vchar01=Vchar01,Vchar12=Vchar12,Vhalf01=Vhalf01,Vhalf12=Vhalf12)
-    E = Ensemble(nchannels,H.pstates,H.output,H.Q)
+    E = Ensemble(H,nchannels)
     M = hmm.HMM(E.pstates,E.output,E.Q)
+    return M
+
+def ch3EnsembleC(V0=-65,V1=[20,-65],tau01=2.,tau12=4.,Vchar01=1.,Vchar12=1.,Vhalf01=-20,Vhalf12=-25,nchannels=5):
+    H = hmm.ch3chain(V0,V1,tau01,tau12,Vchar01,Vchar12,Vhalf01,Vhalf12,nchannels)
+    E = Ensemble(H,nchannels)
+    M = hmm.HMMChain(E.pstates,E.output,E.Q)
     return M
 
 def initialCov(smallQ, n):
@@ -16,18 +22,23 @@ def initialCov(smallQ, n):
     return iCov
 
 class Ensemble(object):
-    def __init__(self,nchannels,pconfig,output_config,smallQ):
+    def __init__(self,Hsmall,nchannels):
         self.nchannels = nchannels
-        self.pconfig = pconfig
-        self.output_config = output_config
-        self.smallQ = smallQ
+        self.pconfig = Hsmall.pstates
+        self.output_config = Hsmall.output
+        self.smallQ = Hsmall.Q
         self.nconfig = len(self.pconfig)
         self.enum = self.enumerate(self.nchannels, self.nconfig)
         self.nstates = len(self.enum)
         self.index = self.reverseEnumerate(self.nchannels, self.nconfig)
         self.pstates = self.makeProb(self.enum, self.pconfig)
         self.output = self.makeOutput(self.enum,self.output_config)
-        self.Q = self.makeQ(self.enum,self.index,self.smallQ)
+        if type(self.smallQ) is list:
+            self.Q = []
+            for sQi in self.smallQ:
+                self.Q.append(self.makeQ(self.enum,self.index,sQi))
+        else:
+            self.Q = self.makeQ(self.enum,self.index,self.smallQ)
 
     def recursiveLookup(self,Ensem,n):
         if len(n) > 1:

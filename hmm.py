@@ -10,7 +10,7 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
     Q = numpy.matrix([[-alpha01, alpha01, 0], [beta01, -(beta01 + alpha12), alpha12], [0, beta12, -beta12]])
     return Q
 
-def ch3Qv(V, tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
+def ch3Qv(V,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
     inf01 = 1./(1. + math.exp((1./Vchar01)*(Vhalf01 - V)))
     inf12 = 1./(1. + math.exp((1./Vchar12)*(Vhalf12 - V)))
     alpha01 = inf01/tau01
@@ -35,20 +35,23 @@ def ch3hmm(V0=-65.,V1=20.,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.
     H = HMM(pstates,output,Q,sigma)
     return H
 
-def ch3chain(Vs,tau01=2.,tau12=4.,Vhalf01=-20,Vhalf12=-25,Vchar01=1,Vchar12=1.,sigma=0.001):
-    if Vs[0] < min(Vhalf01,Vhalf12) - 15*max(abs(Vchar01),abs(Vchar12)):
+def ch3chain(V0,V1,tau01=2.,tau12=4.,Vhalf01=-20,Vhalf12=-25,Vchar01=1,Vchar12=1.,sigma=0.001):
+    if V0 < min(Vhalf01,Vhalf12) - 15*max(abs(Vchar01),abs(Vchar12)):
         pstates = [1.0, 0.0, 0.0]  # Saves an expensive eig computation
-    elif Vs[0] > max(Vhalf01,Vhalf12) + 15*max(abs(Vchar01),abs(Vchar12)):
+    elif V0 > max(Vhalf01,Vhalf12) + 15*max(abs(Vchar01),abs(Vchar12)):
         pstates = [0.0, 0.0, 1.0]  # Saves an expensive eig computation
     else:
-        Q0 = ch3Qv(Vs[0],tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
+        Q0 = ch3Qv(V0,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
         pstates = equilibrium(Q0)
+    print "Equilibrium Q0", pstates
     # print "initial state", pstates
     output = [0.0, 0.0, 1.0]
-    Qs = []
-    for i in range(1,len(Vs)):
-        Qs.append(ch3Qv(Vs[i],tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12))
-    H = HMMChain(pstates,output,Qs,sigma)
+    Q = []
+    for V in V1:
+        print 'V', V
+        Q.append(ch3Qv(V,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12))
+        print Q
+    H = HMMChain(pstates,output,Q,sigma)
     return H
 
 def equilibrium(Q):
@@ -101,27 +104,29 @@ def equilibrium(Q):
     return pstates
 
 class HMMChain(object):
-    def __init__(self, pstates0, output, Qs, sigma=0.001):
+    def __init__(self, pstates, output, Q, sigma=0.001):
         self.simmed = False
         self.liked = False
-        self.pstates0 = pstates0
+        self.pstates = pstates
         self.output = output
-        self.Qs = Qs
+        self.Q = Q
         self.sigma = sigma
-        self.nstates = len(pstates0)
+        self.nstates = len(pstates)
         self.R = random.Random()
         
     def sim(self, seeds=[0], dt=0.1, tstops=[20]):
         assert len(tstops) > 0
         self.HMMLinks = []
+        # Put links together
         for seedi in range(len(seeds)):
             self.HMMLinks.append([])
             for stopj in range(len(tstops)):
-                self.HMMLinks[-1].append(HMM(self.pstates0,self.output,self.Qs[stopj%len(self.Qs)],self.sigma,self.R))
-        if len(tstops) < len(self.Qs):
-            print "Warning: fewer stop-times than Qs, truncating protocol"
-        if len(tstops) > len(self.Qs):
-            print "Warning: more stop-times than Qs, looping protocol"
+                print "Q#", stopj%len(self.Q)
+                self.HMMLinks[-1].append(HMM(self.pstates,self.output,self.Q[stopj%len(self.Q)],self.sigma,self.R))
+        if len(tstops) < len(self.Q):
+            print "Warning: fewer stop-times than Q's, truncating protocol"
+        if len(tstops) > len(self.Q):
+            print "Warning: more stop-times than Q's, looping protocol"
         if not type(seeds) is list:
             seeds = [seeds]
         self.simseeds = seeds
@@ -132,8 +137,8 @@ class HMMChain(object):
             self.R.seed(self.simseeds[j])
             nextFirstState = None
             for i in range(len(tstops)):
-                # QIndex = i%len(self.Qs)  # QIndex = i mod len(Qs)   
-                self.HMMLinks[j][i].sim(None,self.simdt,self.simtstops[i],nextFirstState)
+                # QIndex = i%len(self.Q)  # QIndex = i mod len(Q)   
+                self.HMMLinks[j][i].sim(None,self.simdt,[self.simtstops[i]],nextFirstState)
                 nextFirstState = self.HMMLinks[j][i].simStates[-1]
         self.simmed = True
     
@@ -141,14 +146,11 @@ class HMMChain(object):
         self.fitChain = fitChain
         j = 0
         total = 0
-        for oneSeed in fitChain.HMMLinks:
-            i = 0
+        for j in range(len(fitChain.HMMLinks)):
             nextinitpmf=None
-            for fitLink in oneSeed:
-                total+=self.HMMLinks[i][j].likelihood(fitLink.simData,plotskipdt,nextinitpmf)
-                nextinitpmf = self.HMMLinks[i][j].likefinalpmf
-                i += 1
-            j += 1
+            for i in range(len(fitChain.HMMLinks[j])):
+                total+=self.HMMLinks[j][i].likelihood(fitChain.HMMLinks[j][i].simData,plotskipdt,nextinitpmf)
+                nextinitpmf = self.HMMLinks[j][i].likefinalpmf
         return total
     
     def simplot(self,num=0):
@@ -212,7 +214,11 @@ class HMM(object):
                 return i
         assert False
 
-    def sim(self, seeds=[0], dt=0.1, tstop=20, firstState=None):
+    def sim(self, seeds=[0], dt=0.1, tstops=[20], firstState=None):
+        if type(tstops) is list:
+            tstop = tstops[0]
+        else:
+            tstop = tstops
         if not seeds == None:
             if not type(seeds) is list:
                 seeds = [seeds]
@@ -307,6 +313,7 @@ class HMM(object):
         # print 'weight', weight
         # print 'prior', prior
         # print 'posterior', posterior
+        assert marg>0
         return (posterior, marg)
 
     def likelihood(self, fitData, plotskipdt=None, initpmf=None):
