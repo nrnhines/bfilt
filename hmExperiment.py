@@ -165,3 +165,4 @@ class fit(object):
                 # Changed plans from: for pn in pnzz[0], pnzz = (pnames,zz)
                 z = efun(p,structure,self.simExper)
                 f.write(str(z)+' ')
+		# last line
