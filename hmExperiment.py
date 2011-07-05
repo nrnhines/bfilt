@@ -11,7 +11,7 @@ def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
     return E
 
 # A structure
-def ch3mix(tau01=2.,tau12=4.,nchannels=5):
+def ch3mix():
     E = HME([])
     E.append(hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.,nchannels=nchannels))
     return E
