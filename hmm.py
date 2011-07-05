@@ -11,6 +11,7 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
     return Q
 
 def ch3Qv(V,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
+    # print "V", V
     inf01 = 1./(1. + math.exp((1./Vchar01)*(Vhalf01 - V)))
     inf12 = 1./(1. + math.exp((1./Vchar12)*(Vhalf12 - V)))
     alpha01 = inf01/tau01
@@ -18,7 +19,7 @@ def ch3Qv(V,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
     alpha12 = inf12/tau12
     beta12 = (1./tau12)-alpha12
     Q = ch3Q(alpha01, beta01, alpha12, beta12)
-    # print Q
+    # print 'Q', Q
     return Q
 
 def ch3hmm(V0=-65.,V1=20.,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.,sigma=0.001):
@@ -43,15 +44,12 @@ def ch3chain(V0,V1,tau01=2.,tau12=4.,Vhalf01=-20,Vhalf12=-25,Vchar01=1,Vchar12=1
     else:
         Q0 = ch3Qv(V0,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12)
         pstates = equilibrium(Q0)
-    print "Equilibrium Q0", pstates
-    # print "initial state", pstates
+    # print "Equilibrium Q0", pstates
     output = [0.0, 0.0, 1.0]
     Q = []
     for V in V1:
-        print 'V', V
         Q.append(ch3Qv(V,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12))
-        print Q
-    H = HMMChain(pstates,output,Q,sigma)
+        H = HMMChain(pstates,output,Q,sigma)
     return H
 
 def equilibrium(Q):
@@ -114,14 +112,16 @@ class HMMChain(object):
         self.nstates = len(pstates)
         self.R = random.Random()
         
-    def sim(self, seeds=[0], dt=0.1, tstops=[20]):
+    def sim(self, seeds=[0], dt=0.1, tstops=None):
+        if tstops == None:
+            tstops = [20.]*len(self.Q)
         assert len(tstops) > 0
         self.HMMLinks = []
         # Put links together
         for seedi in range(len(seeds)):
             self.HMMLinks.append([])
             for stopj in range(len(tstops)):
-                print "Q#", stopj%len(self.Q)
+                # print "Q#", stopj%len(self.Q)
                 self.HMMLinks[-1].append(HMM(self.pstates,self.output,self.Q[stopj%len(self.Q)],self.sigma,self.R))
         if len(tstops) < len(self.Q):
             print "Warning: fewer stop-times than Q's, truncating protocol"
