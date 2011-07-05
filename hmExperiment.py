@@ -11,9 +11,9 @@ def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
     return E
 
 # A structure
-def ch3mix():
+def ch3mix(tau01=2.,tau12=4.,nchannels=5):
     E = HME([])
-    E.append(hmEnsemble.ch3Ensemble(V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.))
+    E.append(hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.,nchannels=nchannels))
     return E
 
 def testfind():
@@ -108,11 +108,11 @@ class fit(object):
         self.simExper = experiment
         vals = []
         names = []
-        for key,v in guess.items():
+        for key,v in self.guess.items():
             names.append(key)
             vals.append(v)
         values = numpy.array(vals)
-        R = scipy.optimize.fmin_bfgs(like4opt,values,args=(names,known,structure,self.simExper),full_output=True,retall=True)
+        R = scipy.optimize.fmin_bfgs(like4opt,values,args=(names,self.known,self.structure,self.simExper),full_output=True,retall=True)
         self.MLE = R[0]
         self.ML = -R[1]
         self.fopt = R[1]
@@ -140,7 +140,12 @@ class fit(object):
             zz.update({ptuple:L})
         return (pnames, zz)
 
-    def save4plot(self,fname,params,xname,yname,pnzz,base={}):
+    def save4plot(self,fname,params,xname,yname,base,efun,structure,experiment):
+        if self.found:
+            assert experiment == None  # self.simExper should already be defn
+        else:
+            assert not experiment == None
+            self.simExper = experiment
         self.fname = fname
         f = open(self.fname+"_x.txt","w")
         for x in params[xname]:
@@ -157,4 +162,6 @@ class fit(object):
             p.update({xname:x})
             for y in params[yname]:
                 p.update({yname:y})
-                for pn in pnzz[0]:
+                # Changed plans from: for pn in pnzz[0], pnzz = (pnames,zz)
+                z = efun(p,structure,self.simExper)
+                f.write(str(z)+' ')
