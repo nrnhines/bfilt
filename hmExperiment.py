@@ -14,8 +14,8 @@ def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
 def ch3mix():
     E = HME([])
     E.append(hmEnsemble.ch3Ensemble(V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.))
-    return E
-
+    return E    
+  
 def testfind():
     E_true = ch3bothdirs()
     E_true.sim([[1,2],[4,5]])
@@ -43,6 +43,15 @@ def like4eval(params,structure,experiment):
     S = structure(**params)
     L = S.likelihood(experiment)
     return L
+
+# class HMMSystem(object):
+    # def __init__(self,System,Model):
+    #    self.System = System
+    #    self.Model = Model
+    #
+    #def sim(self, seeds=[0], dt=0.1, tstops=[20]):
+    #    System.sim(seeds,dt,tstops)
+
 
 class HME(object):
     def __init__(self,protocol):

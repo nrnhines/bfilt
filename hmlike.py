@@ -15,17 +15,7 @@ def ch3like4opt(param,V0,V1,N,Data):
     except:
         print "Out of range: tau01",p[0], "tau12",p[1]
         L = numpy.nan
-    return -L
-
-class HMMLike(object):
-    def __init__(self,System,Model):
-        self.System = System
-        self.Model = Model
-    
-    def sim(self, seeds=[0], dt=0.1, tstops=[20]):
-        System.sim(seeds,dt,tstops)
-    
-    
+    return -L  
             
 class HML(object):
     def __init__(self,V0=-65,V1=20,tau01=2.,tau12=4.,N=5):
