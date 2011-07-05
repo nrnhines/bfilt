@@ -291,12 +291,16 @@ class HMM(object):
 
     def predict(self,skips,extraskipdt,extratrans,inter):
         # print 'time', self.time[-1], 'pmf', inter
+        assert (inter>=0).all()
         self.saveErrorBars(inter,self.time[-1])
         if not self.plotskipdt == None:
             for i in range(skip):
                 inter = inter*self.skiptrans
+                assert (inter>=0).all()
                 self.saveErrorBars(inter,self.time[-1]+self.plotskipdt)
+        assert (inter*extratrans >= 0).all()
         inter = inter*extratrans
+        assert (inter>=0).all()
         self.saveErrorBars(inter,self.time[-1]+extraskipdt)
         return inter
 
@@ -336,6 +340,7 @@ class HMM(object):
                 # print i, i*self.dt #, self.fitData[i]
                 pre = self.predict(self.plotskips[i],self.extraskipdt[i],self.extratrans[i],pmf)
                 (pmf, lk) = self.update(xs[i], pre)
+                assert (pmf>=0).all()
                 sll += math.log(lk)
             total += sll
         self.likefinalpmf=pmf
@@ -357,7 +362,9 @@ class HMM(object):
         maxdt = max(self.dts)
         dttol = 1e-7
         skiptol = 1e-7
+        # INSIDE THIS IF STATEMENT NOT TESTED, ELIF YES, ELSE NO
         if (not self.plotskipdt == None) and self.plotskipdt < maxdt - dttol:  # I.e. we want to plot likelihood at higher sample freq
+            print "Case 0"
             self.plotskiptrans = scipy.linalg.expm(plotskipdt*self.Q)
             self.plotskips = []
             self.extraskipdt = []
@@ -365,7 +372,7 @@ class HMM(object):
             for dt in dts:
                 nskip = int(math.floor(dt/plotskipdt))
                 assert(nskip > -1)
-                self.extradt.append(dt - nskip*plotskipdt)
+                self.extraskipdt.append(dt - nskip*plotskipdt) #extraSKIPdt  (SKIP added later)
                 assert(self.extraskipdt[-1] > - skiptol)
                 self.plotskips.append(nskip)
                 if self.extraskipdt[-1] > skiptol:
@@ -373,11 +380,13 @@ class HMM(object):
                 else:
                     self.extratrans = None
         elif max(self.dts) - min(self.dts) < dttol:  # i.e. if all dts are approximately the same
+            print "Case 1"
             self.plotskipdt = None
-            self.extratrans = [scipy.linalg.expm(self.dts[-1]*self.Q)]*nData
+            self.extratrans = [scipy.linalg.expm(self.dts[-1]*self.Q)]*nData  #makes a sequence nData long
             self.extraskipdt = [self.dts[-1]]*nData
             self.plotskips = [0]*nData
         else:
+            print "Case 2"
             self.plotskipdt = None
             self.plotskips = []
             self.extraskipdt = []
