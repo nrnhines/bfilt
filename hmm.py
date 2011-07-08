@@ -298,7 +298,7 @@ class HMM(object):
                 inter = inter*self.skiptrans
                 assert (inter>=0).all()
                 self.saveErrorBars(inter,self.time[-1]+self.plotskipdt)
-        assert (inter*extratrans >= 0).all()
+        # assert (inter*extratrans >= 0).all()
         inter = inter*extratrans
         assert (inter>=0).all()
         self.saveErrorBars(inter,self.time[-1]+extraskipdt)
