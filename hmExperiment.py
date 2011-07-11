@@ -6,6 +6,12 @@ import scipy.optimize
 import copy
 
 # A structure
+def ch3up(tau01=2.,tau12=4.,nchannels=5):
+    E = HME([])
+    E.append(hmEnsemble.ch3Ensemble(V0=-65,V1=20,tau01=tau01,tau12=tau12,nchannels=nchannels))
+    return E
+
+# A structure
 def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
     E = HME([])
     E.append(hmEnsemble.ch3Ensemble(V0=-65,V1=20,tau01=tau01,tau12=tau12,nchannels=nchannels))
@@ -192,6 +198,7 @@ class fit(object):
         for x in params[xname]:
             p.update({xname:x})
             for y in params[yname]:
+                print xname, x, yname, y
                 p.update({yname:y})
                 # Changed plans from: for pn in pnzz[0], pnzz = (pnames,zz)
                 z = efun(p,self.structure,self.SysWData)
