@@ -1,7 +1,9 @@
 import hmm
 import hmEnsemble
 import numpy
+import pylab
 import scipy.optimize
+import copy
 
 # A structure
 def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
@@ -13,6 +15,19 @@ def ch3bothdirs(tau01=2.,tau12=4.,nchannels=5):
 # A structure
 def ch3mix():
     E = HME([])
+    E.append(hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.,nchannels=nchannels))
+    return E
+
+# A structure
+def ch3chn(tau01=2.,tau12=4.,nchannels=5):
+    E = HME([])
+    E.append(hmEnsemble.ch3EnsemChain(tau01=tau01,tau12=tau12,nchannels=nchannels))
+    return E
+
+# A structure
+def hybridprotocol(tau01=2.,tau12=4.,nchannels=5):
+    E = HME([])
+    E.append(hmEnsemble.ch3EnsemChain(tau01=tau01,tau12=tau12,nchannels=nchannels))
     E.append(hmEnsemble.ch3Ensemble(tau01=tau01,tau12=tau12,V0=-25.,V1=-20.,Vchar01=15.,Vchar12=15.,nchannels=nchannels))
     return E
 
@@ -78,24 +93,36 @@ class HME(object):
         if list == None:
             list = self.protocol
         for h in list:
-            assert(isinstance(h,hmm.HMM))
+            assert(isinstance(h,hmm.HMM) or isinstance(h,hmm.HMMChain))
 
-    def sim(self,seeds,dt,tstop):
+    def sim(self,seeds,dt,tstops):
+        if tstops == None:
+            tstops = [None]*len(self)
+        if not type(tstops) is list:
+            tstops = [tstops]*len(self)
         assert len(self) == len(seeds)
-        for i in range(len(self)):
-            self[i].sim(seeds[i],dt,tstop)
+        for i in range(len(self)):  # i ranges over the experiments
+            self[i].sim(seeds[i],dt,tstops[i])
 
     def simmed(self):
         s = True
         for M in self:
             s &= M.simmed
         return s
+    
+    def simplot(self,num):
+        assert self.simmed()
+        fig = 0
+        for E in self.protocol:
+            pylab.figure(fig)
+            E.simplot(num)
+            fig += 1
 
     def likelihood(self,simExperiment):
         assert simExperiment.simmed()
         total = 0
         for i in range(len(self)):
-            total += self[i].likelihood(simExperiment[i].simData)
+            total += self[i].likelihood(simExperiment[i])
         return total
 
 class fit(object):
@@ -104,17 +131,17 @@ class fit(object):
         self.known = known
         self.structure = structure
         self.found = False
-	self.simmed = False
+        self.simmed = False
 
-    def sim(self,system,true,seeds,dt,tstop):
-	self.system = system
-	self.true = true
-	self.SysWData = system(**true)
-	self.SysWData.sim(seeds,dt,tstop)
-	self.simmed = True
-	
+    def sim(self,system,true,seeds=[0],dt=.1,tstops=None):
+        self.system = system
+        self.true = true
+        self.SysWData = system(**true)
+        self.SysWData.sim(seeds,dt,tstops)
+        self.simmed = True
+
     def find(self):
-	assert(self.simmed)
+        assert(self.simmed)
         vals = []
         names = []
         for key,v in self.guess.items():
@@ -134,23 +161,28 @@ class fit(object):
         self.found = True
         return self.MLE
 
-    def evalD(self,params,structure,efun=like4eval):
+    def simplot(self,num=0):
+        assert(self.simmed)
+        self.SysWData.simplot(num)
+    
+    # The following routine is not functional
+    def evalD(self,params,efun=like4eval):
         pnames = params.keys()
         pfactorlist = params.values()
         zz = {}
-        for ptuples in myutil.cartesian_product(*pfactorlist):
+        for ptuples in myutil.cartesian_product(*pfactorlist):  # myutil not written
             paramset = dict([(pnames[i],ptuples[i]) for i in range(len(ptuples))])
-            L = efun(paramset,structure,self.SysWData)
+            L = efun(paramset,self.structure,self.SysWData)
             zz.update({ptuple:L})
         return (pnames, zz)
 
-    def save4plot(self,fname,params,xname,yname,base,efun,structure):
+    def save4plot(self,fname,params,xname="tau01",yname="tau12",base={},efun=like4eval):
         self.fname = fname
         f = open(self.fname+"_x.txt","w")
         for x in params[xname]:
             f.write(str(x)+' ')
         f.close()
-        f.open(self.fname+"_y.txt","w")
+        f = open(self.fname+"_y.txt","w")
         for y in params[yname]:
             f.write(str(y)+' ')
         f.close()
@@ -162,5 +194,6 @@ class fit(object):
             for y in params[yname]:
                 p.update({yname:y})
                 # Changed plans from: for pn in pnzz[0], pnzz = (pnames,zz)
-                z = efun(p,structure,sysWData)
+                z = efun(p,self.structure,self.SysWData)
                 f.write(str(z)+' ')
+        f.close()
