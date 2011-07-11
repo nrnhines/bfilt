@@ -111,10 +111,12 @@ class HMMChain(object):
         self.sigma = sigma
         self.nstates = len(pstates)
         self.R = random.Random()
-        
+
     def sim(self, seeds=[0], dt=0.1, tstops=None):
         if tstops == None:
             tstops = [20.]*len(self.Q)
+        if not type(tstops) is list:
+            tstops = [tstops]*len(self.Q)
         assert len(tstops) > 0
         self.HMMLinks = []
         # Put links together
@@ -141,18 +143,23 @@ class HMMChain(object):
                 self.HMMLinks[j][i].sim(None,self.simdt,[self.simtstops[i]],nextFirstState)
                 nextFirstState = self.HMMLinks[j][i].simStates[-1]
         self.simmed = True
-    
-    def likelihood(self, fitChain, plotskipdt=None):
-        self.fitChain = fitChain
+
+    def likelihood(self, dataChain, plotskipdt=None):
+        self.dataChain = dataChain
+        self.LikeLinks = []
+        for seedi in range(len(dataChain.HMMLinks)):
+            self.LikeLinks.append([])
+            for stopj in range(len(dataChain.HMMLinks[seedi])):
+                self.LikeLinks[-1].append(HMM(self.pstates,self.output,self.Q[stopj%len(self.Q)],self.sigma,self.R))
         j = 0
         total = 0
-        for j in range(len(fitChain.HMMLinks)):
+        for j in range(len(dataChain.HMMLinks)):
             nextinitpmf=None
-            for i in range(len(fitChain.HMMLinks[j])):
-                total+=self.HMMLinks[j][i].likelihood(fitChain.HMMLinks[j][i].simData,plotskipdt,nextinitpmf)
-                nextinitpmf = self.HMMLinks[j][i].likefinalpmf
+            for i in range(len(dataChain.HMMLinks[j])):
+                total+=self.LikeLinks[j][i].likelihood(dataChain.HMMLinks[j][i].simData,plotskipdt,nextinitpmf)
+                nextinitpmf = self.LikeLinks[j][i].likefinalpmf
         return total
-    
+
     def simplot(self,num=0):
         assert(self.simmed)
         seednum = 0
@@ -321,10 +328,13 @@ class HMM(object):
         return (posterior, marg)
 
     def likelihood(self, fitData, plotskipdt=None, initpmf=None):
-        self.fitData = fitData
+        if isinstance(fitData,HMM):
+            self.fitData = fitData.simData
+        else:
+            self.fitData = fitData
         total = 0
         # For chains fitData is a list with one element
-        for fD in fitData:
+        for fD in self.fitData:
             ts = fD[0]
             xs = fD[1]
             assert(len(ts) == len(xs))
@@ -364,7 +374,7 @@ class HMM(object):
         skiptol = 1e-7
         # INSIDE THIS IF STATEMENT NOT TESTED, ELIF YES, ELSE NO
         if (not self.plotskipdt == None) and self.plotskipdt < maxdt - dttol:  # I.e. we want to plot likelihood at higher sample freq
-            print "Case 0"
+            print "Case 0 -- Untested"
             self.plotskiptrans = scipy.linalg.expm(plotskipdt*self.Q)
             self.plotskips = []
             self.extraskipdt = []
@@ -380,13 +390,13 @@ class HMM(object):
                 else:
                     self.extratrans = None
         elif max(self.dts) - min(self.dts) < dttol:  # i.e. if all dts are approximately the same
-            print "Case 1"
+            #print "Case 1"
             self.plotskipdt = None
             self.extratrans = [scipy.linalg.expm(self.dts[-1]*self.Q)]*nData  #makes a sequence nData long
             self.extraskipdt = [self.dts[-1]]*nData
             self.plotskips = [0]*nData
         else:
-            print "Case 2"
+            print "Case 2 -- Untested."
             self.plotskipdt = None
             self.plotskips = []
             self.extraskipdt = []
