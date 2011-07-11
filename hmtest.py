@@ -1,4 +1,5 @@
 import hmm
+import hmExperiment
 
 def chaintest():
     HC1 = hmm.ch3chain([-65.,20.,-65.])
@@ -11,4 +12,10 @@ def chaintest():
     l22 = HC2.likelihood(HC2)
     assert(False)
 
-chaintest()
+def experchntest():
+    F = hmExperiment.fit(hmExperiment.ch3chn,dict(tau01=2.,tau12=4.),dict(nchannels=5))
+    F.sim(hmExperiment.ch3chn,dict(tau01=2.,tau12=4.,nchannels=5),seeds=[[1,2]],dt=.1,tstops=[[20,20]])
+    F.find()
+    
+#chaintest()
+experchntest()
