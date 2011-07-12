@@ -3,6 +3,7 @@ import hmEnsemble
 import numpy
 import pylab
 import scipy.optimize
+import scipy.stats
 import copy
 
 # A structure
@@ -182,7 +183,21 @@ class fit(object):
             zz.update({ptuple:L})
         return (pnames, zz)
 
+    def pValue(self,z,ml=None,nparam=None):
+        if ml == None:
+            ml = self.ML
+        if nparam == None:
+            nparam = len(self.guess)
+        CS = 2.0*(ml-z)  #plus log-likelihood
+        p = scipy.stats.chisqprob(CS,nparam)
+        return p
+    
+    def cValue(self,z,ml=None,nparam=None):
+        p = self.pValue(z,ml,nparam)
+        return 100*(1-p)
+    
     def save4plot(self,fname,params,xname="tau01",yname="tau12",base={},efun=like4eval):
+        mle = self.find()
         self.fname = fname
         f = open(self.fname+"_x.txt","w")
         for x in params[xname]:
@@ -193,6 +208,7 @@ class fit(object):
             f.write(str(y)+' ')
         f.close()
         f = open(self.fname+"_z.txt","w")
+        g = open(self.fname+"_c.txt","w")
         p = copy.deepcopy(params)
         p.update(base)
         for x in params[xname]:
@@ -203,4 +219,7 @@ class fit(object):
                 # Changed plans from: for pn in pnzz[0], pnzz = (pnames,zz)
                 z = efun(p,self.structure,self.SysWData)
                 f.write(str(z)+' ')
+                c = self.cValue(z)
+                g.write(str(c)+' ')
         f.close()
+        g.close()
