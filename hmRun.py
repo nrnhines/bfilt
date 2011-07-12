@@ -2,11 +2,12 @@ import hmExperiment
 import numpy
 import string
 
-def conSeed2HR():
-    rn = numpy.arange(.001,12.0001,.05).tolist()
+# Keep this function, used for plots
+def conSeed2HR16():
+    rn = numpy.arange(.001,16.01,.05).tolist()
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=5))
     F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5),seeds=[[2]],tstops=[[20]])
-    F.save4plot("conSeed2HR",dict(tau01=rn,tau12=rn))
+    F.save4plot("conSeed2HR16",dict(tau01=rn,tau12=rn))
     print F.find()
 
 def findMLSeed2():
@@ -41,15 +42,14 @@ def readlikefile(fnamep):
     f.close()
     return xs
 
-def extendy(ymax=12.002):
+def extendy(ymax=13.002):
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=5))
     F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5),seeds=[[2]],tstops=[[20]])
     F.find()
-    fname = "/Users/seancarver/Code/neuron-dev/bfilt/conSeed2HR"
+    fname = "conSeed2HR"
     xs = readlikefile(fname+"_x.txt")
     ys = readlikefile(fname+"_y.txt")
     zs = readlikefile(fname+"_z.txt")
-    cs = readlikefile(fname+"_c.txt")
     dy = ys[-1] - ys[-2]
     f = open(fname+"NEW_y.txt", "w")
     for y in ys:
@@ -74,6 +74,7 @@ def extendy(ymax=12.002):
         y = ys[-1] + dy
         while y < ymax:
             p.update({"tau01":x,"tau12":y})
+            print "tau01", x, "tau12", y
             newz = efun(p,F.structure,F.SysWData)
             f.write(str(newz)+' ')
-             
+            y = y + dy 
