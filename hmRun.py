@@ -7,7 +7,7 @@ def x5c1(seeds=[[12,22,32,42,52]],fname="conX5c1SX2"):
     rn = numpy.arange(.001,16.51,.05).tolist()
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=1))
     F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=1),seeds=seeds,tstops=[[20]])
-    F.save4plot(fname,dict(tau01=rn,tau12=rn))
+    F.save4plot(fname,dict(tau01=rn,tau12=rn,nchannels=1))
     print F.find()
 
 def x1c1():
