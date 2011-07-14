@@ -3,12 +3,40 @@ import numpy
 import string
 
 # Keep this function, used for plots
-def conSeed2HR16():
+def x5c1(seeds=[[12,22,32,42,52]],fname="conX5c1SX2"):
+    rn = numpy.arange(.001,16.51,.05).tolist()
+    F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=1))
+    F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=1),seeds=seeds,tstops=[[20]])
+    F.save4plot(fname,dict(tau01=rn,tau12=rn))
+    print F.find()
+
+def x1c1():
+    x5c1(seeds=[[2]],fname="conX1c1S2")
+
+def conSHR16(seeds=[[2]],fname="conSeed2HR16"):
     rn = numpy.arange(.001,16.01,.05).tolist()
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=5))
-    F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5),seeds=[[2]],tstops=[[20]])
-    F.save4plot("conSeed2HR16",dict(tau01=rn,tau12=rn))
+    F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5),seeds=seeds,tstops=[[20]])
+    F.save4plot(fname,dict(tau01=rn,tau12=rn))
     print F.find()
+
+def conSeed0HR16():
+    conSHR16([[0]],"conSeed0HR16")
+
+def conSeed1HR16():
+    conSHR16([[1]],"conSeed1HR16")
+
+def conSeed2HR16():
+    conSHR16([[2]],"conSeed2HR16")
+
+def conSeed3HR16():
+    conSHR16([[3]],"conSeed3HR16")
+
+def conSeed4HR16():
+    conSHR16([[4]],"conSeed4HR16")
+
+def conSeed5HR16():
+    conSHR16([[5]],"conSeed5HR16")
 
 def findMLSeed2():
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=5))
