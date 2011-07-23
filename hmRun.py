@@ -13,6 +13,28 @@ def x5c1(seeds=[[12,22,32,42,52]],fname="conX5c1SX2cor1cF"):
 def x1c1():
     x5c1(seeds=[[2]],fname="conX1c1S2cor1cF")
 
+def conV5(Vchar=5,fname="conV5",seeds=[[2]]):
+    rn = numpy.arange(.001,16.01,.05).tolist()
+    F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(Vchar01=Vchar,Vchar12=Vchar,nchannels=5))
+    F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5,Vchar01=Vchar,Vchar12=Vchar),seeds=seeds,tstops=[[20]])
+    F.save4plot(fname,dict(tau01=rn,tau12=rn,nchannels=5))
+    print F.find()
+
+def conV10():
+    Vchar=10
+    fname="conV10"
+    conV5(Vchar=Vchar,fname=fname);
+
+def conV20(seeds=[[2]]):
+    Vchar=20
+    fname="conV20"
+    conV5(Vchar=Vchar,fname=fname,seeds=seeds);
+
+def conV40():
+    Vchar=40
+    fname="conV40"
+    conV5(Vchar=Vchar,fname=fname);
+
 def conSHR16(seeds=[[2]],fname="conSeed2HR16"):
     rn = numpy.arange(.001,16.01,.05).tolist()
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(nchannels=5))
