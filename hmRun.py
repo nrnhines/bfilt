@@ -17,7 +17,7 @@ def conV5(Vchar=5,fname="conV5",seeds=[[2]]):
     rn = numpy.arange(.001,16.01,.05).tolist()
     F = hmExperiment.fit(hmExperiment.ch3up,dict(tau01=2.,tau12=4.),dict(Vchar01=Vchar,Vchar12=Vchar,nchannels=5))
     F.sim(hmExperiment.ch3up,dict(tau01=2.,tau12=4.,nchannels=5,Vchar01=Vchar,Vchar12=Vchar),seeds=seeds,tstops=[[20]])
-    F.save4plot(fname,dict(tau01=rn,tau12=rn,nchannels=5))
+    F.save4plot(fname,dict(tau01=rn,tau12=rn,nchannels=5,Vchar01=Vchar,Vchar12=Vchar))
     print F.find()
 
 def conV10():
