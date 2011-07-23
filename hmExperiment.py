@@ -7,9 +7,9 @@ import scipy.stats
 import copy
 
 # A structure
-def ch3up(tau01=2.,tau12=4.,nchannels=5):
+def ch3up(tau01=2.,tau12=4.,nchannels=5,Vchar01=1.,Vchar12=1.):
     E = HME([])
-    E.append(hmEnsemble.ch3Ensemble(V0=-65,V1=20,tau01=tau01,tau12=tau12,nchannels=nchannels))
+    E.append(hmEnsemble.ch3Ensemble(V0=-65,V1=20,tau01=tau01,tau12=tau12,Vchar01=Vchar01,Vchar12=Vchar12,nchannels=nchannels))
     return E
 
 # A structure
@@ -26,9 +26,9 @@ def ch3mix():
     return E
 
 # A structure
-def ch3chn(tau01=2.,tau12=4.,nchannels=5):
+def ch3chn(tau01=2.,tau12=4.,nchannels=5,Vchar01=1.,Vchar12=1.):
     E = HME([])
-    E.append(hmEnsemble.ch3EnsemChain(tau01=tau01,tau12=tau12,nchannels=nchannels))
+    E.append(hmEnsemble.ch3EnsemChain(tau01=tau01,tau12=tau12,nchannels=nchannels,Vchar01=Vchar01,Vchar12=Vchar12))
     return E
 
 # A structure
@@ -140,6 +140,15 @@ class fit(object):
         self.found = False
         self.simmed = False
 
+    def like(self,point,SysWData):
+        p = dict()
+        p.update(self.known)
+        p.update(self.guess)
+        p.update(point)
+        S = self.structure(**p)
+        L = S.likelihood(SysWData)
+        return L
+    
     def sim(self,system,true,seeds=[0],dt=.1,tstops=None):
         self.system = system
         self.true = true
