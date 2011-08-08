@@ -49,7 +49,7 @@ def ch3chain(V0,V1,tau01=2.,tau12=4.,Vhalf01=-20,Vhalf12=-25,Vchar01=1,Vchar12=1
     Q = []
     for V in V1:
         Q.append(ch3Qv(V,tau01,tau12,Vhalf01,Vhalf12,Vchar01,Vchar12))
-        H = HMMChain(pstates,output,Q,sigma)
+    H = HMMChain(pstates,output,Q,sigma)
     return H
 
 def equilibrium(Q):
@@ -283,7 +283,17 @@ class HMM(object):
         self.center = []
         self.width = []
         self.time = [0.0]
+        
+    def initializeAllErrorBars(self):
+        self.centers = []
+        self.widths = []
+        self.times = []
 
+    def saveAllErrorBars(self):
+        self.centers.append(self.center)
+        self.widths.append(self.width)
+        self.times.append(self.time)
+        
     def saveErrorBars(self, pmf, t):
         E = 0.0
         for i in range(len(self.output)):
@@ -333,6 +343,7 @@ class HMM(object):
         else:
             self.fitData = fitData
         total = 0
+        self.initializeAllErrorBars()
         # For chains fitData is a list with one element
         for fD in self.fitData:
             ts = fD[0]
@@ -353,6 +364,7 @@ class HMM(object):
                 assert (pmf>=0).all()
                 sll += math.log(lk)
             total += sll
+            self.saveAllErrorBars()
         self.likefinalpmf=pmf
         self.liked = True
         return total
@@ -422,19 +434,19 @@ class HMM(object):
         y = numpy.array(self.simData[num][1])
         pylab.plot(x+redOrigin,y,colY)
 
-    def plot(self):
+    def plot(self,num=0):
         #MIGHT NOT WORK AFTER MULTIPLE TRAJS ADDED
         assert(self.liked)
-        x = numpy.array(self.fitData[0])
-        y = numpy.array(self.fitData[1])
+        x = numpy.array(self.fitData[num][0])
+        y = numpy.array(self.fitData[num][1])
         pylab.hold(False)
         pylab.plot(x,y)
-        xf = self.time
+        xf = self.times[num]
         yfh = []
         yfl = []
-        for i in range(len(self.center)):
-            yfh.append(self.center[i] + self.width[i])
-            yfl.append(self.center[i] - self.width[i])
+        for i in range(len(self.centers[num])):
+            yfh.append(self.centers[num][i] + self.widths[num][i])
+            yfl.append(self.centers[num][i] - self.widths[num][i])
         pylab.hold(True)
         pylab.plot(xf,yfh,'g')
         pylab.plot(xf,yfl,'g')
