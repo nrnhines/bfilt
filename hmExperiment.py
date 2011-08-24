@@ -126,7 +126,7 @@ class HME(object):
             fig += 1
 
     def likelihood(self,simExperiment):
-        assert simExperiment.simmed()
+        assert simExperiment.simmed
         total = 0
         for i in range(len(self)):
             total += self[i].likelihood(simExperiment[i])

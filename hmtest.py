@@ -23,6 +23,11 @@ def experchntest():
 def V20test():    
     hmRun.conV20()
 
+def plottest():
+    H = hmm.ch3hmm()
+    H.sim(seeds=[0])
+    H = hmm.ch3hmm(tau01=3.,tau12=3.)
+    
 V20test()
 #chaintest()
 #experchntest()

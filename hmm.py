@@ -429,10 +429,11 @@ class HMM(object):
                 y = numpy.array(self.simData[i][1])
                 pylab.plot(x+tOrigin,y,colN)
                 pylab.hold(True)
-            # no need to increment tOrigin 
-        x = numpy.array(self.simData[num][0])
-        y = numpy.array(self.simData[num][1])
-        pylab.plot(x+redOrigin,y,colY)
+            # no need to increment tOrigin
+        if num < len(self.simData):
+            x = numpy.array(self.simData[num][0])
+            y = numpy.array(self.simData[num][1])
+            pylab.plot(x+redOrigin,y,colY)
 
     def plot(self,num=0):
         #MIGHT NOT WORK AFTER MULTIPLE TRAJS ADDED
