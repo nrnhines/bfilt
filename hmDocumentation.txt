@@ -1,0 +1,280 @@
+Documentation for ion-channel hidden Markov model software in python
+Sean Carver
+August 3, 2011
+ADDED August 7, 2011: HOW TO RUN CODE, see bottom.
+
+All relevant files have filenames of the form hm*.py.
+The important ones are
+
+hmm.py
+hmEnsemble.py
+hmExperiment.py
+
+I put commands to run code into hmRun.py and hmtest.py.  Of the others hmAbsorb.py is under construction but put aside for now (it concerns absorbing states).  All other hm*.py files are "legacy" and not used currently.
+
+hmm.py:
+
+The files define five classes: 
+
+1. hmm.HMM(...) defines an homogenous (i.e. constant membrane potential) Markov model (but the initial condition can be the equilibrium distribution from a different membrane potential -- i.e. the model is homogenous but not stationary).
+2. hmm.HMMChain(...) defines a piecewise homogenous Markov model (i.e the membrane potential a step function with an arbitrary number of levels)
+3. hmEnsemble.Ensemble(...) defines an ensemble of ion channels.
+4. hmExperiment.HME(...) defines an "experiment" with "multiple-trace" protocols.  Note: unlike HMMChain, the steps of HME involve a new "initialization" rather than a "continuation" at a different voltage.  However the two can be combined: some of the HME traces can be an HMMChain.
+5. hmExperiment.fit(...) defines an object that includes all the information for fitting: the parameterized structure, the to-be-fitted and the assumed-know parameter names and values.
+
+
+Let's look at the constructor function for each class:  NOTE: we consider the class constructors first because many of these classes have the same methods.
+---------------------------------------------------------------
+HMMObject = hmm.HMM(pstates, output, Q, sigma)
+
+#0: (self)
+
+#3 (Q) is a numpy.matrix.  Let the states be indexed by i in I.  Let p[i](t) be the probability of being in state i at time t.  Then Q is the matrix that defines the equations of motion for the model
+
+d/dt p(t) = p(t) Q
+ 
+For now, Q is defined only for the ch3 model by the function  hmm.ch3Qv(V,tau01,tau12,...) where V is the membrane potential followed by parameters.  There are 6 parameters; see the code hmm.py:line13.
+
+#1 (pstates) is a list of floats:  pstates[i] is the initial probability of being in state[i].  pstates is usually defined by the following function call: pstates = hmm.equilibrium(Q0) where Q0 is the Q-matrix at the holding potential prior to the experiment (analogous to the Q-matrix during the experiment, parametter #3, above).
+
+#2 & #4: (output) is a list & (sigma) is a float: when the chain is in state i, the measured 
+conductance at each sample is a Gaussian random variable with mean=output[i] and standard deviation=sigma
+
+NOTE: To better match what is in the literature, I want to change these parameters to hmm.HMM(p0,Q,mu,sigma) where mu (formerly output) and sigma are both lists (sigma depends on state, state-dependent noise) 
+
+NOTE: Other parameters are needed, but they are specifed later.  For example the random seed(s) are specified when the model is simulated.
+
+NEEDED FOR CHANNEL BUILDER: From a built channel, get Q-matrix for a given V.  Q-matrix specification must depend on parameters to be specified by the optimization routine. Note that p0 can also depend on parameters to be optimized.  A model specification in channel builder must also involve the specification somehow, of 2 real numbers for each state, i: mu[i] (aka output[i]) and sigma[i].
+
+FINALLY NOTE that the ch3 model can be constructed with the shortcut:
+CH3 = hmm.ch3hmm()
+Optional parameters can be passed, see code.
+
+---------------------------------------------------------------
+HMMChainObject = hmm.HMMChain(pstates,output,Q,sigma)
+
+same as HMM except HMMChain defines a piecewise homogenous instead of a homogenous Markov model.  Q is now a list of Q-matricies instead of a single Q-matrix (list of numpy.matrix instead of numpy.matrix).  
+
+When the model is simulated the times for each piece is passed in.  When fitted the data determine the times for each piece.
+
+NOTE: models defined as HMMs can be defined as HMMChains with only one piece.  One might think I could do away with the class HMM.  However I don't do this because  it is conceptually easier to start with HMMs then define HMMChains as a list of HMMs that pass their initial conditions and random number generators (with seeds) to the next HMM in the list. 
+
+NOTE: The code refers to each piece as a "link" and the whole thing as a "chain".  This is confusing  because in both cases (HMM & HMMChain) the model is a Markov chain.  I am going to change "link" to "piece" or "step" and "chain" to something else I haven't decided, maybe "list" or "linkedlist".
+
+FINALLY NOTE that the a multi-step ch3 model can be created with the shortcut
+CH3CHAIN = hmm.ch3chain()
+Optional parameters can be passed, see code.
+---------------------------------------------------------------
+EnsembleObject = hmEnsemble.Ensemble(Hsmall,nchannels)
+
+#0 (self)
+#1 (Hsmall) is the HMM or HMMChain model of a single ion channel
+#2 (nchannels) is the number of channels
+
+The output argument is E an hmEnsemble object.
+Typically after constructing E, you construct a new HMM or HMMChain object as follows:
+
+Hsmall = hmm.HMM(...)
+E = hmEnsemble.Ensemble(Hsmall,nchannels)
+HE = hmm.HMM(E.pstates,E.output,E.Q,sigma)
+HE = hmm.HMMChain(E.states,E.output,E.Q,sigma)
+
+NOTE: To make sigma state dependent, I have do some reprogramming to figure out noise of dependent on ensemble state; also need to change variable names as described above: pstates -> p0 & output -> mu
+
+FINALLY NOTE that an ensemble (HMM Object) can be created with the shortcut CH3Ensemble = hmEnsemble.ch3Ensemble(). Additionally a multistep ch3 ensemble can be created with CH3ENSC = hmEnsemble.ch3EnsemChain().  Optional parameters can be passed to both shortcuts,  see code.  
+-----------------------------------------------------------------
+HMEObject = hmExperiment.HME(protocol)
+
+#0 (self)
+#1 (protcol): A list of hmm.HMM and/or hmm.HMMChain objects
+
+NOTE: To construct experiments, more readable code is obtained from using the overloaded operators (other operations are available): e.g.
+X = hmExperiment.HME([])
+X.append(HMMobject0)
+X.append(HMMobject1)
+
+FINALLY NOTE: Five sample HME object constructors are given at the top of the file hmExperiment.py.   These are labeled as "# A Structure".
+-----------------------------------------------------------------
+fitObject = hmExperiment.fit(structure,guess,known)
+
+#0 (self)
+#1 (structure) this variable is a function which defines an hmExperiment.HME object in terms of parameters.
+#2 (guess) this is a dictionary which gives the names of the parameters to be fitted linked to the guesses for their values to be used as the initial condition in the optimization.  Example:
+guess = dict(tau01=2., tau12=4.)
+#2 (known) this is a dictionary which gives the names of the parameters which are assumed known  linked to their assumed values. Example:
+known = dict(nchannels=5)
+
+
+======================================================
+==================CLASS METHODS==========================
+======================================================
+
+THE sim() METHOD
+
+HMMObject.sim(seeds,dt,tstops,firststate) -- Simulates model.
+HMMChainObject.sim(seeds,dt,tstops)
+HMEObject.sim(seeds,dt,tstops)
+fitObject.sim(system,true,seeds,dt,tstops)
+
+These all work the same although fitObject is a little different.  For the first three you simulate the system defined by the Object.  For fitObject you pass the system to be simulated through (system) -- a function defining an HMEObject -- and (true) the true value for the parameters.
+
+(seeds) are the list of pseudo-random seeds to be used.  If the list has more than one element the experiment is repeated in an independent and identically distributed fashion.
+
+(dt) sample interval for data points
+
+(tstops) list of durations for pieces (can for HMMObject, can still be a list but then only zeroth element is used). For HMMChainObject.sim() tstops is now a list whose elements correspond to the Q-matrix list.  If the Q-matrix loop has a different length than the tstop list a warning is given and the Q-matrix list is either truncated or looped.
+
+(firststate) Usually None; used to pass the initial state when HMMObject.sim() is called by the sim method of an HMMChainObject.
+
+--
+
+THE simplot() METHOD
+
+HMMObject.simplot(num,...) -- Plots results of simulation
+HMMChainObject.simplot(num)
+HMEObject.simplot(num)
+fitObject.simplot(num)
+
+(num) trajectory to highlight (num corresponds to an element in the list of seeds)
+
+--
+
+THE likelihood() METHOD
+
+HMMObject.likelihood(fitData,...) -- Computes likelihood.
+HMMChainObject.likelihood(dataChain,...)
+HMEOjbect.likelihood(simExperiment)
+fitObject.like(point,SysWData)
+
+(fitData) data to use for computing likelihood -- can come from a different HMMObject with different parameters, e.g. HMMObject0.likelihood(HMMObject1.simData).  Note .simData exists after model has been simulated.
+
+(dataChain) a hmm.HMMChain object
+
+(simExperiment) is a hmExperiment.HME object
+
+(point, SysWData) is a dictionary of parameters to be combined with "guess" and "known" then "the structure" is created with the parameters and likelihood is evaluated at the data contained in SysWData.  Not sure if this is best.
+
+--
+
+THE plot() METHOD 
+
+HMMObject.plot() -- Funnel plot.  Worked at one point but was not maintained as the code evolved.
+
+-- 
+
+THE find() METHOD
+
+fitObject.find() -- finds maximum likelihood estimates
+
+--
+
+THE save4plot METHOD saves for plotting likelihood contours in R.
+
+====================================================
+================== HOW TO RUN CODE =====================
+====================================================
+
+Try a single channel model:
+
+import hmm
+H = hmm.ch3hmm()
+H.sim(seeds=[0])
+H.simplot()
+
+These commands on my system makes a plot of the simulated data.  WIth mine I don't have to do anything else but to see plot you might have to execute the following commands (not sure of order)
+
+import pylab
+pylab.show()
+pylab.ion()
+
+The H we just created is for simulating data.  Now create a different HMM object with possibly (but not necessarily) different parameter values to evaluate likelihood given the simulated data.
+
+H2 = hmm.ch3hmm(tau01=3.,tau12=3.)
+H2.likelihood(H.simData)
+
+Now the funnel plot for the previous likelihood command
+
+H2.plot()
+
+Now let's try several trajectories.  The number of seeds determines the number of trajectories.
+
+H.sim(seeds=[1,2,3])
+H.simplot(num=0)
+H.simplot(num=1)
+H.simplot(num=2)
+
+H2.likelihood(H.simData)
+H2.plot(num=0)
+H2.plot(num=1)
+H2.plot(num=2)
+
+Now let's try more than one voltage step.
+
+HV = hmm.ch3chain(-65,[20,-45,20,-25,20,-5,20])
+HV.sim(seeds=[6,7,8],tstops=[10,5,10,5,10,5,10])
+HV.simplot(num=0)
+HV.simplot(num=1)
+
+For mulit-step protocols, you pass the whole simulated object through to likelihood.  You can use same object for simulating and fitting, but you don't have to.  Here we use the same object.
+
+HV.likelihood(HV)
+
+Funnel plots are not yet programmed for multi-step protocols.
+
+Now let's try an ensemble.  You can make an ensemble out of any of the objects defined above.
+
+import hmEnsemble
+E = hmEnsemble.Ensemble(H,nchannels=5)
+E2 = hmEnsemble.Ensemble(H2,nchannels=5)
+EV = hmEnsemble.Ensemble(HV,nchannels=5)
+
+Now transform these objects back to hidden Markov models HMM and HMMChain with augmented state-space for the ensemble.
+
+F = hmm.HMM(E.pstates,E.output,E.Q)
+F2 = hmm.HMM(E2.pstates,E2.output,E2.Q)
+FV = hmm.HMMChain(EV.pstates,EV.output,EV.Q)
+
+F.sim(seeds=[10,11,12,13])
+F.simplot(num=0)
+F.simplot(num=1)
+
+F2.likelihood(F.simData)
+F2.plot(num=0)
+F2.plot(num=1)
+
+FV.sim(seeds = [15,16]
+FV.simplot(num=0)
+FV.simplot(num=1)
+FV.likelihood(FV)
+
+Now we want to do multitrace "experiments".  These are defined by "structures" at the head of the file hmExperiment.py
+
+import hmExperiment
+G = hmExperiment.ch3bothdirs(tau01=2.,tau12=4.,nchannels=5)
+G.sim([[1,2,3],[4,5]],0.1,[[20],[20]])  # seeds, dt, tstops
+G.simplot(0)
+G.simplot(1)
+G.simplot(2)
+
+These structures such as G above are seldom called this way.  Instead use the hmExperiment.fit class:
+ K=hmExperiment.fit(hmExperiment.ch3bothdirs,dict(tau01=2.,tau12=4.),dict(nchannels=5)
+K.sim(hmExperiment.ch3bothdirs,dict(tau01=3.,tau12=3.,nchannels=5),seeds=[[1,2,3],[4,5],tstops=[[20],[20]])
+K.simplot(0)
+K.simplot(1)
+K.simplot(2)
+
+The likelihood function doesn't seem to be working for this class but try instead
+
+K.find()
+
+then see the arguments returned by BFGS
+
+K.MLE
+K.ML
+K.fopt
+K.gopt
+K.Bopt
+
+and more, see code
+
+Finally if you wnat to plot the contour functions of likelihood you can use the save4plot function.  I am not putting code here because to plot it you need to import it into R.  Will write that up next, if you want.
