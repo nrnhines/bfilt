@@ -10,6 +10,31 @@ def ch3Q(alpha01, beta01, alpha12, beta12):
     Q = numpy.matrix([[-alpha01, alpha01, 0], [beta01, -(beta01 + alpha12), alpha12], [0, beta12, -beta12]])
     return Q
 
+def khhch3Q(V):
+    gmax_khh = 0.02979 # (Siemens/cm2)
+    ta1 = 4.4          # (ms)
+    tk1 = -0.025       # (/millivolt)
+    d1  = 21           # (millivolt)
+    k1  = 0.2          # (/millivolt)
+    ta2 = 2.6          # (ms)
+    tk2 = -0.007       # (/millivolt)
+    d2  = 43.          # (millivolt)
+    k2  = 0.036        # (/millivolt)
+    
+    vr   = V + 65.
+    tau1 = ta1*math.exp(tk1*vr)
+    K1   = math.exp((k2*(d2 - vr)) - (k1*(d1 - vr)))
+    tau2 = ta2*math.exp(tk2*vr)
+    K2   = math.exp(-(k2*(d2 - vr)))
+
+    a1 = K1/(tau1*(K1+1.))
+    b1 =  1./(tau1*(K1+1.))
+    a2 = K2/(tau2*(K2+1.))
+    b2 =  1./(tau2*(K2+1.))
+    
+    Q = ch3Q(a1,b1,a2,b2)
+    return Q
+
 def ch3Qv(V,tau01=2.,tau12=4.,Vhalf01=-20.,Vhalf12=-25.,Vchar01=1.,Vchar12=1.):
     # print "V", V
     inf01 = 1./(1. + math.exp((1./Vchar01)*(Vhalf01 - V)))
